@@ -1,61 +1,77 @@
-import tiktoken
-import openai
-# import faiss  # Comment out the direct import
-import numpy as np
-from difflib import SequenceMatcher
-import time
-import io
+"""
+Course context processing module for FAISS index creation.
+
+This module processes course files and creates vector embeddings for RAG.
+"""
+
 import json
-import boto3
+import time
+from difflib import SequenceMatcher
+
+import numpy as np
+import openai
+import tiktoken
 from utils.s3_utils import (
+    SUPABASE_BUCKET_NAME,
     get_course_s3_folder,
-    upload_json_to_s3,
+    get_json_from_s3,
+    list_files_in_prefix,
+    read_text_file_from_s3,
+    storage,
     upload_faiss_index_to_s3,
-    ACCESS_KEY,
-    SECRET_KEY,
-    REGION_NAME
+    upload_json_to_s3,
 )
 
 # Try to import faiss, make it optional
 try:
     import faiss
+
     FAISS_AVAILABLE = True
 except ImportError:
-    print("Warning: FAISS not available in load_and_process_index. Vector index functionality will be disabled.")
+    print(
+        "Warning: FAISS not available in load_and_process_index. Vector index functionality will be disabled."
+    )
     FAISS_AVAILABLE = False
     faiss = None
 
 
 def process_course_context_s3(bucket_name, username, coursename, api_key, max_tokens=2000):
-    """Standalone function to process course files from S3 and upload indices back to S3"""
+    """
+    Standalone function to process course files from storage and upload indices.
+
+    Args:
+        bucket_name: Storage bucket name
+        username: User's email/username
+        coursename: Course ID/name
+        api_key: OpenAI API key
+        max_tokens: Maximum tokens per chunk
+
+    Returns:
+        True if successful, False otherwise
+    """
     start_time = time.time()
 
-    # Initialize S3 client
-    s3 = boto3.client('s3',
-                      aws_access_key_id=ACCESS_KEY,
-                      aws_secret_access_key=SECRET_KEY,
-                      region_name=REGION_NAME)
-
-    # 1. Load and combine text files from S3
+    # 1. Load and combine text files from storage
     course_prefix = get_course_s3_folder(username, coursename)
     all_text = []
 
     try:
-        # List and read text files
-        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=course_prefix)
-        for obj in response.get('Contents', []):
-            if obj['Key'].endswith('.txt'):
-                file_obj = s3.get_object(Bucket=bucket_name, Key=obj['Key'])
-                all_text.append(file_obj['Body'].read().decode('utf-8'))
+        # List text files using s3_utils function
+        text_files = list_files_in_prefix(bucket_name, course_prefix, file_extension="txt")
+
+        for file_path in text_files:
+            content = read_text_file_from_s3(bucket_name, file_path)
+            if content:
+                all_text.append(content)
 
         if not all_text:
             raise ValueError("No text files found in course directory")
 
-        combined_text = '\n'.join(all_text)
+        combined_text = "\n".join(all_text)
         del all_text  # Free memory early
 
     except Exception as e:
-        print(f"Error loading files from S3: {str(e)}")
+        print(f"Error loading files from storage: {str(e)}")
         return False
 
     # 2. Split into chunks with memory efficiency
@@ -64,18 +80,18 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
     current_chunk = []
     current_token_count = 0
 
-    for line in combined_text.split('\n'):
-        line_tokens = len(encoder.encode(line + '\n'))
+    for line in combined_text.split("\n"):
+        line_tokens = len(encoder.encode(line + "\n"))
         if current_token_count + line_tokens > max_tokens:
             if current_chunk:
-                chunks.append('\n'.join(current_chunk))
+                chunks.append("\n".join(current_chunk))
                 current_chunk = []
                 current_token_count = 0
             # Handle long lines that exceed max_tokens
             while line_tokens > max_tokens:
-                chunks.append(line[:len(line) // 2])
-                line = line[len(line) // 2:]
-                line_tokens = len(encoder.encode(line + '\n'))
+                chunks.append(line[: len(line) // 2])
+                line = line[len(line) // 2 :]
+                line_tokens = len(encoder.encode(line + "\n"))
             current_chunk.append(line)
             current_token_count = line_tokens
         else:
@@ -83,7 +99,7 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
             current_token_count += line_tokens
 
     if current_chunk:
-        chunks.append('\n'.join(current_chunk))
+        chunks.append("\n".join(current_chunk))
     del combined_text  # Free memory
 
     # 3. Generate embeddings and build FAISS index (only if FAISS is available)
@@ -98,11 +114,10 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
         # Process chunks in batches to control memory usage
         batch_size = 100
         for i in range(0, len(chunks), batch_size):
-            batch = chunks[i:i + batch_size]
+            batch = chunks[i : i + batch_size]
             try:
                 response = openai_client.embeddings.create(
-                    model="text-embedding-3-large",
-                    input=batch
+                    model="text-embedding-3-large", input=batch
                 )
                 batch_embeddings = [e.embedding for e in response.data]
                 embeddings.extend(batch_embeddings)
@@ -112,10 +127,9 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
 
             # Clear memory between batches
             del batch
-            del response
 
         # Convert to numpy array and add to FAISS
-        embeddings_np = np.array(embeddings).astype('float32')
+        embeddings_np = np.array(embeddings).astype("float32")
         faiss_index.add(embeddings_np)
         del embeddings
         del embeddings_np
@@ -125,11 +139,11 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
     # 4. Build inverted index
     inverted_index = {}
     for i, chunk in enumerate(chunks):
-        quotes = [line for line in chunk.split('\n') if line.startswith('"')]
+        quotes = [line for line in chunk.split("\n") if line.startswith('"')]
         for quote in quotes:
             inverted_index[quote.lower()] = i
 
-    # 5. Upload all artifacts to S3
+    # 5. Upload all artifacts to storage
     base_key = get_course_s3_folder(username, coursename)
 
     # Upload chunks
@@ -141,7 +155,9 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
         upload_faiss_index_to_s3(faiss_index, bucket_name, f"{base_key}faiss.index")
         del faiss_index
     else:
-        print("Warning: FAISS index not created or FAISS not available. Skipping FAISS index upload.")
+        print(
+            "Warning: FAISS index not created or FAISS not available. Skipping FAISS index upload."
+        )
 
     # Upload inverted index
     upload_json_to_s3(inverted_index, bucket_name, f"{base_key}inverted_index.json")
