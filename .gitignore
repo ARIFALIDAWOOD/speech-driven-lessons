@@ -43,4 +43,10 @@ dist/
 build/
 
 # Backend .env
-backend/.env 
+backend/.env
+
+# Pre-commit
+.pre-commit/
+
+# Secrets baseline (keep this file, but ignore scan results)
+.secrets.baseline.tmp

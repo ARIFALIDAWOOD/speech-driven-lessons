@@ -1,115 +1,53 @@
-// import { NextResponse } from 'next/server';
-// import type { NextRequest } from 'next/server';
-//
-// // Predefined user credentials
-// const USERS = {
-//     user1: 'password1',
-//     user2: 'password2',
-// };
-//
-// export function middleware(request: NextRequest) {
-//     const authHeader = request.headers.get('authorization');
-//
-//     // If no authorization header is provided, trigger the browser's login popup
-//     if (!authHeader) {
-//         return new Response('Unauthorized', {
-//             status: 401,
-//             headers: { 'WWW-Authenticate': 'Basic realm="Login Required"' },
-//         });
-//     }
-//
-//     // Decode the Authorization header
-//     const credentials = Buffer.from(authHeader.split(' ')[1], 'base64').toString();
-//     const [username, password] = credentials.split(':');
-//
-//     // Validate the username and password
-//     if (!(username in USERS && USERS[username] === password)) {
-//         return new Response('Unauthorized', {
-//             status: 401,
-//             headers: { 'WWW-Authenticate': 'Basic realm="Login Required"' },
-//         });
-//     }
-//
-//     // Pass the authenticated username to the next step
-//     request.headers.set('x-authenticated-user', username);
-//
-//     // Allow the request to continue to the app
-//     return NextResponse.next();
-// }
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
 
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { parse } from 'cookie';
+// Routes that don't require authentication
+const publicRoutes = ['/login', '/auth/callback']
 
-// Predefined user credentials
-const USERS = {
-    user1: 'password1',
-    user2: 'password2',
-};
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
 
-function isAuthenticated(request: NextRequest) {
-    const cookieHeader = request.headers.get('cookie');
-    console.log('Cookie Header:', cookieHeader);
+  // Allow public routes
+  if (publicRoutes.some(route => pathname.startsWith(route))) {
+    return NextResponse.next()
+  }
 
-    if (!cookieHeader) return false;
+  // Handle root path - redirect to welcome if authenticated, login if not
+  if (pathname === '/') {
+    const { user, supabaseResponse } = await updateSession(request)
 
-    const cookies = parse(cookieHeader);
-    console.log('Parsed Cookies:', cookies);
-
-    // Check for auth cookie (predefined user credentials)
-    const authCookie = cookies.auth;
-    if (authCookie) {
-        const credentials = Buffer.from(authCookie, 'base64').toString();
-        const [username, password] = credentials.split(':');
-        if (username in USERS && (USERS as {[key: string]: string})[username] === password) {
-            return true;
-        }
+    if (user) {
+      return NextResponse.redirect(new URL('/welcome', request.url))
+    } else {
+      return NextResponse.redirect(new URL('/login', request.url))
     }
+  }
 
-    // Check for email cookie (Google authentication)
-    const emailCookie = cookies.user_email;
-    if (emailCookie) {
-        console.log('Authenticated via Google with email:', emailCookie);
-        return true;
-    }
+  // For all other routes, check authentication
+  const { user, supabaseResponse } = await updateSession(request)
 
-    console.log('No valid authentication found');
-    return false;
+  if (!user) {
+    // Redirect to login with the original URL as a redirect parameter
+    const redirectUrl = new URL('/login', request.url)
+    redirectUrl.searchParams.set('redirectTo', pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  // User is authenticated, continue with the session-refreshed response
+  return supabaseResponse
 }
 
-// Middleware function
-export function middleware(request: NextRequest) {
-    const authenticated = isAuthenticated(request);
-
-    console.log('authenticated', authenticated);
-    console.log('request.nextUrl.pathname', request.nextUrl.pathname);
-
-    const pathname = request.nextUrl.pathname;
-
-    // Exclude requests for static files and assets
-    if (pathname.startsWith('/_next') || pathname.startsWith('/static')) {
-        return NextResponse.next();
-    }
-
-    if (!authenticated && !request.nextUrl.pathname.startsWith('/login')) {
-        console.log('redirecting to /login');
-        return NextResponse.redirect(new URL('/login', request.url));
-    }
-
-    if (authenticated && request.nextUrl.pathname === '/login') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    // Add authenticated username to headers
-    const response = NextResponse.next();
-    const authHeader = request.headers.get('authorization');
-    if (authHeader) {
-        const credentials = Buffer.from(authHeader.split(' ')[1], 'base64').toString();
-        const [username] = credentials.split(':');
-        response.headers.set('x-authenticated-user', username);
-    }
-
-    return response;
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - api (API routes - handled separately)
+     * Feel free to modify this pattern to include more paths.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
-
-

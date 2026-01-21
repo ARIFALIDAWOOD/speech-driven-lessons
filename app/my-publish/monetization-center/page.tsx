@@ -12,7 +12,7 @@ export default function MonetizationCenterPage() {
       <div className="flex h-full">
         {/* Left Sidebar */}
         <PublishSidebar />
-        
+
         {/* Main Content Area */}
         <div className="flex-1 bg-white">
           <ScrollArea className="h-[calc(100vh-64px)]">
@@ -22,7 +22,7 @@ export default function MonetizationCenterPage() {
                 <h1 className="text-2xl font-bold text-gray-900">Monetization Center</h1>
                 <p className="text-gray-500 mt-2">Manage your earnings and payment options</p>
               </div>
-              
+
               {/* Revenue Overview */}
               <div className="bg-gray-100 border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
                 <div className="flex items-center mb-6">
@@ -55,7 +55,7 @@ export default function MonetizationCenterPage() {
                   </Button>
                 </div>
               </div>
-              
+
               {/* Revenue Sources */}
               <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-8">
                 <h3 className="font-semibold text-gray-800 text-lg mb-6">Revenue Sources</h3>
@@ -92,7 +92,7 @@ export default function MonetizationCenterPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Payment Methods */}
               <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
@@ -142,4 +142,4 @@ export default function MonetizationCenterPage() {
       </div>
     </HeaderOnlyLayout>
   )
-} 
+}

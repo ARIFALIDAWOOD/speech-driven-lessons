@@ -102,8 +102,8 @@ export default function ProfilePage() {
                   onChange={(e) => setName(e.target.value)}
                   disabled={!isEditing}
                   className={`bg-white border-gray-300 text-gray-900 font-medium ${
-                    isEditing 
-                      ? "focus-visible:ring-emerald-200 focus-visible:border-emerald-400" 
+                    isEditing
+                      ? "focus-visible:ring-emerald-200 focus-visible:border-emerald-400"
                       : "cursor-not-allowed opacity-80"
                   }`}
                 />
@@ -122,8 +122,8 @@ export default function ProfilePage() {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={!isEditing}
                   className={`bg-white border-gray-300 text-gray-900 font-medium ${
-                    isEditing 
-                      ? "focus-visible:ring-emerald-200 focus-visible:border-emerald-400" 
+                    isEditing
+                      ? "focus-visible:ring-emerald-200 focus-visible:border-emerald-400"
                       : "cursor-not-allowed opacity-80"
                   }`}
                 />
@@ -142,8 +142,8 @@ export default function ProfilePage() {
                   onChange={(e) => setSchool(e.target.value)}
                   disabled={!isEditing}
                   className={`bg-white border-gray-300 text-gray-900 font-medium ${
-                    isEditing 
-                      ? "focus-visible:ring-emerald-200 focus-visible:border-emerald-400" 
+                    isEditing
+                      ? "focus-visible:ring-emerald-200 focus-visible:border-emerald-400"
                       : "cursor-not-allowed opacity-80"
                   }`}
                 />
@@ -190,8 +190,8 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => isEditing && setIsOpen(!isOpen)}
                   className={`w-full text-left bg-white border border-gray-300 rounded-md px-3 py-2 text-gray-800 font-medium ${
-                    isEditing 
-                      ? "cursor-pointer hover:border-emerald-400 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200" 
+                    isEditing
+                      ? "cursor-pointer hover:border-emerald-400 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200"
                       : "cursor-not-allowed opacity-80"
                   }`}
                 >
@@ -416,26 +416,26 @@ export default function ProfilePage() {
           <div className="max-w-7xl mx-auto px-14 sm:px-20 lg:px-28 pt-16 sm:pt-20 pb-8">
             <section>
               <div className="mb-8">
-                <ProfileHeader 
-                  title="User Profile" 
-                  description="Manage your account information and preferences" 
+                <ProfileHeader
+                  title="User Profile"
+                  description="Manage your account information and preferences"
                 />
               </div>
-              
+
               <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Profile Summary Card - Deepened green colors and improved font visibility */}
                 <div className="md:col-span-1">
                   <Card className="overflow-hidden bg-white rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md hover:border-emerald-200 sticky top-6">
                     <div className="relative h-20 bg-gradient-to-r from-emerald-200 to-emerald-100 overflow-hidden">
                       {/* Decorative pattern with improved visibility */}
-                      <div className="absolute inset-0 opacity-30" 
-                        style={{ 
+                      <div className="absolute inset-0 opacity-30"
+                        style={{
                           backgroundImage: "linear-gradient(#4b5563 1px, transparent 1px), linear-gradient(90deg, #4b5563 1px, transparent 1px)",
                           backgroundSize: "20px 20px"
                         }}>
                       </div>
                     </div>
-                    
+
                     <CardContent className="pt-0 relative -mt-10 px-5 pb-4">
                       <div className="flex flex-col items-center text-center">
                         <Avatar className="w-20 h-20 border-3 border-white shadow-md">
@@ -445,7 +445,7 @@ export default function ProfilePage() {
                           />
                           <AvatarFallback className="text-xl font-bold bg-emerald-700 text-white">SZ</AvatarFallback>
                         </Avatar>
-                        
+
                         <h2 className="mt-3 text-xl font-bold text-gray-900">{name}</h2>
                         <p className="text-emerald-700 font-medium flex items-center justify-center">
                           @samzhong
@@ -455,7 +455,7 @@ export default function ProfilePage() {
                           </span>
                         </p>
                         <p className="text-gray-700 font-medium mt-0.5">{school}</p>
-                        
+
                         <div className="w-full mt-4 space-y-1.5">
                           <div className="flex items-center justify-between py-1.5 border-t border-gray-200">
                             <span className="text-gray-600 font-medium">Joined</span>
@@ -473,11 +473,11 @@ export default function ProfilePage() {
                             </span>
                           </div>
                         </div>
-                        
+
                         {/* AI stats section with improved contrast */}
                         <div className="mt-4 pt-3 border-t border-gray-200 w-full">
                           <h3 className="text-emerald-700 text-sm font-semibold flex items-center justify-start">
-                            <Cpu className="h-3.5 w-3.5 mr-1.5" /> 
+                            <Cpu className="h-3.5 w-3.5 mr-1.5" />
                             AI Learning Stats
                           </h3>
                           <div className="grid grid-cols-2 gap-2 mt-2">
@@ -529,31 +529,31 @@ export default function ProfilePage() {
                         )}
                       </div>
                     </CardHeader>
-                    
+
                     {/* Custom tabs with improved visibility */}
                     <div>
                       <div className="border-b border-gray-200 bg-white flex">
-                        <button 
-                          className={`h-10 px-5 flex items-center font-medium ${activeTab === 'profile' 
-                            ? 'text-gray-900 border-b-2 border-emerald-600' 
+                        <button
+                          className={`h-10 px-5 flex items-center font-medium ${activeTab === 'profile'
+                            ? 'text-gray-900 border-b-2 border-emerald-600'
                             : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'}`}
                           onClick={() => setActiveTab('profile')}
                         >
                           <User className={`h-4 w-4 mr-2 ${activeTab === 'profile' ? 'text-emerald-700' : 'text-gray-500'}`} />
                           Profile
                         </button>
-                        <button 
-                          className={`h-10 px-5 flex items-center font-medium ${activeTab === 'preferences' 
-                            ? 'text-gray-900 border-b-2 border-emerald-600' 
+                        <button
+                          className={`h-10 px-5 flex items-center font-medium ${activeTab === 'preferences'
+                            ? 'text-gray-900 border-b-2 border-emerald-600'
                             : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'}`}
                           onClick={() => setActiveTab('preferences')}
                         >
                           <Sparkles className={`h-4 w-4 mr-2 ${activeTab === 'preferences' ? 'text-emerald-700' : 'text-gray-500'}`} />
                           Preferences
                         </button>
-                        <button 
-                          className={`h-10 px-5 flex items-center font-medium ${activeTab === 'security' 
-                            ? 'text-gray-900 border-b-2 border-emerald-600' 
+                        <button
+                          className={`h-10 px-5 flex items-center font-medium ${activeTab === 'security'
+                            ? 'text-gray-900 border-b-2 border-emerald-600'
                             : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'}`}
                           onClick={() => setActiveTab('security')}
                         >
@@ -561,7 +561,7 @@ export default function ProfilePage() {
                           Security
                         </button>
                       </div>
-                      
+
                       <CardContent className="p-5">
                         {renderTabContent()}
                       </CardContent>
@@ -576,4 +576,3 @@ export default function ProfilePage() {
     </MainLayout>
   )
 }
-

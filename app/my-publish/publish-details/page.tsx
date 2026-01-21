@@ -24,7 +24,7 @@ export default function PublishDetailsPage() {
       <div className="flex h-full">
         {/* Left Sidebar */}
         <PublishSidebar />
-        
+
         {/* Main Content Area */}
         <div className="flex-1 bg-gradient-to-br from-gray-50 to-white">
           <ScrollArea className="h-[calc(100vh-64px)]">
@@ -33,10 +33,10 @@ export default function PublishDetailsPage() {
                 <h1 className="text-2xl font-bold text-gray-900 mb-3">Publish Content</h1>
                 <p className="text-sm text-gray-500 max-w-2xl">Choose how you want to publish your AI courses online. We support multiple publication methods to fit your needs.</p>
               </div>
-              
+
               <div className="grid grid-cols-1 gap-8">
                 {/* Option 1: Publish from existing courses - Fancy Design */}
-                <motion.div 
+                <motion.div
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={handleExistingCoursesClick}
@@ -68,7 +68,7 @@ export default function PublishDetailsPage() {
                 </motion.div>
 
                 {/* Option 2: Create new course - Fancy Design */}
-                <motion.div 
+                <motion.div
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={handleCreateCourseClick}

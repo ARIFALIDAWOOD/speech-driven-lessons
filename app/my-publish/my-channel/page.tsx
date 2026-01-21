@@ -57,10 +57,10 @@ export default function MyChannelPage() {
   // Function to format date
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
@@ -87,13 +87,13 @@ export default function MyChannelPage() {
       );
     }
   };
-  
+
   return (
     <HeaderOnlyLayout>
       <div className="flex h-full">
         {/* Left Sidebar */}
         <PublishSidebar />
-        
+
         {/* Main Content Area */}
         <div className="flex-1 bg-white">
           <ScrollArea className="h-[calc(100vh-64px)]">
@@ -103,13 +103,13 @@ export default function MyChannelPage() {
                 <h1 className="text-2xl font-bold text-gray-900">My Channel</h1>
                 <div className="relative w-72">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input 
-                    placeholder="Search for content..." 
+                  <Input
+                    placeholder="Search for content..."
                     className="pl-10 border border-gray-200 focus:border-gray-300 bg-gray-50 h-10 pr-10"
                   />
                 </div>
               </div>
-              
+
               {/* Course List */}
               <div className="space-y-6">
                 {courses.map(course => (
@@ -119,7 +119,7 @@ export default function MyChannelPage() {
                       <div className="w-48 bg-gray-800 flex items-center justify-center">
                         <BookOpen className="h-10 w-10 text-white opacity-70" />
                       </div>
-                      
+
                       {/* Content */}
                       <div className="flex-1 p-4 flex flex-col justify-between">
                         {/* Title and date */}
@@ -128,12 +128,12 @@ export default function MyChannelPage() {
                             <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gray-700 transition-colors mb-2">{course.title}</h3>
                             <span className="text-xs text-gray-500 ml-2">{formatDate(course.createdAt)}</span>
                           </div>
-                          
+
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {renderTags(course.tags)}
                           </div>
                         </div>
-                        
+
                         {/* Stats and actions */}
                         <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
                           <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -146,7 +146,7 @@ export default function MyChannelPage() {
                               <span className="text-gray-600">{course.author}</span>
                             </div>
                           </div>
-                          
+
                           <div className="flex gap-2">
                             <Button variant="ghost" size="sm" className="h-8 px-2 text-gray-600 hover:text-emerald-600">
                               <Edit className="h-3.5 w-3.5" />
@@ -167,4 +167,4 @@ export default function MyChannelPage() {
       </div>
     </HeaderOnlyLayout>
   )
-} 
+}

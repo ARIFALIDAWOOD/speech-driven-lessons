@@ -6,13 +6,13 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { 
-  Upload, 
-  BookOpen, 
-  ClipboardList, 
-  Presentation, 
-  Check, 
-  ArrowLeft, 
+import {
+  Upload,
+  BookOpen,
+  ClipboardList,
+  Presentation,
+  Check,
+  ArrowLeft,
   ArrowRight,
   Search,
   PlusCircle,
@@ -370,10 +370,10 @@ export default function PublishDetailsPage() {
   // First make sure the getSelectedCourseData function is defined before usage
   const getSelectedCourseData = (id: number | null): Course | null => {
     if (id === null) return null;
-    
+
     const course = existingCourses.find(course => course.id === id);
     if (!course) return null;
-    
+
     // Convert legacy syllabus structure to course_outline if needed
     if (!course.course_outline && course.syllabus) {
       // Create a new object to avoid mutating the original
@@ -391,7 +391,7 @@ export default function PublishDetailsPage() {
         })
       };
     }
-    
+
     return course;
   };
 
@@ -414,34 +414,34 @@ export default function PublishDetailsPage() {
 
   // Filter courses based on search query and sort by recently accessed
   const filteredCourses = existingCourses
-    .filter(course => 
+    .filter(course =>
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.description.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime());
-  
+
   // Helper to determine if a step is the current one
   const isCurrentStep = (stepId: string) => currentStep === stepId;
-  
+
   // Helper to determine if a step is completed
   const isCompletedStep = (stepId: string) => {
     const currentIndex = steps.findIndex(step => step.id === currentStep);
     const stepIndex = steps.findIndex(step => step.id === stepId);
     return stepIndex < currentIndex;
   };
-  
+
   // Navigate to the next or previous step
   const goToStep = (stepId: string) => {
     setCurrentStep(stepId);
   };
-  
+
   const goToNextStep = () => {
     const currentIndex = steps.findIndex(step => step.id === currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1].id);
     }
   };
-  
+
   const goToPreviousStep = () => {
     const currentIndex = steps.findIndex(step => step.id === currentStep);
     if (currentIndex > 0) {
@@ -481,10 +481,10 @@ export default function PublishDetailsPage() {
       // In a real app, you would make an API call to add the label
       // Here we'll just simulate adding it to the availableLabels array
       const randomColor = "#" + Math.floor(Math.random()*16777215).toString(16);
-      
+
       // For now, alert that label functionality would be implemented in production
       alert(`In production, this would add a new label: "${newLabelInput}" with color ${randomColor}`);
-      
+
       setNewLabelInput("");
     }
   };
@@ -492,17 +492,17 @@ export default function PublishDetailsPage() {
   const toggleSection = (sectionIndex: number) => {
     console.log(`Toggling section ${sectionIndex}`);
     console.log('Current expanded sections:', expandedSections);
-    
+
     setExpandedSections(prev => {
       const newExpandedSections = prev.includes(sectionIndex)
         ? prev.filter(i => i !== sectionIndex)
         : [...prev, sectionIndex];
-      
+
       console.log('New expanded sections:', newExpandedSections);
       return newExpandedSections;
     });
   };
-  
+
   // Make all sections expanded by default for testing
   // Uncomment this if you want to start with all sections expanded
   // useEffect(() => {
@@ -516,15 +516,15 @@ export default function PublishDetailsPage() {
   const handlePublishCourse = () => {
     // Show publishing state
     setIsPublishing(true);
-    
+
     // Simulate API call to create/publish the course
     setTimeout(() => {
       console.log("Publishing course:", selectedCourseData?.title);
       console.log("With settings:", publishSettings);
-      
+
       // In a real application, you would make an API call here
       // to save the course data with the publish settings
-      
+
       // Navigate to my-channel page after "publishing"
       router.push("/my-publish/my-channel");
     }, 1000); // Simulate a network delay
@@ -541,19 +541,19 @@ export default function PublishDetailsPage() {
               <div className="w-52 sticky" style={{ alignSelf: 'flex-start', top: 'calc(50vh - 250px)' }}>
                 {/* Title now in sidebar */}
                 <h1 className="text-2xl font-bold text-gray-900 mb-8">Publish Course</h1>
-                
+
                 <div className="relative">
                   {steps.map((step, index) => (
                     <div key={step.id} className="relative">
                       {/* Vertical line connecting steps */}
                       {index < steps.length - 1 && (
-                        <div 
+                        <div
                           className={`absolute top-8 left-[15px] h-16 w-0.5 ${
                             isCompletedStep(step.id) ? "bg-emerald-500" : "bg-gray-200"
                           }`}
                         />
                       )}
-                      
+
                       {/* Step button */}
                       <button
                         className="flex items-center mb-16 group"
@@ -561,10 +561,10 @@ export default function PublishDetailsPage() {
                         disabled={selectedCourse === null && step.id !== "select"}
                       >
                         {/* Step circle indicator */}
-                        <div 
+                        <div
                           className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                            isCurrentStep(step.id) 
-                              ? "border-emerald-500 bg-emerald-50 text-emerald-600" 
+                            isCurrentStep(step.id)
+                              ? "border-emerald-500 bg-emerald-50 text-emerald-600"
                               : isCompletedStep(step.id)
                                 ? "border-emerald-500 bg-emerald-500 text-white"
                                 : selectedCourse === null && step.id !== "select"
@@ -578,12 +578,12 @@ export default function PublishDetailsPage() {
                             <step.icon className="h-4 w-4" />
                           )}
                         </div>
-                        
+
                         {/* Step label */}
-                        <span 
+                        <span
                           className={`ml-4 text-base ${
-                            isCurrentStep(step.id) 
-                              ? "font-semibold text-gray-900" 
+                            isCurrentStep(step.id)
+                              ? "font-semibold text-gray-900"
                               : isCompletedStep(step.id)
                                 ? "font-medium text-emerald-600"
                                 : selectedCourse === null && step.id !== "select"
@@ -598,7 +598,7 @@ export default function PublishDetailsPage() {
                   ))}
                 </div>
               </div>
-              
+
               {/* Step Content */}
               <div className="flex-1">
                 {/* Select Course Content */}
@@ -608,27 +608,27 @@ export default function PublishDetailsPage() {
                     <p className="text-gray-600">
                       Choose from your recently accessed courses or create a new one from scratch.
                     </p>
-                    
+
                     {/* Search bar */}
                     <div className="relative w-full max-w-md mb-4">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input 
-                        placeholder="Search your courses..." 
+                      <Input
+                        placeholder="Search your courses..."
                         className="pl-10 border border-gray-200 focus:border-gray-300 bg-gray-50"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
-                    
+
                     {filteredCourses.length > 0 ? (
                       <div className="overflow-hidden">
                         <div className="h-[380px] overflow-y-auto pr-2 -mr-2">
                           {filteredCourses.map(course => (
-                            <div 
+                            <div
                               key={course.id}
                               className={`border rounded-lg p-4 mb-4 cursor-pointer transition-all duration-200 ${
-                                selectedCourse === course.id 
-                                  ? 'border-emerald-500 bg-emerald-50' 
+                                selectedCourse === course.id
+                                  ? 'border-emerald-500 bg-emerald-50'
                                   : 'border-gray-200 hover:border-gray-300 bg-white'
                               }`}
                               onClick={() => handleSelectCourse(course.id)}
@@ -675,7 +675,7 @@ export default function PublishDetailsPage() {
                     )}
                   </div>
                 )}
-                
+
                 {/* Preview Content */}
                 {currentStep === "preview" && selectedCourseData && (
                   <div className="space-y-8">
@@ -687,12 +687,12 @@ export default function PublishDetailsPage() {
                         </p>
                       </div>
                     </div>
-                    
+
                     {/* Course Info Summary */}
                     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                       <h3 className="text-lg font-semibold text-gray-800">{selectedCourseData.title}</h3>
                       <p className="text-gray-600 mt-2">{selectedCourseData.description}</p>
-                      
+
                       <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
                         <div className="flex items-center gap-1">
                           <Presentation className="h-4 w-4" />
@@ -700,28 +700,28 @@ export default function PublishDetailsPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Syllabus Preview */}
                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
                       <div className="border-b border-gray-200 px-6 py-4">
                         <h3 className="text-md font-semibold text-gray-800">Course Syllabus</h3>
                       </div>
-                      
+
                       <div className="divide-y divide-gray-200">
                         {selectedCourseData && selectedCourseData.course_outline && selectedCourseData.course_outline.length > 0 ? (
                           selectedCourseData.course_outline.map((section: CourseSection, index: number) => (
                             <div key={index} className="group">
                               {/* Section header - clickable if has subsections */}
-                              <div 
+                              <div
                                 className={`flex justify-between p-4 ${
-                                  section.subtopics && section.subtopics.length > 0 
-                                    ? 'cursor-pointer hover:bg-gray-50' 
+                                  section.subtopics && section.subtopics.length > 0
+                                    ? 'cursor-pointer hover:bg-gray-50'
                                     : ''
                                 }`}
                                 onClick={() => {
                                   console.log('Section clicked:', section.title);
                                   console.log('Has subtopics:', section.subtopics && section.subtopics.length > 0);
-                                  
+
                                   if (section.subtopics && section.subtopics.length > 0) {
                                     toggleSection(index);
                                   }
@@ -731,8 +731,8 @@ export default function PublishDetailsPage() {
                                   <div className="flex items-center gap-2">
                                     <h4 className="font-medium text-gray-800">{section.title}</h4>
                                     {section.subtopics && section.subtopics.length > 0 && (
-                                      expandedSections.includes(index) ? 
-                                        <ChevronDown className="h-4 w-4 text-gray-400" /> : 
+                                      expandedSections.includes(index) ?
+                                        <ChevronDown className="h-4 w-4 text-gray-400" /> :
                                         <ChevronRight className="h-4 w-4 text-gray-400" />
                                     )}
                                   </div>
@@ -741,10 +741,10 @@ export default function PublishDetailsPage() {
                                   )}
                                 </div>
                               </div>
-                              
+
                               {/* Subsections if they exist and section is expanded */}
-                              {section.subtopics && 
-                                section.subtopics.length > 0 && 
+                              {section.subtopics &&
+                                section.subtopics.length > 0 &&
                                 expandedSections.includes(index) && (
                                 <div className="bg-gray-50 pb-2">
                                   {/* Debug logging */}
@@ -769,7 +769,7 @@ export default function PublishDetailsPage() {
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Slides Preview */}
                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
                       <div className="border-b border-gray-200 px-6 py-4">
@@ -778,7 +778,7 @@ export default function PublishDetailsPage() {
                       <div className="p-6">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           {[...Array(Math.min(8, selectedCourseData.slides))].map((_, index) => (
-                            <div 
+                            <div
                               key={index}
                               className="aspect-[4/3] bg-gray-100 rounded-md flex items-center justify-center text-gray-400 border border-gray-200 hover:border-gray-300 transition-colors"
                             >
@@ -795,7 +795,7 @@ export default function PublishDetailsPage() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Publishing Settings */}
                 {currentStep === "settings" && selectedCourseData && (
                   <div className="space-y-6">
@@ -803,7 +803,7 @@ export default function PublishDetailsPage() {
                     <p className="text-gray-600">
                       Configure how your course will be published and who can access it.
                     </p>
-                    
+
                     <div className="space-y-6">
                       {/* Labels/Tags Settings */}
                       <div className="bg-white border border-gray-200 rounded-lg p-5">
@@ -811,11 +811,11 @@ export default function PublishDetailsPage() {
                           <Tag className="h-5 w-5 text-gray-700" />
                           <h3 className="text-md font-medium text-gray-800">Course Labels</h3>
                         </div>
-                        
+
                         <p className="text-sm text-gray-500 mb-4">
                           Add labels to help students find your course by topic
                         </p>
-                        
+
                         <div className="flex flex-wrap gap-2 mb-4">
                           {availableLabels.map(label => (
                             <button
@@ -826,7 +826,7 @@ export default function PublishDetailsPage() {
                                   ? "text-white"
                                   : "text-gray-700 bg-gray-100 hover:bg-gray-200"
                               }`}
-                              style={{ 
+                              style={{
                                 backgroundColor: publishSettings.labels.includes(label.id) ? label.color : undefined,
                               }}
                             >
@@ -837,7 +837,7 @@ export default function PublishDetailsPage() {
                             </button>
                           ))}
                         </div>
-                        
+
                         <div className="mt-3 flex gap-2">
                           <Input
                             type="text"
@@ -846,7 +846,7 @@ export default function PublishDetailsPage() {
                             onChange={(e) => setNewLabelInput(e.target.value)}
                             className="w-full"
                           />
-                          <Button 
+                          <Button
                             onClick={addNewLabel}
                             disabled={!newLabelInput.trim()}
                             className="shrink-0"
@@ -855,19 +855,19 @@ export default function PublishDetailsPage() {
                           </Button>
                         </div>
                       </div>
-                      
+
                       {/* Visibility Settings */}
                       <div className="bg-white border border-gray-200 rounded-lg p-5">
                         <div className="flex items-center gap-2 mb-4">
                           <Globe className="h-5 w-5 text-gray-700" />
                           <h3 className="text-md font-medium text-gray-800">Visibility</h3>
                         </div>
-                        
+
                         <div className="space-y-3">
                           <div className="flex items-center gap-3">
-                            <input 
-                              type="radio" 
-                              id="public" 
+                            <input
+                              type="radio"
+                              id="public"
                               name="visibility"
                               checked={publishSettings.visibility === "Public"}
                               onChange={() => handlePublishSettingChange("visibility", "Public")}
@@ -878,11 +878,11 @@ export default function PublishDetailsPage() {
                               <p className="text-sm text-gray-500">Anyone can find and access your course</p>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center gap-3">
-                            <input 
-                              type="radio" 
-                              id="unlisted" 
+                            <input
+                              type="radio"
+                              id="unlisted"
                               name="visibility"
                               checked={publishSettings.visibility === "Unlisted"}
                               onChange={() => handlePublishSettingChange("visibility", "Unlisted")}
@@ -893,11 +893,11 @@ export default function PublishDetailsPage() {
                               <p className="text-sm text-gray-500">Only people with the link can access your course</p>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center gap-3">
-                            <input 
-                              type="radio" 
-                              id="group" 
+                            <input
+                              type="radio"
+                              id="group"
                               name="visibility"
                               checked={publishSettings.visibility === "Group"}
                               onChange={() => handlePublishSettingChange("visibility", "Group")}
@@ -910,14 +910,14 @@ export default function PublishDetailsPage() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Additional Settings */}
                       <div className="bg-white border border-gray-200 rounded-lg p-5">
                         <div className="flex items-center gap-2 mb-4">
                           <Settings className="h-5 w-5 text-gray-700" />
                           <h3 className="text-md font-medium text-gray-800">Additional Settings</h3>
                         </div>
-                        
+
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <div>
@@ -929,11 +929,11 @@ export default function PublishDetailsPage() {
                               onCheckedChange={(checked) => handlePublishSettingChange("allowComments", checked)}
                             />
                           </div>
-                          
+
                           <div className="space-y-2">
                             <Label htmlFor="schedule">Schedule Publishing</Label>
-                            <Input 
-                              id="schedule" 
+                            <Input
+                              id="schedule"
                               type="datetime-local"
                               value={publishSettings.scheduledDate}
                               onChange={(e) => handlePublishSettingChange("scheduledDate", e.target.value)}
@@ -946,7 +946,7 @@ export default function PublishDetailsPage() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Final Review */}
                 {currentStep === "review" && selectedCourseData && (
                   <div className="space-y-6">
@@ -954,38 +954,38 @@ export default function PublishDetailsPage() {
                     <p className="text-gray-600">
                       Review your course details before publishing.
                     </p>
-                    
+
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-emerald-800">
                       <p className="flex items-center gap-2">
                         <Check className="h-5 w-5 text-emerald-600" />
                         <span>Your course is ready to be published!</span>
                       </p>
                     </div>
-                    
+
                     {/* Summary */}
                     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                       <div className="p-5 border-b border-gray-200">
                         <h3 className="text-lg font-medium text-gray-800">Course Summary</h3>
                       </div>
-                      
+
                       <div className="divide-y divide-gray-200">
                         <div className="px-5 py-4 flex justify-between">
                           <span className="text-gray-500">Title</span>
                           <span className="text-gray-800 font-medium">{selectedCourseData.title}</span>
                         </div>
-                        
+
                         <div className="px-5 py-4 flex justify-between">
                           <span className="text-gray-500">Content</span>
                           <span className="text-gray-800 font-medium">
                             {selectedCourseData.slides} slides
                           </span>
                         </div>
-                        
+
                         <div className="px-5 py-4 flex justify-between">
                           <span className="text-gray-500">Visibility</span>
                           <span className="text-gray-800 font-medium">{publishSettings.visibility}</span>
                         </div>
-                        
+
                         <div className="px-5 py-4 flex justify-between items-start">
                           <span className="text-gray-500">Labels</span>
                           <div className="flex flex-wrap justify-end gap-1.5 max-w-[60%]">
@@ -993,7 +993,7 @@ export default function PublishDetailsPage() {
                               const label = availableLabels.find(l => l.id === labelId);
                               if (!label) return null;
                               return (
-                                <span 
+                                <span
                                   key={label.id}
                                   className="inline-block px-2 py-0.5 text-xs text-white rounded-full"
                                   style={{ backgroundColor: label.color }}
@@ -1004,14 +1004,14 @@ export default function PublishDetailsPage() {
                             })}
                           </div>
                         </div>
-                        
+
                         <div className="px-5 py-4 flex justify-between">
                           <span className="text-gray-500">Publishing</span>
                           <span className="text-gray-800 font-medium">
                             {publishSettings.scheduledDate ? `Scheduled for ${new Date(publishSettings.scheduledDate).toLocaleString()}` : "Publish immediately"}
                           </span>
                         </div>
-                        
+
                         <div className="px-5 py-4 flex justify-between">
                           <span className="text-gray-500">Comments</span>
                           <span className="text-gray-800 font-medium">{publishSettings.allowComments ? "Enabled" : "Disabled"}</span>
@@ -1020,11 +1020,11 @@ export default function PublishDetailsPage() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Navigation Buttons */}
                 <div className="mt-12 pt-6 border-t border-gray-100 flex justify-between">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={goToPreviousStep}
                     disabled={currentStep === steps[0].id}
                     className="flex items-center gap-2"
@@ -1032,9 +1032,9 @@ export default function PublishDetailsPage() {
                     <ArrowLeft className="h-4 w-4" />
                     Previous
                   </Button>
-                  
+
                   {currentStep === "review" ? (
-                    <Button 
+                    <Button
                       onClick={handlePublishCourse}
                       disabled={isPublishing}
                       className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2"
@@ -1042,7 +1042,7 @@ export default function PublishDetailsPage() {
                       {isPublishing ? "Publishing..." : "Publish Course"}
                     </Button>
                   ) : (
-                    <Button 
+                    <Button
                       onClick={goToNextStep}
                       disabled={currentStep === "select" && selectedCourse === null}
                       className="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2"
@@ -1059,4 +1059,4 @@ export default function PublishDetailsPage() {
       </div>
     </div>
   )
-} 
+}

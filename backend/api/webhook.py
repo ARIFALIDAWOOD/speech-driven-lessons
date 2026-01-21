@@ -1,42 +1,42 @@
-from flask import Blueprint, request, jsonify
-import utils.s3_utils as s3_utils
 import functions.get_detailed_content as get_detailed_content
 import functions.slides_navigation as slides_navigation
+import utils.s3_utils as s3_utils
+from flask import Blueprint, jsonify, request
 
-webhook = Blueprint('webhook', __name__)
+webhook = Blueprint("webhook", __name__)
 
 
-@webhook.route('/', methods=['POST'])
+@webhook.route("/", methods=["POST"])
 async def webhook_route():
     # Add your logic here
 
     request_data = request.get_json()
-    payload = request_data.get('message')
+    payload = request_data.get("message")
 
-    if payload['type'] == "function-call":
+    if payload["type"] == "function-call":
         response = await function_call_handler(payload)
         return jsonify(response), 201
-    elif payload['type'] == "status-update":
+    elif payload["type"] == "status-update":
         response = await status_update_handler(payload)
         return jsonify(response), 201
-    elif payload['type'] == "speech-update":
+    elif payload["type"] == "speech-update":
         print("speech-update called")
         response = speech_update_handler(payload)
         return jsonify(response), 201
-    elif payload['type'] == "conversation-update":
+    elif payload["type"] == "conversation-update":
         print("conversation-update called")
         response = await conversation_update_handler(payload)
         return jsonify(response), 201
-    elif payload['type'] == "assistant-request":
+    elif payload["type"] == "assistant-request":
         response = await assistant_request_handler(payload)
         return jsonify(response), 201
-    elif payload['type'] == "end-of-call-report":
+    elif payload["type"] == "end-of-call-report":
         await end_of_call_report_handler(payload)
         return jsonify({}), 201
-    elif payload['type'] == "transcript":
+    elif payload["type"] == "transcript":
         response = await transcript_handler(payload)
         return jsonify(response), 201
-    elif payload['type'] == "hang":
+    elif payload["type"] == "hang":
         response = await hang_event_handler(payload)
         return jsonify(response), 201
     else:
@@ -54,13 +54,13 @@ async def function_call_handler(payload):
 
     # print(payload)
 
-    function_call = payload.get('functionCall')
+    function_call = payload.get("functionCall")
 
     if not function_call:
         raise ValueError("Invalid Request.")
 
-    name = function_call.get('name')
-    parameters = function_call.get('parameters')
+    name = function_call.get("name")
+    parameters = function_call.get("parameters")
 
     assistant_id = payload.get("assistant", {}).get("id")
 
@@ -72,45 +72,37 @@ async def function_call_handler(payload):
 
     print(f"function call handler called: {name} - {parameters}")
 
-    if name == 'getDetailedContent':
-        context = get_detailed_content.get_detailed_content(user_course_data['course_id'],
-                                                           user_course_data['username'],
-                                                           parameters['userQuery'])
+    if name == "getDetailedContent":
+        context = get_detailed_content.get_detailed_content(
+            user_course_data["course_id"], user_course_data["username"], parameters["userQuery"]
+        )
         return context
-    elif name == 'goToStartingSlide':
+    elif name == "goToStartingSlide":
         context = slides_navigation.go_to_starting_slide(
-            assistant_id, 
-            user_course_data['course_id'],
-            user_course_data['username']
+            assistant_id, user_course_data["course_id"], user_course_data["username"]
         )
         return context
-    elif name == 'goToNextSlide':
+    elif name == "goToNextSlide":
         context = slides_navigation.go_to_next_slide(
-            assistant_id, 
-            user_course_data['course_id'],
-            user_course_data['username']
+            assistant_id, user_course_data["course_id"], user_course_data["username"]
         )
         return context
-    elif name == 'goToPreviousSlide':
+    elif name == "goToPreviousSlide":
         context = slides_navigation.go_to_previous_slide(
-            assistant_id, 
-            user_course_data['course_id'],
-            user_course_data['username']
+            assistant_id, user_course_data["course_id"], user_course_data["username"]
         )
         return context
     elif name == "goToSpecifiedSlide":
         context = slides_navigation.go_to_specified_slide(
             assistant_id,
-            user_course_data['course_id'],
-            user_course_data['username'],
-            parameters['slideNumber']
+            user_course_data["course_id"],
+            user_course_data["username"],
+            parameters["slideNumber"],
         )
         return context
     elif name == "goToViewingSlide":
         context = slides_navigation.go_to_viewing_slide(
-            assistant_id,
-            user_course_data['course_id'],
-            user_course_data['username']
+            assistant_id, user_course_data["course_id"], user_course_data["username"]
         )
         return context
     else:
@@ -151,7 +143,7 @@ async def conversation_update_handler(payload):
     You can store the conversation in your database or have some other business logic.
     """
     print("conversation_update_handler called")
-    print(payload['conversation'][-1]['content'])
+    print(payload["conversation"][-1]["content"])
     return {}
 
 
@@ -189,41 +181,38 @@ async def assistant_request_handler(payload):
     You can have various predefined static assistant here and return them based on the call details.
     """
 
-    if payload and 'call' in payload:
+    if payload and "call" in payload:
         assistant = {
-            'name': 'Paula',
-            'model': {
-                'provider': 'openai',
-                'model': 'gpt-3.5-turbo',
-                'temperature': 0.7,
-                'systemPrompt': "You're Paula, an AI assistant who can help user draft beautiful emails to their clients based on the user requirements. Then Call sendEmail function to actually send the email.",
-                'functions': [
+            "name": "Paula",
+            "model": {
+                "provider": "openai",
+                "model": "gpt-3.5-turbo",
+                "temperature": 0.7,
+                "systemPrompt": "You're Paula, an AI assistant who can help user draft beautiful emails to their clients based on the user requirements. Then Call sendEmail function to actually send the email.",
+                "functions": [
                     {
-                        'name': 'sendEmail',
-                        'description': 'Send email to the given email address and with the given content.',
-                        'parameters': {
-                            'type': 'object',
-                            'properties': {
-                                'email': {
-                                    'type': 'string',
-                                    'description': 'Email to which we want to send the content.'
+                        "name": "sendEmail",
+                        "description": "Send email to the given email address and with the given content.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "description": "Email to which we want to send the content.",
                                 },
-                                'content': {
-                                    'type': 'string',
-                                    'description': 'Actual Content of the email to be sent.'
-                                }
+                                "content": {
+                                    "type": "string",
+                                    "description": "Actual Content of the email to be sent.",
+                                },
                             },
-                            'required': ['email']
-                        }
+                            "required": ["email"],
+                        },
                     }
-                ]
+                ],
             },
-            'voice': {
-                'provider': '11labs',
-                'voiceId': 'paula'
-            },
-            'firstMessage': "Hi, I'm Paula, your personal email assistant."
+            "voice": {"provider": "11labs", "voiceId": "paula"},
+            "firstMessage": "Hi, I'm Paula, your personal email assistant.",
         }
-        return {'assistant': assistant}
+        return {"assistant": assistant}
 
-    raise ValueError('Invalid call details provided.')
+    raise ValueError("Invalid call details provided.")

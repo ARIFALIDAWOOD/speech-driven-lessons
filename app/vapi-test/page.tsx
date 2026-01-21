@@ -18,7 +18,11 @@ export default function VoiceChat() {
 
     useEffect(() => {
         if (typeof window !== "undefined") {
-            const apiKey = "9d761ee5-d393-4aab-9d43-3265b8d66a66";
+            const apiKey = process.env.NEXT_PUBLIC_VAPI_API_KEY || "";
+            if (!apiKey) {
+                console.error("VAPI API key not found. Please set NEXT_PUBLIC_VAPI_API_KEY in your .env.local file.");
+                return;
+            }
             vapiRef.current = new Vapi(apiKey);
             setupVapiListeners();
         }

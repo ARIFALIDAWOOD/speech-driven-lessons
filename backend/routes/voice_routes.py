@@ -1,15 +1,19 @@
-from flask import Blueprint, request, jsonify, send_file
-import edge_tts
 import asyncio
 import os
 import tempfile
+
+import edge_tts
 import openai
-voice_bp = Blueprint('voice', __name__)
+from flask import Blueprint, jsonify, request, send_file
+
+voice_bp = Blueprint("voice", __name__)
 AUDIO_DIR = "audio_cache"
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-@voice_bp.route('/api/list-voices', methods=['GET'])
+
+
+@voice_bp.route("/api/list-voices", methods=["GET"])
 def list_voices():
     try:
         voices = asyncio.run(edge_tts.list_voices())
@@ -17,7 +21,8 @@ def list_voices():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@voice_bp.route('/api/generate-audio', methods=['POST'])
+
+@voice_bp.route("/api/generate-audio", methods=["POST"])
 def generate_audio():  # Remove async
     data = request.json
     text = data.get("text", "")
@@ -33,19 +38,19 @@ def generate_audio():  # Remove async
         async def generate():
             communicate = edge_tts.Communicate(text, voice)
             await communicate.save(audio_file)
-        
+
         asyncio.run(generate())
         return send_file(audio_file, as_attachment=True)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-@voice_bp.route('/api/recognize-openai', methods=['POST'])
+@voice_bp.route("/api/recognize-openai", methods=["POST"])
 def recognize_with_openai():
-    if 'audio' not in request.files:
+    if "audio" not in request.files:
         return jsonify({"error": "No audio file uploaded"}), 400
 
-    audio_file = request.files['audio']
+    audio_file = request.files["audio"]
 
     try:
         # Save the audio file to a temporary location
@@ -59,7 +64,7 @@ def recognize_with_openai():
                 model="whisper-1",
                 file=file,
                 response_format="verbose_json",
-                timestamp_granularities=["segment", "word"]
+                timestamp_granularities=["segment", "word"],
             )
 
         print(f"response: {response}")
@@ -73,4 +78,4 @@ def recognize_with_openai():
         return jsonify({"text": response.text})
     except Exception as e:
         print(f"Error in recognize_with_openai: {str(e)}")
-        return jsonify({"error": str(e)}), 500 
+        return jsonify({"error": str(e)}), 500

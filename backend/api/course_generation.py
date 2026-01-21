@@ -1,12 +1,22 @@
-from flask import Blueprint, request, jsonify, Response
-import os
-import tempfile
 import json
+import os
 import sys
-from utils import user_utils, s3_utils
-from course_content_generation.gemini_course_outline_generator import CourseOutlineGenerator
-from course_content_generation.gemini_slide_speech_generator import process_course_outline
+import tempfile
+
+from flask import Blueprint, Response, jsonify, request
 from flask_cors import cross_origin
+from utils import s3_utils, user_utils
+
+# Try to import course content generation modules (may not be available)
+try:
+    from course_content_generation.gemini_course_outline_generator import CourseOutlineGenerator
+    from course_content_generation.gemini_slide_speech_generator import process_course_outline
+    COURSE_GENERATION_AVAILABLE = True
+except ImportError:
+    CourseOutlineGenerator = None
+    process_course_outline = None
+    COURSE_GENERATION_AVAILABLE = False
+    print("Warning: course_content_generation module not found. Course generation features disabled.")
 
 course_generation = Blueprint('course_generation', __name__)
 
@@ -15,7 +25,13 @@ course_generation = Blueprint('course_generation', __name__)
 def generate_course_outline():
     if request.method == 'OPTIONS':
         return jsonify({'message': 'CORS preflight handling for generate-outline'}), 200
-    
+
+    # Check if course generation is available
+    if not COURSE_GENERATION_AVAILABLE:
+        def error_generate():
+            yield f"data: {json.dumps({'status': 'error', 'message': 'Course generation not available on this platform (missing course_content_generation module)'})}\\n\\n"
+        return Response(error_generate(), mimetype='text/event-stream')
+
     # Set up SSE response
     def generate():
         try:
@@ -39,33 +55,33 @@ def generate_course_outline():
 
             # Send an initial event indicating PDF processing has started
             yield f"data: {json.dumps({'status': 'processing_pdf', 'message': 'Reading and processing PDF files...'})}\n\n"
-            
+
             # Flush to ensure this message is sent immediately
             sys.stdout.flush()
-            
+
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Get all PDFs from course materials folder
                 pdf_files = s3_utils.list_files_in_prefix(
-                    bucket='jasmintechs-tutorion',
+                    bucket='anantra-lms-store',
                     prefix=s3_pdf_prefix,
                     file_extension='.pdf'
                 )
 
                 # Add debug logging
-                print(f"Looking for PDFs in: s3://jasmintechs-tutorion/{s3_pdf_prefix}")
+                print(f"Looking for PDFs in: s3://anantra-lms-store/{s3_pdf_prefix}")
                 print(f"Found {len(pdf_files)} PDF files: {pdf_files}")
 
                 if not pdf_files:
-                    yield f"data: {json.dumps({'status': 'error', 'message': 'No PDF files found in course materials', 'debug_info': {'s3_path': f"s3://jasmintechs-tutorion/{s3_pdf_prefix}", 'expected_location': f"user_data/{username}/{course_id}/course_materials/your-file.pdf"}})}\n\n"
+                    yield f"data: {json.dumps({'status': 'error', 'message': 'No PDF files found in course materials', 'debug_info': {'s3_path': f"s3://anantra-lms-store/{s3_pdf_prefix}", 'expected_location': f"user_data/{username}/{course_id}/course_materials/your-file.pdf"}})}\n\n"
                     return
 
                 # Process first PDF
                 first_pdf_key = pdf_files[0]
                 local_pdf_path = os.path.join(temp_dir, 'source.pdf')
-                
+
                 # Download PDF from S3
                 if not s3_utils.download_file_from_s3(
-                    bucket='jasmintechs-tutorion',
+                    bucket='anantra-lms-store',
                     s3_key=first_pdf_key,
                     local_path=local_pdf_path
                 ):
@@ -75,7 +91,7 @@ def generate_course_outline():
                 # Generate outline
                 generator = CourseOutlineGenerator()
                 result = generator.generate_from_pdf(local_pdf_path, stream=True)
-                
+
                 if 'error' in result:
                     yield f"data: {json.dumps({'status': 'error', 'message': result['error']})}\n\n"
                     return
@@ -83,25 +99,25 @@ def generate_course_outline():
                 # Save outline to S3
                 s3_utils.upload_json_to_s3(
                     json_data=result,
-                    bucket_name ='jasmintechs-tutorion',
+                    bucket_name ='anantra-lms-store',
                     s3_key=s3_outline_path
                 )
 
                 # Then start the actual generation
                 yield f"data: {json.dumps({'status': 'stream_starting', 'message': 'STREAM OUTPUT BEGINS'})}\n\n"
                 sys.stdout.flush()
-                
+
                 # When generating each chunk, include a status
                 for chunk in generator.stream_response:
                     yield f"data: {json.dumps({'status': 'generating', 'chunk': chunk})}\n\n"
                     sys.stdout.flush()
-                
+
                 # Final completion message
                 yield f"data: {json.dumps({'status': 'completed', 'message': 'Generation complete'})}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'status': 'error', 'message': str(e)})}\n\n"
-    
+
     return Response(generate(), mimetype='text/event-stream')
 
 @course_generation.route('/generate-slides', methods=['POST', 'OPTIONS'])
@@ -110,6 +126,11 @@ def generate_slides():
     if request.method == 'OPTIONS':
         return jsonify({'message': 'CORS preflight handling for generate-slides'}), 200
     """Endpoint to generate slides from existing outline"""
+
+    # Check if course generation is available
+    if not COURSE_GENERATION_AVAILABLE:
+        return jsonify({'error': 'Course generation not available on this platform (missing course_content_generation module)'}), 503
+
     try:
         # Authentication
         username = user_utils.get_current_user(request)
@@ -130,7 +151,7 @@ def generate_slides():
 
         # Find the PDF file in course_materials
         pdf_files = s3_utils.list_files_in_prefix(
-            bucket='jasmintechs-tutorion',
+            bucket='anantra-lms-store',
             prefix=s3_pdf_prefix,
             file_extension='.pdf'
         )
@@ -145,7 +166,7 @@ def generate_slides():
 
             # Download PDF
             if not s3_utils.download_file_from_s3(
-                bucket='jasmintechs-tutorion',
+                bucket='anantra-lms-store',
                 s3_key=first_pdf_key,
                 local_path=local_pdf_path
             ):
@@ -153,7 +174,7 @@ def generate_slides():
 
             # Download outline
             if not s3_utils.download_file_from_s3(
-                bucket='jasmintechs-tutorion',
+                bucket='anantra-lms-store',
                 s3_key=s3_outline_path,
                 local_path=local_outline_path
             ):
@@ -173,17 +194,17 @@ def generate_slides():
             slides_s3_prefix = f"user_data/{username}/{course_id}/slides/"
             s3_utils.upload_directory_to_s3(
                 local_path=output_dir,
-                bucket='jasmintechs-tutorion',
+                bucket='anantra-lms-store',
                 s3_prefix=slides_s3_prefix
             )
-            
+
             # Upload all_slides.json file to the course level for easy access by frontend
             all_slides_path = os.path.join(output_dir, "all_slides.json")
             if os.path.exists(all_slides_path):
                 with open(all_slides_path, 'rb') as f:
                     s3_utils.upload_file_to_s3(
                         file=f,
-                        bucket_name='jasmintechs-tutorion',
+                        bucket_name='anantra-lms-store',
                         s3_key=f"user_data/{username}/{course_id}/slides.json"
                     )
 
@@ -219,9 +240,9 @@ def get_course_outline():
         # Download outline from S3
         with tempfile.TemporaryDirectory() as temp_dir:
             local_path = os.path.join(temp_dir, 'outline.json')
-            
+
             if not s3_utils.download_file_from_s3(
-                bucket='jasmintechs-tutorion',
+                bucket='anantra-lms-store',
                 s3_key=s3_outline_path,
                 local_path=local_path
             ):
@@ -266,9 +287,9 @@ def get_course_slides():
         # Download slides from S3
         with tempfile.TemporaryDirectory() as temp_dir:
             local_path = os.path.join(temp_dir, 'slides.json')
-            
+
             if not s3_utils.download_file_from_s3(
-                bucket='jasmintechs-tutorion',
+                bucket='anantra-lms-store',
                 s3_key=s3_slides_path,
                 local_path=local_path
             ):

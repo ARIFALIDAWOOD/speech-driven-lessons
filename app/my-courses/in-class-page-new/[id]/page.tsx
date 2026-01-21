@@ -101,10 +101,10 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => {
       window.removeEventListener('resize', checkMobile);
     };
@@ -113,40 +113,40 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
   // Initialize Socket.IO connection
   useEffect(() => {
     if (!assistantId) return;
-    
+
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
     const newSocket = io(socketUrl);
     setSocket(newSocket);
-    
+
     newSocket.on('connect', () => {
       console.log('Connected to Socket.IO server');
       newSocket.emit('join_course', { assistant_id: assistantId });
     });
-    
+
     newSocket.on('slide_changed', (data) => {
       if (data.position !== undefined) {
         setCurrentSlideIndex(data.position);
         setAssistantLastSlide(data.position);
-        
+
         if (showWelcomeBlock) {
           setShowWelcomeBlock(false);
         }
-        
+
         newSocket.emit('update_viewing_slide', {
           assistant_id: assistantId,
           position: data.position
         });
       }
     });
-    
+
     newSocket.on('assistant_activity', () => {
       console.log('Received assistant activity notification');
     });
-    
+
     newSocket.on('disconnect', () => {
       console.log('Disconnected from Socket.IO server');
     });
-    
+
     return () => {
       newSocket.disconnect();
     };
@@ -160,13 +160,13 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
           setIsLoading(true);
           setStatusMessage("Loading course content...");
           setStatusType("info");
-          
+
           const slideData = await fetchCourseSlides(courseId);
-          
+
           if (!slideData || !Array.isArray(slideData) || slideData.length === 0) {
             throw new Error('No slide content available for this course');
           }
-          
+
           // Transform the data to match the expected format
           const formattedSlides = slideData.map((slide: any, index: number) => ({
             id: slide.id,
@@ -177,9 +177,9 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
             subtopic_title: slide.subtopic_title || "General",
             section_title: slide.section_title || "Main Section",
           }));
-          
+
           setSlides(formattedSlides);
-          
+
           // Extract course name from first slide if possible
           if (formattedSlides[0]?.title && !courseName && courseId !== "default-course-id") {
             const parts = formattedSlides[0].title.split(':');
@@ -187,34 +187,34 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
               // setCourseName(parts[0].trim());
             }
           }
-          
+
           // Generate sections for syllabus
           const generatedSyllabus = generateSyllabusStructure(formattedSlides);
           setSyllabusStructure(generatedSyllabus);
-          
+
           // Initialize expandedChapters state - default all to true (expanded)
           const initialExpandedState: Record<string, boolean> = {};
           generatedSyllabus.forEach(chapter => {
             initialExpandedState[chapter.title] = true;
           });
           setExpandedChapters(initialExpandedState);
-          
+
           setHasSlideContent(true);
           setStatusMessage("Course content loaded successfully!");
           setStatusType("success");
-          
+
           setTimeout(() => setStatusMessage(null), 3000);
         } catch (error) {
           console.error("Error loading slides:", error);
-          
-          const errorMessage = error instanceof Error 
-            ? error.message 
+
+          const errorMessage = error instanceof Error
+            ? error.message
             : "Failed to load course content. Please try again.";
-            
+
           setStatusMessage(errorMessage);
           setStatusType("error");
           setHasSlideContent(false);
-          
+
           setSlides([{
             id: 0,
             title: "Course Content Error",
@@ -227,7 +227,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
         }
       }
     }
-    
+
     loadSlides();
   }, [courseId]);
 
@@ -250,7 +250,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
       }
 
       const subtopicEntry = chapterEntry.subtopicMap.get(subtopicTitle)!;
-      
+
       // Process slide title to remove subtopic prefix if present
       let displaySlideTitle = slide.title;
       const prefixToRemove = subtopicTitle + ": ";
@@ -302,10 +302,10 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
   // Handle exit from the course
   const handleExit = async () => {
     setIsExitDialogOpen(false);
-    
+
     // First, hide the assistant component to prevent instance conflicts
     setShowAssistant(false);
-    
+
     // Save progress before exiting
     await handleSaveProgress();
 
@@ -390,14 +390,14 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
           position: newIndex
         });
       }
-      
+
       // Scroll the corresponding preview item into view
       setTimeout(() => {
         previewItemRefs.current[newIndex]?.scrollIntoView({
           behavior: 'smooth',
           block: 'nearest',
         });
-      }, 0); 
+      }, 0);
 
       // Find the chapter for the new slide index and ensure it's expanded
       let targetChapterTitle: string | null = null;
@@ -424,8 +424,8 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
   };
 
   // Get current slide progress percentage
-  const slideProgress = slides.length > 1 
-    ? Math.round((currentSlideIndex / (slides.length - 1)) * 100) 
+  const slideProgress = slides.length > 1
+    ? Math.round((currentSlideIndex / (slides.length - 1)) * 100)
     : 0;
 
   // Get current slide
@@ -499,7 +499,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
 
     // Find the slide item ref for the current slide
     const slideItemElement = syllabusSlideItemRefs.current[currentSlideIndex];
-    
+
     if (slideItemElement) {
       // If we found the slide item element, scroll to it
       setTimeout(() => {
@@ -507,7 +507,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
           behavior: 'smooth',
           block: 'nearest', // 'nearest' is usually better for small items
         });
-        
+
         // Trigger highlight animation
         setHighlightedSlideId(currentSlideIndex);
         setTimeout(() => setHighlightedSlideId(null), 1500); // Clear after animation
@@ -520,17 +520,17 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
       {/* Top navigation bar */}
       <header className="bg-[#0D0D0D] text-white py-2 px-3 sm:px-4 flex items-center justify-between shadow-md z-10 border-b border-gray-800 mb-2">
         <div className="flex items-center space-x-1 sm:space-x-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="text-white hover:bg-[#1A1A1A] rounded-full h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center"
             onClick={() => router.push('/my-courses')}
             title="Home"
           >
             <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             className="text-white hover:bg-[#1A1A1A] rounded-full h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center"
             onClick={toggleSyllabus}
@@ -539,14 +539,14 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
             <Menu className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
         </div>
-        
+
         <h1 className="text-base sm:text-lg font-medium truncate text-center px-2 sm:px-4 flex-1">
           {courseName}
         </h1>
-        
+
         <div className="flex items-center space-x-1 sm:space-x-2">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             className="text-white hover:bg-[#1A1A1A] rounded-full h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center"
             onClick={togglePreviewPanel}
@@ -554,8 +554,8 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
           >
             <Grid className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             className="text-white hover:bg-[#1A1A1A] rounded-full h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center"
             onClick={() => {}}
@@ -563,8 +563,8 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
           >
             <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             className="text-white hover:bg-[#1A1A1A] rounded-full h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center"
             onClick={() => {}}
@@ -578,23 +578,23 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
       {/* Main content area - with gap between columns */}
       <div className="flex flex-1 overflow-hidden bg-[#0D0D0D] gap-x-2 sm:gap-x-3">
         {/* Syllabus sidebar */}
-        <aside 
+        <aside
           className={cn(
             "bg-[#1A1A1A] border-r border-gray-800 w-full md:w-64 flex-shrink-0 overflow-y-auto transition-all duration-300 ease-in-out transform scrollbar-none rounded-sm",
             showSyllabus ? "translate-x-0" : "-translate-x-full md:hidden",
             isMobile ? "absolute z-30 h-[calc(100%-48px)] top-[48px]" : "relative"
           )}
-          style={{ 
-            msOverflowStyle: 'none', 
-            scrollbarWidth: 'none' 
+          style={{
+            msOverflowStyle: 'none',
+            scrollbarWidth: 'none'
           }}
         >
           <div className="p-3">
             <div className="flex space-x-1 pb-3 border-b border-gray-800">
-              <button 
+              <button
                 className={cn(
                   "text-base font-medium px-3 py-1 rounded-t-md w-1/2 text-center",
-                  activeLeftTab === 'syllabus' 
+                  activeLeftTab === 'syllabus'
                     ? "text-white border-b-2 border-white bg-[#1A1A1A]"
                     : "text-[#CCCCCC] hover:text-white hover:bg-[#1F1F1F]"
                 )}
@@ -602,10 +602,10 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
               >
                 Syllabus
               </button>
-              <button 
+              <button
                 className={cn(
                   "text-base font-medium px-3 py-1 rounded-t-md w-1/2 text-center",
-                  activeLeftTab === 'record' 
+                  activeLeftTab === 'record'
                     ? "text-white border-b-2 border-white bg-[#1A1A1A]"
                     : "text-[#CCCCCC] hover:text-white hover:bg-[#1F1F1F]"
                 )}
@@ -615,20 +615,20 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
               </button>
             </div>
           </div>
-          
+
           {activeLeftTab === 'syllabus' && (
             <nav className="p-3 pt-0 overflow-y-auto scrollbar-none" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
               {syllabusStructure.map((chapter, chapterIndex) => (
-                <div 
-                  key={chapter.title} 
+                <div
+                  key={chapter.title}
                   ref={(el: HTMLDivElement | null) => { syllabusChapterRefs.current[chapterIndex] = el; }}
                   className="mb-1.5"
                 >
-                  <button 
+                  <button
                     onClick={() => toggleChapterExpansion(chapter.title)}
                     className="flex items-center justify-between w-full mb-1.5 px-1.5 py-2 tracking-tight text-left"
-                  > 
-                    <h3 className="text-base font-semibold text-white">{chapter.title}</h3> 
+                  >
+                    <h3 className="text-base font-semibold text-white">{chapter.title}</h3>
                     {expandedChapters[chapter.title] ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
                   </button>
                   {expandedChapters[chapter.title] && (
@@ -638,7 +638,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
                           <h4 className="text-sm font-medium text-gray-300 px-1.5 py-1 mb-0.5 tracking-tight">{subtopic.title}</h4>
                           <ul className="ml-2 space-y-1">
                             {subtopic.slides.map((slideItem: SyllabusSlideItem) => (
-                              <li 
+                              <li
                                 key={slideItem.databaseId}
                                 ref={(el) => { syllabusSlideItemRefs.current[slideItem.arrayIndex] = el; }}
                                 className={cn(
@@ -651,7 +651,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
                                   onClick={() => goToSlide(slideItem.arrayIndex)}
                                   className="text-left w-full px-1.5 py-1.5 text-sm leading-normal flex items-center"
                                 >
-                                  <span 
+                                  <span
                                     className={cn(
                                       "mr-2.5 rounded-full flex-shrink-0 transition-all duration-200 ease-out", // Added transition
                                       currentSlideIndex === slideItem.arrayIndex
@@ -659,10 +659,10 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
                                         : "bg-gray-600 h-2 w-2"    // Inactive: smaller gray dot
                                     )}
                                   ></span>
-                                  <span 
+                                  <span
                                     className={cn(
-                                      currentSlideIndex === slideItem.arrayIndex 
-                                        ? "text-white font-medium"  
+                                      currentSlideIndex === slideItem.arrayIndex
+                                        ? "text-white font-medium"
                                         : "text-[#CCCCCC] hover:text-white font-normal"
                                     )}
                                   >
@@ -720,22 +720,22 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
               "w-full mx-auto flex flex-col overflow-hidden transition-all duration-300 ease-in-out",
               (!showSyllabus || !showPreviewPanel) ? "max-w-full" : "max-w-full lg:max-w-6xl" // Expand if EITHER sidebar is hidden
             )}>
-              <div className="relative w-full h-auto" style={{ paddingBottom: '56.25%' }}> {/* 16:9 aspect ratio */} 
+              <div className="relative w-full h-auto" style={{ paddingBottom: '56.25%' }}> {/* 16:9 aspect ratio */}
                 <div className="absolute inset-0 bg-white text-black overflow-y-auto scrollbar-none rounded-sm shadow-xl">
                   <div className="p-3 sm:p-4 md:p-6 lg:p-8">
-                    <div 
-                      className="prose prose-sm sm:prose-base lg:prose-lg max-w-none" 
-                      dangerouslySetInnerHTML={{ 
-                        __html: currentSlide.slide_markdown 
-                          ? marked(currentSlide.slide_markdown) 
-                          : '<p>No content available.</p>' 
-                      }} 
+                    <div
+                      className="prose prose-sm sm:prose-base lg:prose-lg max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: currentSlide.slide_markdown
+                          ? marked(currentSlide.slide_markdown)
+                          : '<p>No content available.</p>'
+                      }}
                     />
                     <div className="flex justify-end mt-3 sm:mt-4">
-                      <img 
-                        src="/pics/mascot.png" 
-                        alt="Helper character" 
-                        className="h-16 sm:h-20 md:h-24 w-auto" 
+                      <img
+                        src="/pics/mascot.png"
+                        alt="Helper character"
+                        className="h-16 sm:h-20 md:h-24 w-auto"
                         onError={(e) => e.currentTarget.style.display = 'none'}
                       />
                     </div>
@@ -743,14 +743,14 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
                 </div>
               </div>
             </div>
-              
+
             {/* Caption block at bottom - Direct child of the flex container, fixed height */}
             <div className={cn(
               "w-full mx-auto bg-[#0D0D0D] text-white text-left mt-3 rounded-sm shadow-xl flex flex-shrink-0",
               (!showSyllabus || !showPreviewPanel) ? "max-w-full" : "max-w-full lg:max-w-6xl", // Expand if EITHER sidebar is hidden
               "h-12 sm:h-14 md:h-16 lg:h-20 xl:h-24" // Reduced responsive height
-            )}> 
-              <div className="w-full px-4 py-2 md:py-3 overflow-y-auto scrollbar-none"> 
+            )}>
+              <div className="w-full px-4 py-2 md:py-3 overflow-y-auto scrollbar-none">
                 <p className="text-sm md:text-base font-medium">
                   {currentSlide.transcript || "Slide transcript or summary."}
                 </p>
@@ -758,46 +758,46 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
             </div>
           </div>
         </main>
-          
+
         {/* Right sidebar for slide previews */}
-        <aside 
+        <aside
           className={cn(
             "bg-[#1A1A1A] border-l border-gray-800 w-full md:w-72 flex-shrink-0 overflow-y-auto transition-all duration-300 ease-in-out transform scrollbar-none rounded-sm",
             showPreviewPanel ? "translate-x-0" : "translate-x-full md:hidden",
             isMobile ? "absolute right-0 z-30 h-[calc(100%-48px)] top-[48px]" : "relative"
           )}
-          style={{ 
-            msOverflowStyle: 'none', 
-            scrollbarWidth: 'none' 
+          style={{
+            msOverflowStyle: 'none',
+            scrollbarWidth: 'none'
           }}
         >
           <div className="sticky top-0 bg-[#1A1A1A] border-b border-gray-800 z-10 flex justify-between items-center p-3">
             <h2 className="text-sm font-medium text-white pl-1">Slide Previews</h2>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="text-gray-300 hover:text-white hover:bg-[#0D0D0D] h-6 w-6 p-0.5 rounded-md"
               onClick={togglePreviewPanel}
             >
               <X className="h-3 w-3" />
             </Button>
           </div>
-          
+
           <div className="p-2 overflow-y-auto scrollbar-none" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
             {slides.map((slide, index) => (
-              <div 
-                key={slide.id} 
+              <div
+                key={slide.id}
                 ref={(element: HTMLDivElement | null) => { previewItemRefs.current[index] = element; }}
                 className={cn(
                   "mb-3 rounded overflow-hidden cursor-pointer transition-all border",
-                  currentSlideIndex === index 
-                    ? "border-[#00FF84]" 
+                  currentSlideIndex === index
+                    ? "border-[#00FF84]"
                     : "border-gray-800 hover:border-gray-700"
                 )}
                 onClick={() => goToSlide(index)}
               >
                 <div className="relative w-full" style={{ paddingTop: '56.25%' }}> {/* 16:9 aspect ratio for previews too */}
-                  <img 
+                  <img
                     src={slide.preview || `/pics/${(index % 3) + 1}.jpg`}
                     alt={`Preview of slide ${index + 1}`}
                     className="absolute inset-0 object-cover w-full h-full"
@@ -812,7 +812,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
         </aside>
       </div>
 
-      {/* Full-width Bottom Action Bar */} 
+      {/* Full-width Bottom Action Bar */}
       <div className="bg-[#0D0D0D] text-white py-1.5 sm:py-2 px-2 sm:px-4 flex items-center justify-between border-t border-gray-800 shadow-md z-10 mt-2">
         {/* Left Aligned: Settings */}
         <Button
@@ -838,8 +838,8 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
               size="icon"
               className={cn(
                 "rounded-full h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center flex-shrink-0",
-                isMuted 
-                  ? "bg-[#FF3B30] text-white hover:bg-red-700" 
+                isMuted
+                  ? "bg-[#FF3B30] text-white hover:bg-red-700"
                   : "bg-[#1A1A1A] text-white hover:bg-gray-700"
               )}
               onClick={toggleMute}
@@ -847,7 +847,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
             >
               {isMuted ? <MicOff className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
             </Button>
-            
+
             <div className="flex-1 min-w-0 px-1 sm:px-2">
               <div className="flex items-center bg-[#1A1A1A] rounded-full px-2 sm:px-3 py-1 sm:py-1.5">
                 <input
@@ -870,9 +870,9 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
                 </Button>
               </div>
             </div>
-            
-            <Button 
-              variant="ghost" 
+
+            <Button
+              variant="ghost"
               size="icon"
               className="text-white hover:bg-[#1A1A1A] rounded-full h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center flex-shrink-0"
               onClick={toggleFullScreen}
@@ -903,7 +903,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
           width: 0;
           height: 0;
         }
-        
+
         /* Hide scrollbar for IE, Edge and Firefox */
         .scrollbar-none {
           -ms-overflow-style: none;  /* IE and Edge */
@@ -916,21 +916,21 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
           width: 5px;
         }
         .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent; 
+          background: transparent;
         }
         .scrollbar-thin::-webkit-scrollbar-thumb {
-          background: #555; 
+          background: #555;
           border-radius: 10px;
         }
         .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-          background: #777; 
+          background: #777;
         }
         .scrollbar-thin {
           scrollbar-width: thin;
           scrollbar-color: #555 transparent;
         }
         */
-        
+
         /* Custom styles for blue headings like in the screenshot */
         .prose h1 {
           color: #0070C0; /* Microsoft Blue for slide titles */
@@ -943,13 +943,13 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
         .prose h2, .prose h3, .prose p, .prose strong, .prose em {
           color: #000000; /* Ensure text on white slide is black */
         }
-        
+
         /* Better bullet point styling for white background */
         .prose ul {
           list-style-type: none;
           padding-left: 0;
         }
-        
+
         .prose ul li {
           position: relative;
           padding-left: 1.5rem;
@@ -957,7 +957,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
           font-size: 1rem;
           color: #000000; /* Ensure list item text is black */
         }
-        
+
         .prose ul li::before {
           content: "•";
           position: absolute;
@@ -990,8 +990,8 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex space-x-2 justify-end">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsExitDialogOpen(false)}
               className="border-gray-700 text-gray-100 hover:text-white hover:bg-[#0D0D0D]"
             >

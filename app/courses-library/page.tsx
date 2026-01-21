@@ -84,7 +84,7 @@ const mockCourses: CourseItem[] = [
     publishedDate: "2023-08-18"
   },
   {
-    id: 8, 
+    id: 8,
     title: "Introduction to Computer Vision with OpenCV",
     description: "Learn the basics of computer vision and image processing using the OpenCV library.",
     author: "Dr. Lisa Wang",
@@ -142,46 +142,46 @@ const getFilteredCourses = (
 ): CourseItem[] => {
   // Apply filters
   let filtered = [...courses];
-  
+
   // Filter by tags
   if (filters.tags.length > 0) {
-    filtered = filtered.filter(item => 
+    filtered = filtered.filter(item =>
       item.tags && item.tags.some((tag: string) => filters.tags.includes(tag))
     );
   }
 
   // Filter by universities
   if (filters.universities && filters.universities.length > 0) {
-    filtered = filtered.filter(item => 
+    filtered = filtered.filter(item =>
       item.tags && item.tags.some((tag: string) => filters.universities!.includes(tag))
     );
   }
-  
+
   // Filter by date range
   if (filters.dateRange && filters.dateRange.from) {
     const fromDate = new Date(filters.dateRange.from);
     const toDate = filters.dateRange.to ? new Date(filters.dateRange.to) : new Date();
-    
+
     filtered = filtered.filter(item => {
       if (!item.publishedDate) return false;
       const publishedDate = new Date(item.publishedDate);
       return publishedDate >= fromDate && publishedDate <= toDate;
     });
   }
-  
+
   // Sort results
   return filtered.sort((a, b) => {
     switch (sortBy) {
       case 'relevant':
         // For demo purposes, we'll use views
         return (b.views || 0) - (a.views || 0);
-      
+
       case 'newest':
         return new Date(b.publishedDate || '').getTime() - new Date(a.publishedDate || '').getTime();
-      
+
       case 'views':
         return (b.views || 0) - (a.views || 0);
-      
+
       default:
         return 0;
     }
@@ -201,29 +201,29 @@ export default function CoursesLibraryPage() {
   const [visibleCourses, setVisibleCourses] = useState<CourseItem[]>([]);
   const [page, setPage] = useState(1);
   const coursesPerPage = 8;
-  
+
   // Function to handle sorting changes
   const handleSortChange = (option: SortOption) => {
     setSortBy(option);
     setPage(1);
   };
-  
+
   // Function to handle filter changes
   const handleFilterChange = (newFilters: LibraryFilters) => {
     setFilters(newFilters);
     setPage(1);
   };
-  
+
   // Function to handle view mode changes
   const handleViewChange = (mode: ViewMode) => {
     setViewMode(mode);
   };
-  
+
   // Function to load more courses
   const loadMore = () => {
     setPage(prev => prev + 1);
   };
-  
+
   // Function to toggle fullscreen
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -238,7 +238,7 @@ export default function CoursesLibraryPage() {
       }
     }
   };
-  
+
   // Initial data loading
   useEffect(() => {
     // Simulate API fetch
@@ -248,10 +248,10 @@ export default function CoursesLibraryPage() {
       setCourses(mockCourses);
       setIsLoading(false);
     };
-    
+
     loadCourses();
   }, []);
-  
+
   // Apply filters and sorting when they change
   useEffect(() => {
     if (courses.length > 0) {
@@ -259,29 +259,29 @@ export default function CoursesLibraryPage() {
       setVisibleCourses(filteredAndSorted.slice(0, page * coursesPerPage));
     }
   }, [courses, filters, sortBy, page]);
-  
+
   // Listen for fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullScreen(!!document.fullscreenElement);
     };
-    
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, []);
-  
+
   return (
     <MainLayout>
       <div className="flex-1 bg-gray-50 relative">
         <ScrollArea className="h-screen" type="hover">
           {/* Fullscreen button */}
-          <FullscreenButton 
-            isFullScreen={isFullScreen} 
-            onToggle={toggleFullScreen} 
+          <FullscreenButton
+            isFullScreen={isFullScreen}
+            onToggle={toggleFullScreen}
           />
-          
+
           {/* Main content */}
           <div className="max-w-7xl mx-auto px-14 sm:px-20 lg:px-28 py-6">
             <div className="flex flex-col md:flex-row gap-6">
@@ -292,7 +292,7 @@ export default function CoursesLibraryPage() {
                   <SortingTabs onSort={handleSortChange} activeSort={sortBy} />
                   <ViewToggle activeView={viewMode} onViewChange={handleViewChange} />
                 </div>
-                
+
                 {/* Results */}
                 {isLoading ? (
                   <div className="flex justify-center items-center h-64">
@@ -305,7 +305,7 @@ export default function CoursesLibraryPage() {
                     <p className="text-gray-600 mb-4">
                       Try adjusting your filters to find courses that match your interests.
                     </p>
-                    <Button 
+                    <Button
                       onClick={() => {
                         setFilters({
                           tags: [],
@@ -326,12 +326,12 @@ export default function CoursesLibraryPage() {
                         <CourseCard key={course.id} item={course} />
                       ))}
                     </div>
-                    
+
                     {/* Load more button */}
                     {visibleCourses.length < getFilteredCourses(courses, filters, sortBy).length && (
                       <div className="mt-8 flex justify-center">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="min-w-[150px] text-emerald-700 border-emerald-200 hover:bg-emerald-50"
                           onClick={loadMore}
                         >
@@ -348,12 +348,12 @@ export default function CoursesLibraryPage() {
                         <CourseCardGallery key={course.id} item={course} />
                       ))}
                     </div>
-                    
+
                     {/* Load more button */}
                     {visibleCourses.length < getFilteredCourses(courses, filters, sortBy).length && (
                       <div className="mt-8 flex justify-center">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="min-w-[150px] text-emerald-700 border-emerald-200 hover:bg-emerald-50"
                           onClick={loadMore}
                         >
@@ -364,10 +364,10 @@ export default function CoursesLibraryPage() {
                   </>
                 )}
               </div>
-              
+
               {/* Filters sidebar - right side */}
               <div className="md:w-72 order-1 md:order-2 flex-shrink-0">
-                <Filters 
+                <Filters
                   onFilterChange={handleFilterChange}
                   initialFilters={filters}
                 />
@@ -378,4 +378,4 @@ export default function CoursesLibraryPage() {
       </div>
     </MainLayout>
   );
-} 
+}

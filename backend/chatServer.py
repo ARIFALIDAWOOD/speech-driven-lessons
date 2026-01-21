@@ -1,18 +1,18 @@
-import tiktoken
-import openai
+import asyncio
+import os
+import tempfile
+import time
+from difflib import SequenceMatcher  # For fuzzy matching
+
+import edge_tts
 import faiss
 import numpy as np
-from difflib import SequenceMatcher  # For fuzzy matching
-import time
-import os
-from flask import Flask, request, Response, jsonify
+import openai
+import tiktoken
+from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
-import tempfile
-import os
-import edge_tts
-import asyncio
 
 class ContextManager:
     def __init__(self, context_file="./uploads/context.txt"):
@@ -30,11 +30,11 @@ class ContextManager:
         current_chunk = []
         current_token_count = 0
 
-        for line in text.split('\n'):
-            line_tokens = len(encoder.encode(line + '\n'))
+        for line in text.split("\n"):
+            line_tokens = len(encoder.encode(line + "\n"))
             if current_token_count + line_tokens > max_tokens:
                 if current_chunk:
-                    chunks.append('\n'.join(current_chunk))
+                    chunks.append("\n".join(current_chunk))
                 current_chunk = [line]
                 current_token_count = line_tokens
             else:
@@ -42,7 +42,7 @@ class ContextManager:
                 current_token_count += line_tokens
 
         if current_chunk:
-            chunks.append('\n'.join(current_chunk))
+            chunks.append("\n".join(current_chunk))
         return chunks
 
     def load_and_process_context(self):
@@ -50,7 +50,7 @@ class ContextManager:
         try:
             start_time = time.time()
 
-            with open(self.context_file, 'r', encoding='utf-8') as file:
+            with open(self.context_file, "r", encoding="utf-8") as file:
                 content = file.read()
 
             chunk_time = time.time()
@@ -80,7 +80,7 @@ class ContextManager:
 
     def extract_quotes_from_chunk(self, chunk):
         """Extract well-known phrases or quotes from a chunk for indexing."""
-        return [line for line in chunk.split('\n') if line.startswith('"')]
+        return [line for line in chunk.split("\n") if line.startswith('"')]
 
     def find_approximate_quote_match(self, query: str, threshold=0.7):
         """Find the closest quote in the inverted index based on similarity threshold."""
@@ -120,11 +120,12 @@ class ContextManager:
         # Step 3: Fall back to FAISS if no exact or approximate match is found
         faiss_search_time = time.time()
         try:
-            query_embedding = self.client.embeddings.create(
-                model="text-embedding-3-large",
-                input=query
-            ).data[0].embedding
-            query_embedding_np = np.array(query_embedding).astype('float32').reshape(1, -1)
+            query_embedding = (
+                self.client.embeddings.create(model="text-embedding-3-large", input=query)
+                .data[0]
+                .embedding
+            )
+            query_embedding_np = np.array(query_embedding).astype("float32").reshape(1, -1)
 
             _, indices = self.faiss_index.search(query_embedding_np, max_chunks)
             relevant_chunks = "\n\n".join([self.chunks[i] for i in indices[0]])
@@ -141,25 +142,27 @@ class ContextManager:
         embeddings = []
         for chunk in self.chunks:
             try:
-                embedding = self.client.embeddings.create(
-                    model="text-embedding-3-large",
-                    input=chunk
-                ).data[0].embedding
+                embedding = (
+                    self.client.embeddings.create(model="text-embedding-3-large", input=chunk)
+                    .data[0]
+                    .embedding
+                )
                 embeddings.append(embedding)
             except Exception as e:
                 print(f"Error generating embedding: {str(e)}")
                 embeddings.append([0] * 3072)
 
-        embeddings_np = np.array(embeddings).astype('float32')
+        embeddings_np = np.array(embeddings).astype("float32")
 
         # Initialize FAISS index with the large vector size
         dimension = embeddings_np.shape[1]
         self.faiss_index = faiss.IndexFlatL2(dimension)
         self.faiss_index.add(embeddings_np)
 
+
 class builtContext:
     def __init__(self):
-        #XXXX
+        # XXXX
         print("Creating builtContext with its own ContextManager")
         self.context_manager = ContextManager()
 
@@ -180,17 +183,17 @@ class ChatBot:
         try:
             relevant_context = self.context_manager.get_relevant_chunks(message)
             messages = [
-                {"role": "system", 
-                 "content": '''You are my lecturer for university course study. Don't ask students what to do, instead you can ask if the students is ready, and then you can start your lesson. You are here to teach my reading. Don't speak too much content each time.''' + f"Relevant context:\n{relevant_context}"}
+                {
+                    "role": "system",
+                    "content": """You are my lecturer for university course study. Don't ask students what to do, instead you can ask if the students is ready, and then you can start your lesson. You are here to teach my reading. Don't speak too much content each time."""
+                    + f"Relevant context:\n{relevant_context}",
+                }
             ]
             messages.extend(self.conversation_history)
             messages.append({"role": "user", "content": message})
 
             response = self.context_manager.client.chat.completions.create(
-                model="gpt-4o",
-                messages=messages,
-                max_tokens=100,
-                temperature=0.9
+                model="gpt-4o", messages=messages, max_tokens=100, temperature=0.9
             )
 
             ai_content = response.choices[0].message.content
@@ -206,30 +209,36 @@ class ChatBot:
 
 app = Flask(__name__)
 # Configure CORS to allow requests from your frontend
-CORS(app, resources={
-    r"/*": {  # Changed from r"/api/*" to r"/*"
-        "origins": ["http://localhost:3000"],
-        "methods": ["POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
-    }
-})
+CORS(
+    app,
+    resources={
+        r"/*": {  # Changed from r"/api/*" to r"/*"
+            "origins": ["http://localhost:3000"],
+            "methods": ["POST", "OPTIONS"],
+            "allow_headers": ["Content-Type"],
+        }
+    },
+)
 
 conversation_history = []
 
+
 # API Endpoint for handling user input
-@app.route('/api/get-ai-response', methods=['POST'])
+@app.route("/api/get-ai-response", methods=["POST"])
 def get_ai_response():
     print("\nCreating ChatBot with built_context.context_manager")
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'error': 'No data provided'}), 400
-            
-        user_input = data.get('input')
-        thread_id = data.get('thread_id', 'default_thread')  # Support multiple threads by using a thread ID
+            return jsonify({"error": "No data provided"}), 400
+
+        user_input = data.get("input")
+        thread_id = data.get(
+            "thread_id", "default_thread"
+        )  # Support multiple threads by using a thread ID
         if not user_input:
-            return jsonify({'error': 'No input provided'}), 400
-        
+            return jsonify({"error": "No input provided"}), 400
+
         # Pass the global conversation history to ChatBot
         chat = ChatBot(built_context.context_manager, conversation_history)
 
@@ -237,86 +246,84 @@ def get_ai_response():
         print("\nAssistant:", response)
 
         # Return response as JSON
-        return jsonify({'response': response})
-        
+        return jsonify({"response": response})
+
     except Exception as e:
         print(f"Error in get_ai_response: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-    
-    
+
 # Configure upload folder
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = "uploads"
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 
-@app.route('/upload-files', methods=['POST'])
+@app.route("/upload-files", methods=["POST"])
 def upload_files():
     try:
-        if 'files' not in request.files:
-            return jsonify({'error': 'No files part'}), 400
+        if "files" not in request.files:
+            return jsonify({"error": "No files part"}), 400
 
-        files = request.files.getlist('files')  # Retrieve the list of files
+        files = request.files.getlist("files")  # Retrieve the list of files
         if not files:
-            return jsonify({'error': 'No files selected'}), 400
+            return jsonify({"error": "No files selected"}), 400
 
         uploaded_files = []
         for file in files:
             if file.filename:
                 filename = secure_filename(file.filename)
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
                 file.save(file_path)  # Save the file to the server
                 uploaded_files.append(filename)
 
                 # Optionally, read and process .txt files
-                if filename.endswith('.txt'):
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                if filename.endswith(".txt"):
+                    with open(file_path, "r", encoding="utf-8") as f:
                         content = f.read()
                         print(f"Content of {filename}:\n{content}")
 
-        return jsonify({
-            'message': 'Files uploaded successfully',
-            'files': uploaded_files
-        }), 200
+        return jsonify({"message": "Files uploaded successfully", "files": uploaded_files}), 200
 
     except Exception as e:
         print(f"Error during file upload: {str(e)}")
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
-@app.route('/delete-file', methods=['POST'])
+
+@app.route("/delete-file", methods=["POST"])
 def delete_file():
     try:
         data = request.json
-        filename = data.get('filename')
+        filename = data.get("filename")
 
         if not filename:
-            return jsonify({'error': 'Filename is required'}), 400
+            return jsonify({"error": "Filename is required"}), 400
 
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
 
         if os.path.exists(file_path):
             os.remove(file_path)
-            return jsonify({'message': 'File deleted successfully'})
+            return jsonify({"message": "File deleted successfully"})
         else:
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({"error": "File not found"}), 404
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/customize', methods=['POST'])
+
+@app.route("/customize", methods=["POST"])
 def customize_course():
     try:
         data = request.json
-        title = data.get('title')
-        ai_tutor_name = data.get('aiTutor', {}).get('name')
-        personality = data.get('personality')
-        selected_days = data.get('selectedDays')
-        session_duration = data.get('sessionDuration')
-        start_date = data.get('startDate')
-        end_date = data.get('endDate')
+        title = data.get("title")
+        ai_tutor_name = data.get("aiTutor", {}).get("name")
+        personality = data.get("personality")
+        selected_days = data.get("selectedDays")
+        session_duration = data.get("sessionDuration")
+        start_date = data.get("startDate")
+        end_date = data.get("endDate")
 
         print(f"Customizing course: {title}")
         print(f"AI Tutor: {ai_tutor_name}, Personality: {personality}")
@@ -325,14 +332,13 @@ def customize_course():
 
         # Add logic to store or process the customization data here
 
-        return jsonify({'message': 'Course customized successfully'}), 200
+        return jsonify({"message": "Course customized successfully"}), 200
     except Exception as e:
         print(f"Error in customize_course: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
- 
-@app.route('/api/list-voices', methods=['GET'])
+@app.route("/api/list-voices", methods=["GET"])
 def list_voices():
     try:
         voices = asyncio.run(edge_tts.list_voices())  # Use asyncio.run for asynchronous calls
@@ -341,7 +347,7 @@ def list_voices():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/generate-audio', methods=['POST'])
+@app.route("/api/generate-audio", methods=["POST"])
 async def generate_audio():
     data = request.json  # Do not use await with Flask
     text = data.get("text", "")
@@ -360,12 +366,12 @@ async def generate_audio():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/recognize-openai', methods=['POST'])
+@app.route("/api/recognize-openai", methods=["POST"])
 def recognize_with_openai():
-    if 'audio' not in request.files:
+    if "audio" not in request.files:
         return jsonify({"error": "No audio file uploaded"}), 400
 
-    audio_file = request.files['audio']
+    audio_file = request.files["audio"]
 
     try:
         # Save the audio file to a temporary location
@@ -375,10 +381,7 @@ def recognize_with_openai():
 
         # Use OpenAI Whisper API
         with open(audio_path, "rb") as file:
-            response = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=file
-            )
+            response = client.audio.transcriptions.create(model="whisper-1", file=file)
 
         # Clean up the temporary file
         os.remove(audio_path)
@@ -391,7 +394,7 @@ def recognize_with_openai():
         print(f"Error in recognize_with_openai: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-    
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     built_context = builtContext()
-    app.run(debug=True) 
+    app.run(debug=True)

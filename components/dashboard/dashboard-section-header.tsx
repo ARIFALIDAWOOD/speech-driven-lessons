@@ -1,0 +1,38 @@
+"use client";
+
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+
+interface SectionHeaderProps {
+  title: string;
+  description?: string;
+  actionHref?: string;
+  actionText?: string;
+}
+
+export function SectionHeader({
+  title,
+  description,
+  actionHref,
+  actionText = "View All",
+}: SectionHeaderProps) {
+  return (
+    <div className="flex justify-between items-end mb-4">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+        {description && (
+          <p className="text-gray-600 mt-1">{description}</p>
+        )}
+      </div>
+      {actionHref && (
+        <Link
+          href={actionHref}
+          className="flex items-center text-emerald-700 hover:text-emerald-800 font-medium"
+        >
+          {actionText}
+          <ChevronRight className="w-4 h-4 ml-1" />
+        </Link>
+      )}
+    </div>
+  );
+}

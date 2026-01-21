@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { useAuth } from "@/auth/firebase"
+import { useAuth } from "@/auth/supabase"
 import { MainLayout } from "@/components/layout/MainLayout"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -45,7 +45,7 @@ interface CourseSlide {
 }
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [course, setCourse] = useState<CourseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +93,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     async function loadCourseDetails() {
       setLoading(true);
       try {
-        const idToken = user ? await user.getIdToken() : '';
+        const idToken = session?.access_token ?? "";
 
         if (!idToken) {
           setError("Authentication error. Please sign in to view course details.");
@@ -178,7 +178,10 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     setSaveStatus('saving');
 
     try {
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
+      if (!idToken) {
+        throw new Error("Missing auth token");
+      }
 
       // Call the API to update course details
       await updateCourseDetails(idToken, params.id, {
@@ -285,7 +288,10 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         setSlidesError(null)
 
         try {
-          const idToken = await user.getIdToken()
+          const idToken = session?.access_token ?? ""
+          if (!idToken) {
+            throw new Error("Missing auth token")
+          }
           const result = await retrieveCourseSlides(idToken, params.id)
           console.log("Retrieved slides:", result)
           setSlidesData(result.slides)
@@ -312,7 +318,10 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     setSlidesError(null)
 
     try {
-      const idToken = await user.getIdToken()
+      const idToken = session?.access_token ?? ""
+      if (!idToken) {
+        throw new Error("Missing auth token")
+      }
       const result = await retrieveCourseSlides(idToken, params.id)
       setSlidesData(result.slides)
     } catch (error) {

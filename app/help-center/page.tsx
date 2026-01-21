@@ -152,9 +152,9 @@ export default function HelpCenterPage() {
         />
 
         <div className="max-w-4xl mx-auto px-8 sm:px-10 lg:px-12 pt-10 sm:pt-12 pb-8 h-full flex flex-col">
-          <HelpHeader 
-            title="Help Center" 
-            description="Get assistance with Tutorion" 
+          <HelpHeader
+            title="Help Center"
+            description="Get assistance with Tutorion"
           />
 
           <div className="flex-1 flex flex-col mt-4 min-h-0">
@@ -162,7 +162,7 @@ export default function HelpCenterPage() {
             <Card className="overflow-hidden bg-white rounded-xl shadow-md border border-emerald-100 transition-all hover:shadow-lg flex-1 flex flex-col relative mb-6 h-full">
               {/* Decorative green accent */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600"></div>
-              
+
               {/* Chat Header */}
               <div className="p-4 border-b border-emerald-100 flex items-center flex-shrink-0 bg-gradient-to-r from-emerald-50 to-white">
                 <div className="flex items-center gap-3">
@@ -182,9 +182,9 @@ export default function HelpCenterPage() {
                   <span className="text-xs font-medium text-emerald-700">Powered by AI</span>
                 </div>
               </div>
-              
+
               {/* Messages Area with improved scrolling */}
-              <div 
+              <div
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto p-4 pb-20 bg-gradient-to-br from-emerald-50/40 to-white min-h-0 scrollbar-thin scrollbar-thumb-emerald-300 scrollbar-track-transparent hover:scrollbar-thumb-emerald-500"
                 style={{
@@ -195,7 +195,7 @@ export default function HelpCenterPage() {
               >
                 <div className="space-y-4">
                   {messages.map((message) => (
-                    <motion.div 
+                    <motion.div
                       key={message.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -213,9 +213,9 @@ export default function HelpCenterPage() {
                       </div>
                     </motion.div>
                   ))}
-                  
+
                   {isTyping && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="flex justify-start"
@@ -225,16 +225,16 @@ export default function HelpCenterPage() {
                       </div>
                     </motion.div>
                   )}
-                  
+
                   <div ref={messagesEndRef} />
                 </div>
               </div>
-              
+
               {/* Input Area with floating Common Questions directly above */}
               <div className="relative px-4 pt-6 pb-4 border-t border-emerald-100 flex-shrink-0 bg-gradient-to-b from-white to-emerald-50/30 mt-4">
                 {/* Floating Common Questions without a box */}
                 <div className="absolute -top-10 left-0 w-full flex justify-center gap-2 flex-wrap px-4">
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
@@ -249,7 +249,7 @@ export default function HelpCenterPage() {
                       <span className="text-xs">Create a course</span>
                     </Button>
                   </motion.div>
-                  
+
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -265,7 +265,7 @@ export default function HelpCenterPage() {
                       <span className="text-xs">Learning paths</span>
                     </Button>
                   </motion.div>
-                  
+
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -281,7 +281,7 @@ export default function HelpCenterPage() {
                       <span className="text-xs">Contact support</span>
                     </Button>
                   </motion.div>
-                  
+
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -314,7 +314,7 @@ export default function HelpCenterPage() {
                       }}
                     />
                   </div>
-                  
+
                   <Button
                     onClick={handleSend}
                     className="h-8 w-8 p-0 mr-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"
@@ -322,7 +322,7 @@ export default function HelpCenterPage() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
-                
+
                 <div className="text-xs text-gray-500 mt-2 ml-2">
                   Press Enter to send
                 </div>
@@ -334,4 +334,3 @@ export default function HelpCenterPage() {
     </MainLayout>
   )
 }
-

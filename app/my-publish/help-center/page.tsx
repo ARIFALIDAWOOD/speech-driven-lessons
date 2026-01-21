@@ -13,7 +13,7 @@ export default function HelpCenterPage() {
       <div className="flex h-full">
         {/* Left Sidebar */}
         <PublishSidebar />
-        
+
         {/* Main Content Area */}
         <div className="flex-1 bg-white">
           <ScrollArea className="h-[calc(100vh-64px)]">
@@ -22,12 +22,12 @@ export default function HelpCenterPage() {
               <div className="mb-8 text-center max-w-3xl mx-auto">
                 <h1 className="text-2xl font-bold text-gray-900 mb-4">Help Center</h1>
                 <p className="text-gray-500 mb-6">Find answers to your questions and learn how to get the most out of your creator experience</p>
-                
+
                 {/* Search Bar */}
                 <div className="relative max-w-xl mx-auto">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <Input 
-                    placeholder="Search for help articles..." 
+                  <Input
+                    placeholder="Search for help articles..."
                     className="pl-10 border border-gray-200 focus:border-gray-300 bg-gray-50 h-12 pr-10 text-base"
                   />
                   <Button className="absolute right-1 top-1/2 transform -translate-y-1/2 h-10">
@@ -35,7 +35,7 @@ export default function HelpCenterPage() {
                   </Button>
                 </div>
               </div>
-              
+
               {/* Help Categories */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm text-center hover:shadow-md transition-shadow">
@@ -48,7 +48,7 @@ export default function HelpCenterPage() {
                     View Guides <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
-                
+
                 <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm text-center hover:shadow-md transition-shadow">
                   <div className="bg-purple-100 rounded-full p-3 w-14 h-14 flex items-center justify-center mx-auto mb-4">
                     <PlayCircle className="h-6 w-6 text-purple-600" />
@@ -59,7 +59,7 @@ export default function HelpCenterPage() {
                     Watch Videos <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
-                
+
                 <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm text-center hover:shadow-md transition-shadow">
                   <div className="bg-green-100 rounded-full p-3 w-14 h-14 flex items-center justify-center mx-auto mb-4">
                     <MessageCircle className="h-6 w-6 text-green-600" />
@@ -71,14 +71,14 @@ export default function HelpCenterPage() {
                   </Button>
                 </div>
               </div>
-              
+
               {/* FAQ Section */}
               <div className="bg-gray-50 rounded-lg p-8 mb-12">
                 <div className="text-center mb-8">
                   <h2 className="text-xl font-bold text-gray-900 mb-2">Frequently Asked Questions</h2>
                   <p className="text-gray-500">Quick answers to common questions</p>
                 </div>
-                
+
                 <div className="space-y-4 max-w-3xl mx-auto">
                   {[
                     {
@@ -109,14 +109,14 @@ export default function HelpCenterPage() {
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="text-center mt-8">
                   <Button variant="outline">
                     View All FAQs <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
               </div>
-              
+
               {/* Contact Card */}
               <div className="bg-blue-600 rounded-lg p-8 text-white text-center">
                 <h2 className="text-xl font-bold mb-2">Still Need Help?</h2>
@@ -136,4 +136,4 @@ export default function HelpCenterPage() {
       </div>
     </HeaderOnlyLayout>
   )
-} 
+}

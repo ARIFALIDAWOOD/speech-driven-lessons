@@ -257,4 +257,4 @@ export default function VoiceChat() {
             </Card>
         </div>
     );
-} 
+}

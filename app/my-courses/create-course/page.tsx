@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 
 // Auth import
-import { useAuth } from "@/auth/firebase"
+import { useAuth } from "@/auth/supabase"
 
 // UI Components
 import { Button } from "@/components/ui/button"
@@ -37,7 +37,7 @@ import { NavigationButtons } from "@/components/my-courses/create-course/Navigat
 import { Section } from "@/components/my-courses/create-course/SyllabusTypes"
 import { CourseInfo } from "@/components/my-courses/utils/courseTypes"
 
-// API functions 
+// API functions
 import {
   createOrUpdateCourseMetadata,
   uploadCourseFile,
@@ -57,7 +57,7 @@ import {
 
 export default function CreateCoursePage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
 
   // State for course creation
   const [currentStep, setCurrentStep] = useState("title");
@@ -121,7 +121,8 @@ export default function CreateCoursePage() {
 
       setIsLoadingDraft(true);
       try {
-        const idToken = await user.getIdToken();
+        const idToken = session?.access_token ?? "";
+        if (!idToken) throw new Error("Missing auth token");
         const draftCourse = await fetchCourseById(idToken, draftCourseId);
 
         if (draftCourse) {
@@ -187,7 +188,7 @@ export default function CreateCoursePage() {
     }
   }, [user, authLoading]);
 
-  // --- Auto-save content --- 
+  // --- Auto-save content ---
 
   // Function to auto-save content changes without updating step
   const autoSaveContent = useCallback(async (
@@ -216,7 +217,8 @@ export default function CreateCoursePage() {
 
     setSaveStatus('saving');
     try {
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
+      if (!idToken) throw new Error("Missing auth token");
 
       const saveData: Partial<CourseInfo> & { course_title: string } = {
         course_title: contentData.title.trim(),
@@ -267,7 +269,8 @@ export default function CreateCoursePage() {
 
     setIsSaving(true);
     try {
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
+      if (!idToken) throw new Error("Missing auth token");
 
       const updatedCourse = await updateCourseStep(idToken, courseIdForOperation, stepNumber, isComplete);
       console.log(`Updated to step ${stepNumber} (course: ${courseIdForOperation}), complete: ${isComplete}`);
@@ -339,7 +342,8 @@ export default function CreateCoursePage() {
     setIsSaving(true);
     setSaveStatus('saving');
     try {
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
+      if (!idToken) throw new Error("Missing auth token");
       const currentCourseId = courseId;
 
       // Construct the data ensuring correct typing for partial nested objects
@@ -402,7 +406,8 @@ export default function CreateCoursePage() {
     }
 
     setFileError(null);
-    const idToken = await user.getIdToken();
+    const idToken = session?.access_token ?? "";
+    if (!idToken) throw new Error("Missing auth token");
 
     for (const file of files) {
       if (!validateFile(file)) {
@@ -457,7 +462,8 @@ export default function CreateCoursePage() {
     setPendingFileOperations(prev => new Set(prev).add(filename));
 
     try {
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
+      if (!idToken) throw new Error("Missing auth token");
       console.log(`Deleting file: ${filename} for course ${courseId}`);
       await deleteCourseFile(idToken, courseId, filename);
       console.log(`File deleted successfully: ${filename}`);
@@ -737,7 +743,8 @@ export default function CreateCoursePage() {
       `;
       document.body.appendChild(alertElement.firstElementChild!);
 
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
+      if (!idToken) throw new Error("Missing auth token");
 
       // Track content chunks for debugging or display
       let contentChunks: string[] = [];
@@ -906,7 +913,8 @@ export default function CreateCoursePage() {
     setIsSaving(true);
 
     try {
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
+      if (!idToken) throw new Error("Missing auth token");
 
       // 1. First explicitly mark the course as complete using the updateCourseStep function
       console.log("Marking course as complete...");
@@ -997,7 +1005,8 @@ export default function CreateCoursePage() {
 
     setIsDeleting(true);
     try {
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
+      if (!idToken) throw new Error("Missing auth token");
       await deleteCourse(idToken, courseId);
       console.log(`Course draft ${courseId} deleted.`);
       setIsDiscardDialogOpen(false);
@@ -1034,7 +1043,8 @@ export default function CreateCoursePage() {
       try {
         if (!user || !courseId) return;
 
-        const idToken = await user.getIdToken();
+        const idToken = session?.access_token ?? "";
+        if (!idToken) throw new Error("Missing auth token");
 
         const saveData: Partial<CourseInfo> & { course_title: string } = {
           id: courseId,
@@ -1086,7 +1096,8 @@ export default function CreateCoursePage() {
     if (!courseId || !user) return;
 
     try {
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
+      if (!idToken) throw new Error("Missing auth token");
 
       const updatedCourse = await updateCourseStep(idToken, courseId, stepNumber, isComplete);
       console.log(`Step ${stepNumber} completion updated:`, updatedCourse);
@@ -1113,7 +1124,8 @@ export default function CreateCoursePage() {
     setFileError(null);
 
     try {
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
+      if (!idToken) throw new Error("Missing auth token");
 
       // Use the new API function instead of direct fetch
       const result = await retrieveCourseSyllabus(idToken, courseId);
@@ -1359,4 +1371,4 @@ export default function CreateCoursePage() {
       </div>
     </div>
   )
-} 
+}

@@ -91,45 +91,45 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
   // Initialize Socket.IO connection
   useEffect(() => {
     if (!assistantId) return;
-    
+
     const newSocket = io('http://localhost:5000');
     setSocket(newSocket);
-    
+
     newSocket.on('connect', () => {
       console.log('Connected to Socket.IO server');
       newSocket.emit('join_course', { assistant_id: assistantId });
     });
-    
+
     newSocket.on('slide_changed', (data) => {
       console.log('Slide changed from backend:', data);
       if (data.position !== undefined) {
         setCurrentSlideIndex(data.position);
         setAssistantLastSlide(data.position);
-        
+
         // Use the ref to call the latest setCurrentSlide function
         if (setCurrentSlideRef.current) {
           setCurrentSlideRef.current(data.position);
         }
-        
+
         if (showWelcomeBlock) {
           setShowWelcomeBlock(false);
         }
-        
+
         newSocket.emit('update_viewing_slide', {
           assistant_id: assistantId,
           position: data.position
         });
       }
     });
-    
+
     newSocket.on('assistant_activity', () => {
       console.log('Received assistant activity notification');
     });
-    
+
     newSocket.on('disconnect', () => {
       console.log('Disconnected from Socket.IO server');
     });
-    
+
     return () => {
       newSocket.disconnect();
     };
@@ -148,14 +148,14 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
           setIsLoading(true);
           setStatusMessage("Loading course content...");
           setStatusType("info");
-          
+
           const slideData = await fetchCourseSlides(courseId);
-          
+
           // Check if the response is empty or doesn't contain slides data
           if (!slideData || !Array.isArray(slideData) || slideData.length === 0) {
             throw new Error('No slide content available for this course');
           }
-          
+
           // Transform the data to match the expected format if needed
           const formattedSlides = slideData.map((slide: any, index: number) => ({
             id: index + 1,
@@ -164,27 +164,27 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
             transcript: slide.transcript || "No transcript available.",
             preview: slide.preview || `/pics/${(index % 3) + 1}.jpg`, // Fallback preview images
           }));
-          
+
           setSlides(formattedSlides);
           setHasSlideContent(true);
           setStatusMessage("Course content loaded successfully!");
           setStatusType("success");
-          
+
           // After a delay, clear the status message
           setTimeout(() => setStatusMessage(null), 3000);
         } catch (error) {
           console.error("Error loading slides:", error);
-          
+
           // Set a more descriptive error message based on the type of error
-          const errorMessage = error instanceof Error 
-            ? error.message 
+          const errorMessage = error instanceof Error
+            ? error.message
             : "Failed to load course content. Please try again.";
-            
+
           // Update UI to show error state
           setStatusMessage(errorMessage);
           setStatusType("error");
           setHasSlideContent(false);
-          
+
           // Set an error slide to display
           setSlides([{
             id: 0,
@@ -198,7 +198,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
         }
       }
     }
-    
+
     loadSlides();
   }, [courseId]);
 
@@ -233,10 +233,10 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
   // Handle exit from the course
   const handleExit = async () => {
     setIsExitDialogOpen(false);
-    
+
     // First, hide the assistant component to prevent instance conflicts
     setShowAssistant(false);
-    
+
     // Save progress before exiting
     await handleSaveProgress();
 
@@ -302,7 +302,7 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
       />
 
       {/* Course control buttons */}
-      <CourseControls 
+      <CourseControls
         onExitClick={() => setIsExitDialogOpen(true)}
         isFullScreen={isFullScreen}
         toggleFullScreen={toggleFullScreen}

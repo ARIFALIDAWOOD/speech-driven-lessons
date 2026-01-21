@@ -214,4 +214,3 @@ export default function CoursePage({ params }: { params: { id: string } }) {
     </SidebarProvider>
   )
 }
-

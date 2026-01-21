@@ -99,20 +99,20 @@ $$
 void calculate_e_approximation() {
   const int MAX_ITERATIONS = 1'000'000;
   double best_approximation = 0.0;
-  
+
   for(int n = 1; n <= MAX_ITERATIONS; ++n) {
     double current = std::pow(1.0 + 1.0/n, n);
     if(std::abs(current - best_approximation) < 1e-10) break;
     best_approximation = current;
-    
+
     if(n % 100'000 == 0) {
-      std::cout << "Iteration " << n 
+      std::cout << "Iteration " << n
                 << ": Approximation = " << current
                 << " | Error = " << std::abs(current - M_E)
                 << "\\n";
     }
   }
-  
+
   std::cout << "Final Approximation: " << best_approximation
             << "\\nExact Value of e: " << M_E
             << "\\nAbsolute Error: " << std::abs(best_approximation - M_E)
@@ -142,9 +142,9 @@ void calculate_e_approximation() {
     title: "Summary",
     slide_markdown: `
 ## **Summary**
-✅ Limits describe function behavior near specific points  
-✅ They form the foundation for **continuity** and **derivatives**  
-✅ Computational approaches can approximate theoretical limits  
+✅ Limits describe function behavior near specific points
+✅ They form the foundation for **continuity** and **derivatives**
+✅ Computational approaches can approximate theoretical limits
 
 > **Reminder:** A function **does not** necessarily have a limit at every point!
     `,
@@ -170,10 +170,10 @@ void calculate_e_approximation() {
     title: "Advanced Concepts",
     slide_markdown: `
 ## **Advanced Limit Concepts**
-🔹 **Limits at Infinity:** Understanding how functions behave as \\( x \\to \\infty \\)  
-🔹 **Squeeze Theorem:** Using bounding functions to determine limits  
-🔹 **L'Hôpital's Rule:** A method for evaluating indeterminate forms  
-🔹 **Multivariable Limits:** Extending limits to higher dimensions  
+🔹 **Limits at Infinity:** Understanding how functions behave as \\( x \\to \\infty \\)
+🔹 **Squeeze Theorem:** Using bounding functions to determine limits
+🔹 **L'Hôpital's Rule:** A method for evaluating indeterminate forms
+🔹 **Multivariable Limits:** Extending limits to higher dimensions
     `,
     transcript: "Let's explore some more advanced limit concepts that will be discussed in more detail in future lessons...",
     preview: "/pics/3.jpg",
@@ -237,7 +237,7 @@ export default function OnlineCourse({ params }: { params: { id: string } }) {
       slides,
       currentSlide
     }))
-    
+
     // Navigate to preview page (will be implemented)
     router.push(`/course-preview/${courseId}`)
   }
@@ -266,14 +266,14 @@ export default function OnlineCourse({ params }: { params: { id: string } }) {
 
   const handleExit = () => {
     setIsExitDialogOpen(false)
-    
+
     // TODO: API endpoint - Save course progress
     // async function saveProgress() {
     //   try {
     //     // const response = await fetch(`/api/courses/${courseId}/progress`, {
     //     //   method: 'POST',
     //     //   headers: { 'Content-Type': 'application/json' },
-    //     //   body: JSON.stringify({ 
+    //     //   body: JSON.stringify({
     //     //     lastSlideIndex: currentSlide,
     //     //     completedAt: new Date().toISOString()
     //     //   })
@@ -284,7 +284,7 @@ export default function OnlineCourse({ params }: { params: { id: string } }) {
     //   }
     // }
     // saveProgress();
-    
+
     setTimeout(() => {
       router.push("/my-courses")
     }, 100)
@@ -318,7 +318,7 @@ export default function OnlineCourse({ params }: { params: { id: string } }) {
   return (
     <LightCourseLayout title={courseTitle}>
       {/* Course control buttons */}
-      <CourseControls 
+      <CourseControls
         onExitClick={() => setIsExitDialogOpen(true)}
         isFullScreen={isFullScreen}
         toggleFullScreen={toggleFullScreen}
@@ -341,7 +341,7 @@ export default function OnlineCourse({ params }: { params: { id: string } }) {
             totalSlides={slides.length}
             slideContent={slides[currentSlide].slide_markdown}
           />
-          
+
           {/* Chat input */}
           <ChatInput
             courseId={courseId}

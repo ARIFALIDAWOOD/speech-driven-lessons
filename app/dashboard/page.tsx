@@ -46,7 +46,7 @@ const fetchEnrolledCourses = async (): Promise<Course[]> => {
   // This will be replaced with an actual API call in the future
   // Example: const response = await fetch('/api/user/courses');
   //          return await response.json();
-  
+
   // Mock data
   const mockCourses = [
     {
@@ -78,7 +78,7 @@ const fetchEnrolledCourses = async (): Promise<Course[]> => {
       duration: 8
     }
   ];
-  
+
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 500));
   return mockCourses;
@@ -112,7 +112,7 @@ const fetchRecommendedCourses = async (): Promise<Course[]> => {
       progress: 0
     }
   ];
-  
+
   await new Promise(resolve => setTimeout(resolve, 700));
   return mockRecommendations;
 };
@@ -133,7 +133,7 @@ const fetchTutorials = async (): Promise<Tutorial[]> => {
       videoUrl: "https://www.youtube.com/embed/TnpcBrxEQmU",
     },
   ];
-  
+
   await new Promise(resolve => setTimeout(resolve, 600));
   return mockTutorials;
 };
@@ -153,7 +153,7 @@ const fetchFeaturedRecommendations = async (): Promise<FeaturedRecommendation[]>
       id: 2,
       title: "Advanced Data Structures",
       description: "Master complex data structures for efficient programming",
-      image: "/placeholder.svg?height=200&width=300&text=Data+Structures", 
+      image: "/placeholder.svg?height=200&width=300&text=Data+Structures",
       duration: 12,
       match: 95
     },
@@ -166,7 +166,7 @@ const fetchFeaturedRecommendations = async (): Promise<FeaturedRecommendation[]>
       match: 92
     }
   ];
-  
+
   await new Promise(resolve => setTimeout(resolve, 800));
   return mockFeatured;
 };
@@ -181,7 +181,7 @@ export default function DashboardPage() {
   const [featuredRecommendations, setFeaturedRecommendations] = useState<FeaturedRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Function to toggle fullscreen mode
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -196,25 +196,25 @@ export default function DashboardPage() {
       }
     }
   };
-  
+
   // Listen for fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullScreen(!!document.fullscreenElement);
     };
-    
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, []);
-  
+
   // Fetch data
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        
+
         // In a real application, you might want to use Promise.all to fetch multiple resources in parallel
         const [courses, recommended, tutorialData, featuredData] = await Promise.all([
           fetchEnrolledCourses(),
@@ -222,7 +222,7 @@ export default function DashboardPage() {
           fetchTutorials(),
           fetchFeaturedRecommendations()
         ]);
-        
+
         setEnrolledCourses(courses);
         setRecommendedCourses(recommended);
         setTutorials(tutorialData);
@@ -235,7 +235,7 @@ export default function DashboardPage() {
         setIsLoading(false);
       }
     };
-    
+
     fetchDashboardData();
   }, []);
 
@@ -247,9 +247,9 @@ export default function DashboardPage() {
 
   // Function to scroll to tutorials section
   const scrollToTutorials = () => {
-    tutorialsRef.current?.scrollIntoView({ 
-      behavior: 'smooth', 
-      block: 'start' 
+    tutorialsRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
     });
   };
 
@@ -273,11 +273,11 @@ export default function DashboardPage() {
       <div className="flex-1 bg-gray-50 relative">
         <ScrollArea className="h-screen" type="hover">
           {/* Fullscreen button */}
-          <FullscreenButton 
-            isFullScreen={isFullScreen} 
-            onToggle={toggleFullScreen} 
+          <FullscreenButton
+            isFullScreen={isFullScreen}
+            onToggle={toggleFullScreen}
           />
-          
+
           {/* Welcome Banner */}
           <div className="w-full bg-gradient-to-r from-slate-200 to-slate-300 mb-6">
             <div className="max-w-7xl mx-auto px-14 sm:px-20 lg:px-28 py-8 sm:py-10">
@@ -289,16 +289,16 @@ export default function DashboardPage() {
                   <p className="mt-2 text-lg text-emerald-700">
                     Track your learning progress and continue your courses.
                   </p>
-                  
+
                   <div className="mt-4 flex flex-wrap gap-4">
-                    <Button 
+                    <Button
                       className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-6 py-3 rounded-md"
                       onClick={navigateToMyUploads}
                     >
                       Customize your courses
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="border-2 border-emerald-800 text-emerald-800 bg-transparent hover:bg-emerald-50 font-medium px-6 py-3 rounded-md"
                       onClick={scrollToTutorials}
                     >
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-center h-full">
                   {isLoading ? (
                     <div className="w-full max-w-md h-[270px] animate-pulse bg-slate-300 rounded-xl"></div>
@@ -319,14 +319,14 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-          
+
           {/* Main content */}
           <div className="max-w-7xl mx-auto px-14 sm:px-20 lg:px-28 pt-4 sm:pt-6 pb-8">
             {error ? (
               <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-red-700 mb-12">
                 <p>{error}</p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="mt-4"
                   onClick={() => window.location.reload()}
                 >
@@ -337,12 +337,12 @@ export default function DashboardPage() {
               <>
                 {/* Continue Learning Section */}
                 <section className="mb-12">
-                  <SectionHeader 
-                    title="Continue Learning" 
-                    description="Your enrolled courses and learning progress" 
+                  <SectionHeader
+                    title="Continue Learning"
+                    description="Your enrolled courses and learning progress"
                     actionHref="/in-class-courses"
                   />
-                  
+
                   {isLoading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mt-4">
                       {[...Array(4)].map((_, i) => (
@@ -352,13 +352,13 @@ export default function DashboardPage() {
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mt-4">
                       {enrolledCourses.map((course) => (
-                        <CourseCard 
+                        <CourseCard
                           key={course.id}
                           course={{
                             id: course.id,
                             title: course.title,
-                            progress: { 
-                              completion: course.progress, 
+                            progress: {
+                              completion: course.progress,
                               hours: course.hoursCompleted || course.duration || 0
                             },
                             author: "Instructor Name",
@@ -371,7 +371,7 @@ export default function DashboardPage() {
                             },
                             uploadedFiles: [],
                             ai_voice: "jennifer"
-                          } as CourseInfo} 
+                          } as CourseInfo}
                           onRequestAssistant={handleRequestAssistant}
                         />
                       ))}
@@ -381,13 +381,13 @@ export default function DashboardPage() {
 
                 {/* Recommended Courses Section */}
                 <section className="mb-12">
-                  <SectionHeader 
-                    title="Recommended For You" 
+                  <SectionHeader
+                    title="Recommended For You"
                     description="Courses that match your interests and goals"
                     actionHref="/my-courses/recommended"
                     actionText="View All Recommendations"
                   />
-                  
+
                   {isLoading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mt-4">
                       {[...Array(4)].map((_, i) => (
@@ -412,13 +412,13 @@ export default function DashboardPage() {
 
                 {/* Tutorials Section */}
                 <section ref={tutorialsRef} className="mb-8">
-                  <SectionHeader 
-                    title="Helpful Tutorials" 
-                    description="Learn how to get the most out of Tutorion" 
+                  <SectionHeader
+                    title="Helpful Tutorials"
+                    description="Learn how to get the most out of Tutorion"
                     actionText="Browse all tutorials"
                     actionHref="/tutorials"
                   />
-                  
+
                   {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                       {[...Array(2)].map((_, i) => (
@@ -441,4 +441,3 @@ export default function DashboardPage() {
     </MainLayout>
   )
 }
-

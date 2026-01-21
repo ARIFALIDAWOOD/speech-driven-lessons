@@ -130,4 +130,4 @@ export default function CoursePreviewPage({ params }: { params: { id: string } }
       </div>
     </LightCourseLayout>
   )
-} 
+}

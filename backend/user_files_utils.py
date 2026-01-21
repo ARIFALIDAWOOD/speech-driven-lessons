@@ -1,17 +1,18 @@
-import boto3
-import os
+"""
+User files utilities module.
 
-# Set up AWS credentials and S3 resource
-ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
-SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-REGION_NAME = "ca-central-1"  # e.g., 'us-east-1'
+This module provides user-specific file operations.
+Note: This file previously had a standalone boto3 client which has been
+removed in favor of using the centralized s3_utils module.
+"""
 
-# Initialize S3 client
-s3_client = boto3.client(
-    's3',
-    aws_access_key_id=ACCESS_KEY,
-    aws_secret_access_key=SECRET_KEY,
-    region_name=REGION_NAME
+from utils.s3_utils import (
+    SUPABASE_BUCKET_NAME,
+    download_file_from_s3,
+    list_files_in_prefix,
+    storage,
+    upload_file_to_s3,
 )
 
-bucket_name = "jasmintechs-tutorion" 
+# Export bucket name for backwards compatibility
+bucket_name = SUPABASE_BUCKET_NAME

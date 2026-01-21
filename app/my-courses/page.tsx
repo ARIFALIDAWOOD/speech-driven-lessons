@@ -11,7 +11,7 @@ import { CreateCourseCard } from "@/components/my-courses/create-course-card"
 import { StatusMessage, StatusType } from "@/components/ui/status-message"
 import { requestAssistant } from "@/components/my-courses/utils/vapi-api-endpoints"
 import { fetchCoursesAndDrafts } from "@/components/my-courses/utils/course-api-endpoints"
-import { useAuth } from "@/auth/firebase"
+import { useAuth } from "@/auth/supabase"
 import { useRouter } from "next/navigation"
 
 interface CourseData {
@@ -27,7 +27,7 @@ interface CourseData {
 
 export default function CoursesPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [courses, setCourses] = useState<CourseData[]>([])
   const [drafts, setDrafts] = useState<CourseData[]>([])
@@ -51,7 +51,7 @@ export default function CoursesPage() {
 
     try {
       setIsLoading(true);
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
       const coursesData = await fetchCoursesAndDrafts(idToken);
       setCourses(coursesData.courses);
       setDrafts(coursesData.drafts);
@@ -84,7 +84,7 @@ export default function CoursesPage() {
       setStatusType('info');
       console.log("Preparing AI assistant for course:", courseTitle);
 
-      const idToken = await user.getIdToken();
+      const idToken = session?.access_token ?? "";
       // Request assistant from backend
       const assistantId = await requestAssistant(courseId, courseTitle, idToken);
 
@@ -184,9 +184,9 @@ export default function CoursesPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
                 <CreateCourseCard />
                 {creatingCourse && (
-                  <LoadingCourseCard 
-                    courseTitle={creatingCourse.title} 
-                    initialProgress={20} 
+                  <LoadingCourseCard
+                    courseTitle={creatingCourse.title}
+                    initialProgress={20}
                   />
                 )}
                 {drafts.map((draft) => (
@@ -215,4 +215,3 @@ export default function CoursesPage() {
     </MainLayout>
   )
 }
-

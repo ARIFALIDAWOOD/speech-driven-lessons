@@ -1,18 +1,21 @@
-import tiktoken
-import openai
+import json
+import os
+import time
+from difflib import SequenceMatcher
+
 import faiss
 import numpy as np
-from difflib import SequenceMatcher
-import time
-import os
+import openai
+import tiktoken
 from dotenv import load_dotenv
-import json
+
 load_dotenv()
 
 # Retrieve API key from environment variables
 API_KEY = os.getenv("OPENAI_API_KEY")
 if not API_KEY:
     raise ValueError("OPENAI_API_KEY environment variable must be set.")
+
 
 class ContextManager:
     def __init__(self, uploads_dir="../uploads", api_key=None):
@@ -25,8 +28,12 @@ class ContextManager:
         self.chunks = []
         self.inverted_index = {}
         self.faiss_index = None
-        self.client = openai.OpenAI(api_key=API_KEY, base_url='https://api.jpgpt.online/v1/chat/completions')
-        self.client_embedding = openai.OpenAI(api_key=API_KEY, base_url="https://api.jpgpt.online/v1/embeddings")
+        self.client = openai.OpenAI(
+            api_key=API_KEY, base_url="https://api.jpgpt.online/v1/chat/completions"
+        )
+        self.client_embedding = openai.OpenAI(
+            api_key=API_KEY, base_url="https://api.jpgpt.online/v1/embeddings"
+        )
 
     def split_into_chunks(self, text: str, max_tokens: int = 2300) -> list:
         """Split text into smaller chunks based on token count."""
@@ -35,11 +42,11 @@ class ContextManager:
         current_chunk = []
         current_token_count = 0
 
-        for line in text.split('\n'):
-            line_tokens = len(encoder.encode(line + '\n'))
+        for line in text.split("\n"):
+            line_tokens = len(encoder.encode(line + "\n"))
             if current_token_count + line_tokens > max_tokens:
                 if current_chunk:
-                    chunks.append('\n'.join(current_chunk))
+                    chunks.append("\n".join(current_chunk))
                 current_chunk = [line]
                 current_token_count = line_tokens
             else:
@@ -47,7 +54,7 @@ class ContextManager:
                 current_token_count += line_tokens
 
         if current_chunk:
-            chunks.append('\n'.join(current_chunk))
+            chunks.append("\n".join(current_chunk))
         return chunks
 
     def _load_text_files(self):
@@ -58,7 +65,7 @@ class ContextManager:
                 if file_name.endswith(".txt"):
                     file_path = os.path.join(self.uploads_dir, file_name)
                     print(f"Reading file: {file_name}")
-                    with open(file_path, 'r', encoding='utf-8') as file:
+                    with open(file_path, "r", encoding="utf-8") as file:
                         all_text += file.read() + "\n"
         except Exception as e:
             print(f"Error reading files: {str(e)}")
@@ -81,20 +88,22 @@ class ContextManager:
             chunk_time = time.time()
             self.chunks = self.split_into_chunks(all_text)
             # Save chunks
-            with open(os.path.join(self.uploads_dir, 'chunks.json'), 'w', encoding='utf-8') as f:
+            with open(os.path.join(self.uploads_dir, "chunks.json"), "w", encoding="utf-8") as f:
                 json.dump(self.chunks, f, ensure_ascii=False, indent=2)
             print(f"Chunking time: {time.time() - chunk_time:.2f} seconds")
 
             faiss_time = time.time()
             self.build_faiss_index()
             # Save FAISS index
-            faiss.write_index(self.faiss_index, os.path.join(self.uploads_dir, 'faiss.index'))
+            faiss.write_index(self.faiss_index, os.path.join(self.uploads_dir, "faiss.index"))
             print(f"FAISS index build time: {time.time() - faiss_time:.2f} seconds")
 
             inverted_index_time = time.time()
             self.build_inverted_index()
             # Save inverted index
-            with open(os.path.join(self.uploads_dir, 'inverted_index.json'), 'w', encoding='utf-8') as f:
+            with open(
+                os.path.join(self.uploads_dir, "inverted_index.json"), "w", encoding="utf-8"
+            ) as f:
                 json.dump(self.inverted_index, f, ensure_ascii=False, indent=2)
             print(f"Inverted index build time: {time.time() - inverted_index_time:.2f} seconds")
 
@@ -121,20 +130,22 @@ class ContextManager:
             chunk_time = time.time()
             self.chunks = self.split_into_chunks(all_text)
             # Save chunks
-            with open(os.path.join(self.uploads_dir, 'chunks.json'), 'w', encoding='utf-8') as f:
+            with open(os.path.join(self.uploads_dir, "chunks.json"), "w", encoding="utf-8") as f:
                 json.dump(self.chunks, f, ensure_ascii=False, indent=2)
             print(f"Chunking time: {time.time() - chunk_time:.2f} seconds")
 
             faiss_time = time.time()
             self.build_faiss_index()
             # Save FAISS index
-            faiss.write_index(self.faiss_index, os.path.join(self.uploads_dir, 'faiss.index'))
+            faiss.write_index(self.faiss_index, os.path.join(self.uploads_dir, "faiss.index"))
             print(f"FAISS index build time: {time.time() - faiss_time:.2f} seconds")
 
             inverted_index_time = time.time()
             self.build_inverted_index()
             # Save inverted index
-            with open(os.path.join(self.uploads_dir, 'inverted_index.json'), 'w', encoding='utf-8') as f:
+            with open(
+                os.path.join(self.uploads_dir, "inverted_index.json"), "w", encoding="utf-8"
+            ) as f:
                 json.dump(self.inverted_index, f, ensure_ascii=False, indent=2)
             print(f"Inverted index build time: {time.time() - inverted_index_time:.2f} seconds")
 
@@ -149,17 +160,17 @@ class ContextManager:
         try:
             print(f"Loading saved indices for course: {title}")
             course_dir = os.path.join(self.base_uploads_dir, title)
-            
+
             # Load chunks
-            with open(os.path.join(course_dir, 'chunks.json'), 'r', encoding='utf-8') as f:
+            with open(os.path.join(course_dir, "chunks.json"), "r", encoding="utf-8") as f:
                 self.chunks = json.load(f)
 
             # Load inverted index
-            with open(os.path.join(course_dir, 'inverted_index.json'), 'r', encoding='utf-8') as f:
+            with open(os.path.join(course_dir, "inverted_index.json"), "r", encoding="utf-8") as f:
                 self.inverted_index = json.load(f)
 
             # Load FAISS index
-            self.faiss_index = faiss.read_index(os.path.join(course_dir, 'faiss.index'))
+            self.faiss_index = faiss.read_index(os.path.join(course_dir, "faiss.index"))
 
             return True
         except Exception as e:
@@ -175,7 +186,7 @@ class ContextManager:
 
     def extract_quotes_from_chunk(self, chunk):
         """Extract well-known phrases or quotes from a chunk for indexing."""
-        return [line for line in chunk.split('\n') if line.startswith('"')]
+        return [line for line in chunk.split("\n") if line.startswith('"')]
 
     def find_approximate_quote_match(self, query: str, threshold=0.65):
         """Find the closest quote in the inverted index based on similarity threshold."""
@@ -217,11 +228,12 @@ class ContextManager:
         # Step 3: Fall back to FAISS if no exact or approximate match is found
         faiss_search_time = time.time()
         try:
-            query_embedding = self.client_embedding.embeddings.create(
-                model="text-embedding-3-large",
-                input=query
-            ).data[0].embedding
-            query_embedding_np = np.array(query_embedding).astype('float32').reshape(1, -1)
+            query_embedding = (
+                self.client_embedding.embeddings.create(model="text-embedding-3-large", input=query)
+                .data[0]
+                .embedding
+            )
+            query_embedding_np = np.array(query_embedding).astype("float32").reshape(1, -1)
 
             _, indices = self.faiss_index.search(query_embedding_np, max_chunks)
             relevant_chunks = "\n\n".join([self.chunks[i] for i in indices[0]])
@@ -238,16 +250,17 @@ class ContextManager:
         embeddings = []
         for chunk in self.chunks:
             try:
-                embedding = self.client.embeddings.create(
-                    model="text-embedding-3-large",
-                    input=chunk
-                ).data[0].embedding
+                embedding = (
+                    self.client.embeddings.create(model="text-embedding-3-large", input=chunk)
+                    .data[0]
+                    .embedding
+                )
                 embeddings.append(embedding)
             except Exception as e:
                 print(f"Error generating embedding: {str(e)}")
                 embeddings.append([0] * 3072)
 
-        embeddings_np = np.array(embeddings).astype('float32')
+        embeddings_np = np.array(embeddings).astype("float32")
 
         # Initialize FAISS index with the large vector size
         dimension = embeddings_np.shape[1]
