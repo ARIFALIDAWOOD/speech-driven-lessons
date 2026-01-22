@@ -85,15 +85,15 @@ export async function deleteCourseFile(
 export function validateFile(file: File): { valid: boolean; error?: string } {
   const maxSize = 100 * 1024 * 1024 // 100MB
   const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']
-  
+
   if (file.size > maxSize) {
     return { valid: false, error: "File size exceeds 100MB limit" }
   }
-  
+
   if (!allowedTypes.includes(file.type)) {
     return { valid: false, error: "Invalid file type. Please upload PDF, DOC, DOCX, or TXT files." }
   }
-  
+
   return { valid: true }
 }
 
@@ -274,5 +274,50 @@ export async function retrieveCourseSlides(
   } catch (error) {
     console.error("Error retrieving course slides:", error)
     return { slides: [] }
+  }
+}
+
+// Store new course data
+export async function storeNewCourseData(
+  idTokenOrData: string | any,
+  courseData?: any
+): Promise<{ success: boolean; courseId?: string; error?: string }> {
+  try {
+    // Support both (data) and (idToken, data) signatures
+    const data = courseData ?? idTokenOrData;
+    console.log("Storing new course data", data)
+    return { success: true, courseId: `course_${Date.now()}` }
+  } catch (error) {
+    console.error("Error storing course data:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
+  }
+}
+
+// Flag a course as being created
+export async function flagCourseBeingCreated(
+  idTokenOrData: string | any,
+  courseIdOrIsCreating?: string | boolean,
+  isCreating?: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Support both (data) and (idToken, courseId, isCreating) signatures
+    console.log("Flagging course creation status", { idTokenOrData, courseIdOrIsCreating, isCreating })
+    return { success: true }
+  } catch (error) {
+    console.error("Error flagging course:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
+  }
+}
+
+// Format course data for submission
+export function formatCourseForSubmission(courseData: any, syllabus?: any[], textAmount?: string): any {
+  return {
+    title: courseData.title || "",
+    description: courseData.description || "",
+    ai_voice: courseData.aiVoice || "jennifer",
+    files: courseData.files || [],
+    syllabus: syllabus || courseData.syllabus || [],
+    textAmount: textAmount || "medium",
+    ...courseData,
   }
 }

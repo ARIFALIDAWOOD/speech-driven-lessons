@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,7 +9,7 @@ import { motion } from "framer-motion"
 import AnimatedBackground from "@/components/AnimatedBackground"
 import { useAuth, auth } from "@/auth/supabase"
 
-export default function LoginPage() {
+function LoginPageContent() {
     const [email, setEmail] = useState("")
     const [error, setError] = useState("")
     const [successMessage, setSuccessMessage] = useState("")
@@ -260,5 +260,24 @@ export default function LoginPage() {
                 </motion.div>
             </div>
         </div>
+    )
+}
+
+function LoginLoadingFallback() {
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-[#7A9E7E] via-[#E8EFE8] to-[#F5F7F5] flex items-center justify-center">
+            <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7A9E7E] mx-auto"></div>
+                <p className="mt-4 text-[#5D745F]">Loading...</p>
+            </div>
+        </div>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<LoginLoadingFallback />}>
+            <LoginPageContent />
+        </Suspense>
     )
 }

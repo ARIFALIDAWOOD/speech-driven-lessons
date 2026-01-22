@@ -3,10 +3,10 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { 
-  BookOpen, 
-  DollarSign, 
-  HelpCircle, 
+import {
+  BookOpen,
+  DollarSign,
+  HelpCircle,
   BarChart3,
   Settings
 } from "lucide-react"
@@ -28,7 +28,7 @@ export function PublishSidebar() {
         {menuItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href
-          
+
           return (
             <Link key={item.href} href={item.href}>
               <Button

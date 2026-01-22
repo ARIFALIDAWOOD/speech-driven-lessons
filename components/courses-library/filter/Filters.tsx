@@ -22,9 +22,9 @@ interface FiltersProps {
   onFilterChange?: (filters: LibraryFilters) => void
 }
 
-export function Filters({ 
-  filters: filtersProp, 
-  onFiltersChange, 
+export function Filters({
+  filters: filtersProp,
+  onFiltersChange,
   availableTags = [],
   initialFilters,
   onFilterChange
@@ -37,11 +37,11 @@ export function Filters({
     const newTags = filters.tags.includes(tag)
       ? filters.tags.filter((t) => t !== tag)
       : [...filters.tags, tag]
-    onFiltersChange({ ...filters, tags: newTags })
+    handleFiltersChange({ ...filters, tags: newTags })
   }
 
   const clearFilters = () => {
-    onFiltersChange({ tags: [] })
+    handleFiltersChange({ tags: [] })
   }
 
   return (

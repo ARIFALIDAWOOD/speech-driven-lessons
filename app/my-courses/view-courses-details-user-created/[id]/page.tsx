@@ -5,7 +5,7 @@ import { useAuth } from "@/auth/supabase"
 import { MainLayout } from "@/components/layout/MainLayout"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { UploadedFile } from "@/components/my-uploads/utils-backup/file-management"
+import { UploadedFile } from "@/components/my-courses/utils/courseTypes"
 import { FullscreenButton } from "@/components/layout/fullscreen-button"
 import {
   CourseHeader,
@@ -187,7 +187,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
       await updateCourseDetails(idToken, params.id, {
         title,
         description,
-        aiVoice
+        ai_voice: aiVoice
         // instructor is not updated since it's stored as author in backend
       });
 

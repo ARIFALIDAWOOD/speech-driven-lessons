@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Eye, Edit, Trash2 } from "lucide-react"
 
 interface Slide {
-  id?: string
+  id?: string | number
   title?: string
   content?: string
   [key: string]: any
@@ -19,9 +19,9 @@ interface SlideGalleryProps {
   onSlideDelete?: (index: number) => void
 }
 
-export function SlideGallery({ 
-  slides, 
-  currentSlide, 
+export function SlideGallery({
+  slides,
+  currentSlide,
   setCurrentSlide,
   onSlideEdit,
   onSlideDelete

@@ -6,14 +6,14 @@ import { CreateCourseModal } from "@/components/create-course-modal"
 import { Button } from "@/components/ui/button"
 import { Plus } from 'lucide-react'
 import { useState } from "react"
-import { useCourses } from "@/lib/course-context"
+import { useCourses, Course } from "@/lib/course-context"
 
 export default function CoursesPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false)
-  const [courseToEdit, setCourseToEdit] = useState(null);
+  const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
   const { courses, removeCourse, addCourse } = useCourses()
 
-  const handleCustomize = (course) => {
+  const handleCustomize = (course: Course) => {
     setCourseToEdit(course); // 设置要编辑的课程
     setCreateModalOpen(true); // 打开 modal
   };
@@ -53,7 +53,10 @@ export default function CoursesPage() {
           open={createModalOpen}
           onOpenChange={setCreateModalOpen}
           onSave={(courseData) => {
-            addCourse(courseData);
+            addCourse({
+              ...courseData,
+              id: courseData.id || `course_${Date.now()}`,
+            });
             setCreateModalOpen(false);
           }}
           courseToEdit={courseToEdit} // 传递要编辑的课程

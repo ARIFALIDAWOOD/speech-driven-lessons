@@ -7,6 +7,7 @@ import { Video, VideoOff } from "lucide-react"
 interface CameraComponentProps {
   onVideoReady?: (stream: MediaStream | null) => void
   className?: string
+  isVideoOff?: boolean
 }
 
 export default function CameraComponent({ onVideoReady, className }: CameraComponentProps) {
@@ -29,7 +30,7 @@ export default function CameraComponent({ onVideoReady, className }: CameraCompo
         video: true,
         audio: false,
       })
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         streamRef.current = stream

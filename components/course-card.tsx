@@ -75,13 +75,13 @@ export function CourseCard({
               </div>
             </div>
           )}
-          
+
           {aiTutor && (
             <div className="text-sm text-gray-600">
               AI Tutor Available
             </div>
           )}
-          
+
           {startDate && endDate && (
             <div className="text-sm text-gray-500">
               {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}

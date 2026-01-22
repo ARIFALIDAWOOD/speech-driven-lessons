@@ -10,7 +10,7 @@ interface CourseControlsProps {
   onPreviewClick?: () => void
 }
 
-export function CourseControls({ 
+export function CourseControls({
   onExitClick,
   isFullScreen,
   toggleFullScreen,

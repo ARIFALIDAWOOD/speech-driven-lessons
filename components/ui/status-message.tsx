@@ -8,8 +8,9 @@ export type StatusType = "success" | "error" | "warning" | "info"
 interface StatusMessageProps {
   type: StatusType
   title?: string
-  message: string
+  message: string | null
   onClose?: () => void
+  duration?: number
 }
 
 const icons = {
@@ -26,7 +27,12 @@ const styles = {
   info: "border-blue-200 bg-blue-50 text-blue-800",
 }
 
-export function StatusMessage({ type, title, message, onClose }: StatusMessageProps) {
+export function StatusMessage({ type, title, message, onClose, duration }: StatusMessageProps) {
+  // Don't render if no message
+  if (!message) {
+    return null
+  }
+
   const Icon = icons[type]
   const styleClass = styles[type]
 

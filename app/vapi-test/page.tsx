@@ -135,7 +135,6 @@ export default function VoiceChat() {
     const createAssistant = async (): Promise<string | null> => {
         try {
             const response = await fetch(`${BASE_URL}/create`, {
-                credentials: "include",
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },

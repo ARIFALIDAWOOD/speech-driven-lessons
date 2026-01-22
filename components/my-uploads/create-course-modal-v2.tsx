@@ -9,7 +9,7 @@ export function CustomizeCourseModal() {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <Card 
+    <Card
       className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400"
       onClick={() => setIsOpen(true)}
     >

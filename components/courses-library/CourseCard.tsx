@@ -33,7 +33,7 @@ export function CourseCard({ course, item }: CourseCardProps) {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-gray-600 mb-4 line-clamp-2">{courseData.description}</p>
-        
+
         {courseData.tags && courseData.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {courseData.tags.slice(0, 3).map((tag, index) => (

@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import Link from "next/link";
-import { Home, BookOpen, Upload, User, HelpCircle } from "lucide-react";
+import { Home, BookOpen, Upload, User, HelpCircle, GraduationCap } from "lucide-react";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -10,6 +10,7 @@ interface MainLayoutProps {
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
+  { href: "/learn", icon: GraduationCap, label: "Learn" },
   { href: "/my-courses", icon: BookOpen, label: "My Courses" },
   { href: "/my-uploads", icon: Upload, label: "My Uploads" },
   { href: "/profile", icon: User, label: "Profile" },

@@ -20,7 +20,7 @@ export function SyllabusTab({
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-semibold mb-6">Course Syllabus</h2>
-      
+
       {syllabus.length === 0 ? (
         <p className="text-gray-500">No syllabus available</p>
       ) : (

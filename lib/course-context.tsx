@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
-interface Course {
+export interface Course {
   id: string;
   title: string;
   description?: string;

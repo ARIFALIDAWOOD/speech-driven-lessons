@@ -6,7 +6,7 @@ export async function requestAssistant(
   try {
     // TODO: Implement actual VAPI API endpoint call
     console.log("Requesting assistant for course:", { courseId, courseTitle, hasToken: Boolean(idToken) })
-    
+
     // Placeholder implementation
     return null
   } catch (error) {

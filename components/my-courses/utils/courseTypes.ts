@@ -28,4 +28,5 @@ export interface CourseInfo {
   uploadedFiles: UploadedFile[];
   ai_voice: string;
   image?: string;
+  isDraft?: boolean;
 }

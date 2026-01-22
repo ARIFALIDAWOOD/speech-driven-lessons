@@ -10,7 +10,7 @@ interface CreateCourseCardProps {
 
 export function CreateCourseCard({ onClick }: CreateCourseCardProps) {
   return (
-    <Card 
+    <Card
       className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400"
       onClick={onClick}
     >
@@ -21,10 +21,10 @@ export function CreateCourseCard({ onClick }: CreateCourseCardProps) {
           </div>
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              Create New Course
+              Start Learning
             </h3>
             <p className="text-sm text-gray-600">
-              Start building your course from scratch
+              Select your curriculum and begin
             </p>
           </div>
           <Button onClick={onClick}>

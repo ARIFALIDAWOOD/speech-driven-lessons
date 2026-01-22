@@ -11,26 +11,16 @@ import { CreateCourseCard } from "@/components/my-courses/create-course-card"
 import { StatusMessage, StatusType } from "@/components/ui/status-message"
 import { requestAssistant } from "@/components/my-courses/utils/vapi-api-endpoints"
 import { fetchCoursesAndDrafts } from "@/components/my-courses/utils/course-api-endpoints"
+import { CourseInfo } from "@/components/my-courses/utils/courseTypes"
 import { useAuth } from "@/auth/supabase"
 import { useRouter } from "next/navigation"
-
-interface CourseData {
-  id: string;
-  title: string;
-  progress: number;
-  hoursCompleted: number;
-  author: string;
-  nextSection?: string;
-  isDraft: boolean;
-  createdAt?: string;
-}
 
 export default function CoursesPage() {
   const router = useRouter();
   const { user, session, loading: authLoading } = useAuth();
   const [isFullScreen, setIsFullScreen] = useState(false)
-  const [courses, setCourses] = useState<CourseData[]>([])
-  const [drafts, setDrafts] = useState<CourseData[]>([])
+  const [courses, setCourses] = useState<CourseInfo[]>([])
+  const [drafts, setDrafts] = useState<CourseInfo[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [assistantRequests, setAssistantRequests] = useState<Record<string, boolean>>({})
@@ -53,8 +43,23 @@ export default function CoursesPage() {
       setIsLoading(true);
       const idToken = session?.access_token ?? "";
       const coursesData = await fetchCoursesAndDrafts(idToken);
-      setCourses(coursesData.courses);
-      setDrafts(coursesData.drafts);
+      // Map API response to CourseInfo
+      const mapToCourseInfo = (c: any, isDraft: boolean): CourseInfo => ({
+        id: c.id,
+        title: c.title,
+        description: c.description ?? null,
+        author: c.author ?? "Unknown",
+        progress: c.progress ? { completion: c.progress, hours: c.hoursCompleted ?? 0 } : undefined,
+        created_at: c.createdAt || c.startDate || new Date().toISOString(),
+        last_updated_at: c.updatedAt || new Date().toISOString(),
+        create_course_process: c.create_course_process ?? { is_creation_complete: !isDraft, current_step: isDraft ? 1 : 0 },
+        uploadedFiles: c.uploadedFiles ?? [],
+        ai_voice: c.ai_voice ?? "default",
+        image: c.image,
+        isDraft,
+      });
+      setCourses(coursesData.courses.map((c: any) => mapToCourseInfo(c, false)));
+      setDrafts(coursesData.drafts.map((c: any) => mapToCourseInfo(c, true)));
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
       console.error('Error fetching courses:', error);
@@ -182,7 +187,7 @@ export default function CoursesPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-                <CreateCourseCard />
+                <CreateCourseCard onClick={() => router.push('/learn')} />
                 {creatingCourse && (
                   <LoadingCourseCard
                     courseTitle={creatingCourse.title}

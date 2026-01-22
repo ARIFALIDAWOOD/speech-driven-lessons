@@ -127,7 +127,7 @@ export default function CreateCoursePage() {
 
         if (draftCourse) {
           // Update all relevant state with the loaded draft data
-          setCourseId(draftCourse.id);
+          setCourseId(draftCourse.id || null);
           setCourseTitle(draftCourse.title || "");
           setCourseDescription(draftCourse.description || "");
           setUploadedFilesInfo(draftCourse.uploadedFiles || []);
@@ -142,16 +142,16 @@ export default function CreateCoursePage() {
             console.log(`Loaded draft course: ${draftCourse.title} at step ${savedStepId} (step ${savedStep})`);
 
             // If we're at the review step (step 4), we need to load the syllabus
-            if (savedStep === 4) {
+            if (savedStep === 4 && draftCourse.id) {
               console.log("Loading syllabus for review step...");
               try {
                 // Use retrieveCourseSyllabus instead of trying to generate
                 const syllabusResult = await retrieveCourseSyllabus(idToken, draftCourse.id);
                 console.log("Loaded syllabus:", syllabusResult);
 
-                // Extract the course_outline array from the response
-                if (syllabusResult && syllabusResult.course_outline && Array.isArray(syllabusResult.course_outline)) {
-                  setSyllabus(syllabusResult.course_outline);
+                // Extract the sections array from the response
+                if (syllabusResult && syllabusResult.sections && Array.isArray(syllabusResult.sections)) {
+                  setSyllabus(syllabusResult.sections);
                   setCurrentStep("review"); // Set the step after syllabus is loaded
                   setSyllabusFetchMethod('retrieve'); // Mark that we retrieved existing syllabus
                 } else {
@@ -220,23 +220,14 @@ export default function CreateCoursePage() {
       const idToken = session?.access_token ?? "";
       if (!idToken) throw new Error("Missing auth token");
 
-      const saveData: Partial<CourseInfo> & { course_title: string } = {
-        course_title: contentData.title.trim(),
+      const saveData = {
+        title: contentData.title.trim(),
+        description: contentData.description?.trim() ?? null,
+        ai_voice: contentData.ai_voice || "female1",
+        id: courseId || undefined,
       };
 
-      if (contentData.description !== undefined) {
-        saveData.description = contentData.description.trim();
-      }
-
-      if (contentData.ai_voice !== undefined) {
-        saveData.ai_voice = contentData.ai_voice;
-      }
-
-      if (courseId) {
-        saveData.id = courseId;
-      }
-
-      const savedCourse = await autoSaveCourseContent(idToken, saveData);
+      const savedCourse = await autoSaveCourseContent(idToken, saveData as any);
 
       // Only update courseId if this is first save
       if (!courseId && savedCourse?.id) {
@@ -356,7 +347,12 @@ export default function CreateCoursePage() {
         saveData.id = currentCourseId;
       }
 
-      const savedCourse = await createOrUpdateCourseMetadata(idToken, saveData);
+      const savedCourse = await createOrUpdateCourseMetadata(idToken, saveData as any);
+
+      if (!savedCourse) {
+        console.error("Failed to save course metadata");
+        return null;
+      }
 
       if (!currentCourseId && savedCourse.id) {
         setCourseId(savedCourse.id); // Store the new course ID
@@ -364,17 +360,17 @@ export default function CreateCoursePage() {
 
       // Don't update local state from saved data to prevent overwriting current user input
       // Only update if fields are definitely changed on the server and not in the process of editing
-      if (savedCourse.title !== courseTitle && !dataToSave.course_title) {
+      if (savedCourse.title && savedCourse.title !== courseTitle && !dataToSave.course_title) {
         setCourseTitle(savedCourse.title);
       }
 
       if (savedCourse.description !== courseDescription && dataToSave.description === undefined) {
-        setCourseDescription(savedCourse.description || "");
+        setCourseDescription(savedCourse.description ?? "");
       }
 
       // Always update uploaded files list as this wouldn't be in the middle of editing
-      if (JSON.stringify(savedCourse.uploadedFiles) !== JSON.stringify(uploadedFilesInfo)) {
-        setUploadedFilesInfo(savedCourse.uploadedFiles || []);
+      if (savedCourse.uploadedFiles && JSON.stringify(savedCourse.uploadedFiles) !== JSON.stringify(uploadedFilesInfo)) {
+        setUploadedFilesInfo(savedCourse.uploadedFiles);
       }
 
       console.log("Course metadata saved:", savedCourse);
@@ -399,7 +395,8 @@ export default function CreateCoursePage() {
 
   // --- Refactored File Handling ---
 
-  const handleFileUpload = async (files: File[]) => {
+  const handleFileUpload = async (fileOrFiles: File | File[]) => {
+    const files = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
     if (!user || !courseId) {
       alert("Cannot upload file: Course not initialized yet.");
       return;
@@ -746,55 +743,28 @@ export default function CreateCoursePage() {
       const idToken = session?.access_token ?? "";
       if (!idToken) throw new Error("Missing auth token");
 
-      // Track content chunks for debugging or display
-      let contentChunks: string[] = [];
+      // Generate the syllabus
+      const statusElement = document.getElementById('generation-status-message');
+      if (statusElement) {
+        statusElement.textContent = 'Generating syllabus...';
+      }
 
-      // Generate the syllabus using the onStateChange callback to update UI
-      const result = await generateCourseSyllabus(idToken, courseId, (state) => {
-        // Update internal state
-        setGenerationState(state);
-
-        // Update the UI elements
-        const statusElement = document.getElementById('generation-status-message');
-        const outputElement = document.getElementById('generation-output');
-
-        if (statusElement) {
-          if (state.status === 'analysing') {
-            statusElement.textContent = state.message || 'Analyzing document...';
-          } else if (state.status === 'outputing') {
-            statusElement.textContent = 'Generating syllabus outline...';
-
-            // Show output container when generation starts
-            if (outputElement) {
-              outputElement.classList.remove('hidden');
-
-              if (state.chunk) {
-                contentChunks.push(state.chunk);
-                // Append the latest chunks, keeping only the most recent output
-                const recentChunks = contentChunks.slice(-3).join('');
-                outputElement.textContent = recentChunks;
-                outputElement.scrollTop = outputElement.scrollHeight;
-              }
-            }
-          } else if (state.status === 'completed') {
-            statusElement.textContent = 'Syllabus generation complete!';
-          }
-        }
-
-        // You can also update button text via props if needed
-        // For example: setGenerationButtonText(state.status === 'analysing' ? 'Analyzing...' : 'Generating...');
-      });
+      const result = await generateCourseSyllabus(idToken, courseId);
 
       console.log("Raw syllabus result:", result);
 
-      // Extract the course_outline array from the result
-      if (!result || !result.course_outline || !Array.isArray(result.course_outline)) {
+      if (statusElement) {
+        statusElement.textContent = 'Syllabus generation complete!';
+      }
+
+      // Extract the sections array from the result
+      if (!result || !result.sections || !Array.isArray(result.sections)) {
         console.error("Invalid syllabus format:", result);
         throw new Error("Invalid syllabus structure returned from server");
       }
 
       // Set the syllabus array
-      setSyllabus(result.course_outline);
+      setSyllabus(result.sections);
       setCurrentStep("review"); // Go to review step
       window.scrollTo(0, 0);
 
@@ -1058,7 +1028,7 @@ export default function CreateCoursePage() {
         };
 
         console.log("Auto-saving course:", saveData);
-        await autoSaveCourseContent(idToken, saveData);
+        await autoSaveCourseContent(idToken, saveData as any);
 
         // Update save status indicators
         setLastSavedTime(new Date());
@@ -1132,13 +1102,13 @@ export default function CreateCoursePage() {
       console.log("Retrieved syllabus result:", result);
 
       // Process the result
-      if (!result || !result.course_outline || !Array.isArray(result.course_outline)) {
+      if (!result || !result.sections || !Array.isArray(result.sections)) {
         console.error("Invalid syllabus format:", result);
         throw new Error("Invalid syllabus structure returned from server");
       }
 
       // Set the syllabus array
-      setSyllabus(result.course_outline);
+      setSyllabus(result.sections);
       setCurrentStep("review"); // Go to review step
       window.scrollTo(0, 0);
 
@@ -1356,14 +1326,14 @@ export default function CreateCoursePage() {
                 handleNextClick={handleNextClick}
                 handleCreateCourse={handleFinalizeCourse}
                 handleViewSyllabus={currentStep === 'upload' ? handleViewSyllabus : undefined}
-                canProceedToNextStep={canProceedToNextStep}
+                canProceedToNextStep={canProceedToNextStep()}
                 isGeneratingSyllabus={isGeneratingSyllabus}
                 isCreatingCourse={isSaving}
                 isLoadingSyllabus={isLoadingSyllabus}
                 disableNext={currentStep === 'upload' && uploadedFilesInfo.length === 0}
                 saveStatus={saveStatus}
                 lastSavedTime={lastSavedTime}
-                generationState={generationState}
+                generationState={generationState?.status}
               />
             </div>
           </div>

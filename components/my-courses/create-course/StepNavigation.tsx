@@ -18,8 +18,8 @@ interface StepNavigationProps {
   isStepCompleted?: (step: string) => boolean
 }
 
-export function StepNavigation({ 
-  currentStep, 
+export function StepNavigation({
+  currentStep,
   setCurrentStep,
   isStepCompleted = () => false
 }: StepNavigationProps) {

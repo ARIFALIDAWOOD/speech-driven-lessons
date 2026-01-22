@@ -192,7 +192,7 @@ export default function CoursesLibraryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('relevant');
-  const [viewMode, setViewMode] = useState<ViewMode>('gallery');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filters, setFilters] = useState<LibraryFilters>({
     tags: [],
     universities: []

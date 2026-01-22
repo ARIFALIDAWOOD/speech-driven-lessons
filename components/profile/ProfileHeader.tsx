@@ -12,12 +12,12 @@ interface ProfileHeaderProps {
   onEdit?: () => void
 }
 
-export function ProfileHeader({ 
-  name, 
-  email, 
-  school, 
+export function ProfileHeader({
+  name,
+  email,
+  school,
   avatarUrl,
-  onEdit 
+  onEdit
 }: ProfileHeaderProps) {
   const baseForInitials = (name || email || "").trim()
 

@@ -10,7 +10,7 @@ import { SyllabusEditor } from "@/components/syllabus-editor/syllabus-editor"
 import { ContentSettings } from "@/components/syllabus-editor/content-settings"
 import { FullscreenButton } from "@/components/layout/fullscreen-button"
 import { generateSyllabus, generateSlides } from "@/components/create-syllabus/utils/api-endpoints"
-import { parseMarkdownSyllabus, createFallbackSyllabus } from "@/components/create-syllabus/utils/syllabus-parser"
+import { parseMarkdownSyllabus, createFallbackSyllabus, SyllabusItem } from "@/components/create-syllabus/utils/syllabus-parser"
 import { getAIResponse, initializeChatbot } from "@/components/create-syllabus/utils/api-endpoints"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -38,7 +38,7 @@ export default function CreateCoursePage() {
   const [slidesGenerated, setSlidesGenerated] = useState(false)
 
   // Initialize syllabus with default items
-  const [syllabus, setSyllabus] = useState([
+  const [syllabus, setSyllabus] = useState<SyllabusItem[]>([
     {
       id: "item1",
       content: "Introduction to Computer Science",
@@ -242,7 +242,7 @@ export default function CreateCoursePage() {
             setSyllabus(parsedSyllabus);
           } else {
             // Fallback if parsing didn't yield results
-            setSyllabus(createFallbackSyllabus(result.materials.syllabus));
+            setSyllabus(createFallbackSyllabus());
           }
         }
       }

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { BookOpen } from "lucide-react"
 
 interface HeaderWithLogoProps {
-  children: ReactNode
+  children?: ReactNode
 }
 
 export function HeaderWithLogo({ children }: HeaderWithLogoProps) {

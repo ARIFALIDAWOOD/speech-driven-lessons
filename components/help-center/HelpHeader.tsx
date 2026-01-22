@@ -5,9 +5,9 @@ interface HelpHeaderProps {
   description?: string
 }
 
-export function HelpHeader({ 
-  title = "Help Center", 
-  description = "Find answers to your questions" 
+export function HelpHeader({
+  title = "Help Center",
+  description = "Find answers to your questions"
 }: HelpHeaderProps) {
   return (
     <div className="mb-6">

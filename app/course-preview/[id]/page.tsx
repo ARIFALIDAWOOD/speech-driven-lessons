@@ -7,11 +7,17 @@ import { ArrowLeft, Maximize, Minimize } from "lucide-react"
 import { LightCourseLayout } from "@/components/layout/LightCourseLayout"
 import { SlideViewer } from "@/components/creator-edit/slide-viewer"
 
+interface PreviewSlide {
+  title: string;
+  content?: string;
+  slide_markdown?: string;
+}
+
 export default function CoursePreviewPage({ params }: { params: { id: string } }) {
   const courseId = params.id
   const router = useRouter()
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [slides, setSlides] = useState([])
+  const [slides, setSlides] = useState<PreviewSlide[]>([])
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [courseTitle, setCourseTitle] = useState("Course Preview")
 

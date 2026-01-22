@@ -27,7 +27,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { MainLayout } from "@/components/layout/MainLayout"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { ProfileHeader } from "@/components/profile/ProfileHeader"
 import { FullscreenButton } from "@/components/layout/fullscreen-button"
 
 const preferences = [
@@ -416,10 +415,10 @@ export default function ProfilePage() {
           <div className="max-w-7xl mx-auto px-14 sm:px-20 lg:px-28 pt-16 sm:pt-20 pb-8">
             <section>
               <div className="mb-8">
-                <ProfileHeader
-                  title="User Profile"
-                  description="Manage your account information and preferences"
-                />
+                <div className="space-y-1">
+                  <h1 className="text-2xl font-bold tracking-tight">User Profile</h1>
+                  <p className="text-gray-500">Manage your account information and preferences</p>
+                </div>
               </div>
 
               <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">

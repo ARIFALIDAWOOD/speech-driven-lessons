@@ -292,6 +292,12 @@ export default function DashboardPage() {
 
                   <div className="mt-4 flex flex-wrap gap-4">
                     <Button
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-md"
+                      onClick={() => router.push('/learn')}
+                    >
+                      Start Learning
+                    </Button>
+                    <Button
                       className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-6 py-3 rounded-md"
                       onClick={navigateToMyUploads}
                     >

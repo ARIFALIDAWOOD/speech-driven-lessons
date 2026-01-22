@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { UploadedFile } from "@/components/my-uploads/utils-backup/file-management"
+import { UploadedFile } from "@/components/my-courses/utils/courseTypes"
 
 interface GeneralInfoTabProps {
   title: string

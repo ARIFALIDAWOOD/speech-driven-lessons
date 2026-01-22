@@ -65,7 +65,7 @@ export function NavigationButtons({
             Saved {lastSavedTime.toLocaleTimeString()}
           </span>
         )}
-        
+
         {isLastStep ? (
           <Button
             onClick={handleCreateCourse}
