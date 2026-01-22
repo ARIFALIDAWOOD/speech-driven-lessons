@@ -1,0 +1,149 @@
+"use client"
+
+import { useState, useEffect, createContext, useContext } from "react";
+import { useRouter } from "next/navigation";
+
+// Firebase auth stub - Replace with actual Firebase implementation when Firebase SDK is installed
+// For now, this provides a minimal interface to allow the login page to compile
+
+interface AuthContextType {
+  signInWithGoogle: () => Promise<{ success: boolean; error?: Error }>;
+  loading: boolean;
+  userEmail: string | null;
+  user: AuthUser | null;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+type AuthUser = {
+  email?: string | null;
+  getIdToken: () => Promise<string>;
+};
+
+const TEST_AUTH_ENABLED = process.env.NEXT_PUBLIC_TEST_AUTH_BYPASS === "1";
+const TEST_ID_TOKEN = process.env.NEXT_PUBLIC_TEST_ID_TOKEN || "";
+
+// Stub auth object for signOut calls
+export const auth = {
+  signOut: async (): Promise<void> => {
+    // Clear any auth cookies
+    document.cookie = "auth=; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "user_email=; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    return Promise.resolve();
+  },
+};
+
+function useAuthWithProvider(): AuthContextType {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}
+
+// Auth Provider Component (to be used in layout if needed)
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check for existing auth cookies
+    const cookies = document.cookie.split(";");
+    const emailCookie = cookies.find((c) => c.trim().startsWith("user_email="));
+    if (emailCookie) {
+      const email = emailCookie.split("=")[1];
+      setUserEmail(decodeURIComponent(email));
+    }
+
+    if (TEST_AUTH_ENABLED) {
+      setUser({
+        email: userEmail,
+        getIdToken: async () => TEST_ID_TOKEN,
+      });
+    }
+    setLoading(false);
+  }, []);
+
+  const signInWithGoogle = async (): Promise<{ success: boolean; error?: Error }> => {
+    try {
+      setLoading(true);
+      
+      // TODO: Replace with actual Firebase Google Sign-In
+      // For now, return an error indicating Firebase is not configured
+      return {
+        success: false,
+        error: new Error(
+          "Firebase is not configured. Please install firebase SDK and configure Google Sign-In."
+        ),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const value: AuthContextType = {
+    signInWithGoogle,
+    loading,
+    userEmail,
+    user,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+// Export useAuth hook that works without provider requirement
+// This allows the login page to work without wrapping the app in AuthProvider
+export function useAuth(): AuthContextType {
+  const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    const cookies = document.cookie.split(";");
+    const emailCookie = cookies.find((c) => c.trim().startsWith("user_email="));
+    if (emailCookie) {
+      const email = emailCookie.split("=")[1];
+      setUserEmail(decodeURIComponent(email));
+    }
+
+    if (TEST_AUTH_ENABLED) {
+      setUser({
+        email: userEmail,
+        getIdToken: async () => TEST_ID_TOKEN,
+      });
+    }
+  }, []);
+
+  const signInWithGoogle = async (): Promise<{ success: boolean; error?: Error }> => {
+    try {
+      setLoading(true);
+      return {
+        success: false,
+        error: new Error(
+          "Firebase is not configured. Please install firebase SDK and configure Google Sign-In."
+        ),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    signInWithGoogle,
+    loading,
+    userEmail,
+    user,
+  };
+}
