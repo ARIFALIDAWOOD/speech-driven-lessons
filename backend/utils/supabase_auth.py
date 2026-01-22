@@ -1,8 +1,9 @@
-import os
 import logging
-from typing import Optional, Dict, Any
-from jose import jwt, JWTError
+import os
+from typing import Any, Dict, Optional
+
 from dotenv import load_dotenv
+from jose import JWTError, jwt
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,6 +15,7 @@ load_dotenv()
 # Supabase JWT configuration
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
+
 
 def verify_supabase_token(token: str) -> Optional[Dict[str, Any]]:
     """
@@ -31,7 +33,7 @@ def verify_supabase_token(token: str) -> Optional[Dict[str, Any]]:
             return None
 
         # Remove 'Bearer ' prefix if present
-        if token.startswith('Bearer '):
+        if token.startswith("Bearer "):
             token = token[7:]
 
         if not SUPABASE_JWT_SECRET:
@@ -41,14 +43,11 @@ def verify_supabase_token(token: str) -> Optional[Dict[str, Any]]:
         # Decode and verify the JWT
         # Supabase uses HS256 algorithm by default
         decoded_token = jwt.decode(
-            token,
-            SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated"
+            token, SUPABASE_JWT_SECRET, algorithms=["HS256"], audience="authenticated"
         )
 
         # Check if token has email
-        email = decoded_token.get('email')
+        email = decoded_token.get("email")
         if not email:
             logger.warning("No email found in token")
             return None
@@ -76,5 +75,5 @@ def get_user_email_from_token(token: str) -> Optional[str]:
     """
     decoded_token = verify_supabase_token(token)
     if decoded_token:
-        return decoded_token.get('email')
+        return decoded_token.get("email")
     return None

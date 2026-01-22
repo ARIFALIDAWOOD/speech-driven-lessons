@@ -72,7 +72,18 @@ def generate_course_outline():
                 print(f"Found {len(pdf_files)} PDF files: {pdf_files}")
 
                 if not pdf_files:
-                    yield f"data: {json.dumps({'status': 'error', 'message': 'No PDF files found in course materials', 'debug_info': {'s3_path': f"s3://anantra-lms-store/{s3_pdf_prefix}", 'expected_location': f"user_data/{username}/{course_id}/course_materials/your-file.pdf"}})}\n\n"
+                    error_data = {
+                        'status': 'error',
+                        'message': 'No PDF files found in course materials',
+                        'debug_info': {
+                            's3_path': f"s3://anantra-lms-store/{s3_pdf_prefix}",
+                            'expected_location': (
+                                f"user_data/{username}/{course_id}/"
+                                "course_materials/your-file.pdf"
+                            )
+                        }
+                    }
+                    yield f"data: {json.dumps(error_data)}\n\n"
                     return
 
                 # Process first PDF

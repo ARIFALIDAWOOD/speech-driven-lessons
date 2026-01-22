@@ -1,17 +1,52 @@
 import json
+import logging
+import os
 import re
+from typing import Optional
 
 import openai
 from s3_context_manager import ContextManager as S3ContextManager
 
+# Try to import the new LLM abstraction
+try:
+    from llm import LLMConfig, LLMMessage, MessageRole, get_llm_provider
+
+    LLM_ABSTRACTION_AVAILABLE = True
+except ImportError:
+    LLM_ABSTRACTION_AVAILABLE = False
+
+
+logger = logging.getLogger(__name__)
+
 
 class ChatBot:
-    def __init__(self, context_manager, conversation_history=None, api_key=None):
-        if not api_key:
-            raise ValueError("API key must be provided.")
+    def __init__(
+        self,
+        context_manager,
+        conversation_history=None,
+        api_key=None,
+        use_llm_abstraction: bool = False,
+    ):
+        """
+        Initialize the ChatBot.
 
-        openai.api_key = api_key
-        self.api_key = api_key
+        Args:
+            context_manager: Context manager for retrieving relevant content
+            conversation_history: Optional existing conversation history
+            api_key: OpenAI API key (required for legacy mode)
+            use_llm_abstraction: Whether to use the new LLM provider abstraction
+        """
+        self.use_llm_abstraction = use_llm_abstraction and LLM_ABSTRACTION_AVAILABLE
+
+        if self.use_llm_abstraction:
+            self.llm_provider = get_llm_provider()
+            logger.info(f"Using LLM abstraction with provider: {self.llm_provider.provider_name}")
+        else:
+            if not api_key:
+                raise ValueError("API key must be provided.")
+            openai.api_key = api_key
+            self.api_key = api_key
+
         self.context_manager = context_manager
         self.conversation_history = conversation_history if conversation_history is not None else []
         self.system_prompt = """You are my lecturer for university course study. Don't ask students what to do, instead you can ask if the students is ready, and then you can start your lesson. You are here to teach my reading. Don't speak too much content each time."""
@@ -357,6 +392,34 @@ class ChatBot:
         print(f"DEBUG: Final slides: {slides}")
         return slides
 
+    def _call_llm(self, messages: list[dict]) -> str:
+        """
+        Call the LLM using either the new abstraction or legacy OpenAI client.
+
+        Args:
+            messages: List of message dicts with role and content
+
+        Returns:
+            The AI-generated content string
+        """
+        if self.use_llm_abstraction:
+            # Convert to LLMMessage objects
+            llm_messages = [
+                LLMMessage(role=msg["role"], content=msg["content"]) for msg in messages
+            ]
+            config = LLMConfig(temperature=0.9, max_tokens=10000)
+            response = self.llm_provider.complete(llm_messages, config)
+            return response.content
+        else:
+            # Legacy OpenAI client
+            response = self.context_manager.client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                max_tokens=10000,
+                temperature=1.02,
+            )
+            return response.choices[0].message.content
+
     def process_message(self, message: str) -> dict:
         """Process a single message and return structured response."""
         try:
@@ -370,15 +433,7 @@ class ChatBot:
             messages.extend(self.conversation_history)
             messages.append({"role": "user", "content": message})
 
-            response = self.context_manager.client.chat.completions.create(
-                model="gpt-4o",
-                messages=messages,
-                max_tokens=10000,
-                temperature=1.02,
-                # ft:gpt-4o-2024-08-06:personal::AqZJVNG7
-            )
-
-            ai_content = response.choices[0].message.content
+            ai_content = self._call_llm(messages)
 
             # If response is too short, return simple response without slides
             if len(ai_content.split()) < 30:
@@ -390,7 +445,7 @@ class ChatBot:
             structured_response = {"type": "slides", "message": ai_content, "slides": slides}
 
             # Debugging the structured_response
-            print("DEBUG: Structured Response:", structured_response)
+            logger.debug(f"Structured Response: {structured_response}")
 
             self.conversation_history.append({"role": "user", "content": message})
             self.conversation_history.append({"role": "assistant", "content": ai_content})
@@ -398,5 +453,5 @@ class ChatBot:
             return structured_response
 
         except Exception as e:
-            print(f"Error in process_message: {str(e)}")
+            logger.error(f"Error in process_message: {str(e)}")
             return {"type": "error", "message": "An error occurred while processing your request."}

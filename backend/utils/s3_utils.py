@@ -15,9 +15,21 @@ import json
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+from dotenv import load_dotenv
+
 from supabase import Client, create_client
+
+# Load environment variables before accessing them
+# Check for .env.local first (preferred), then .env
+env_local = Path(__file__).parent.parent / ".env.local"
+env_file = Path(__file__).parent.parent / ".env"
+if env_local.exists():
+    load_dotenv(env_local)
+else:
+    load_dotenv(env_file)
 
 # Configure logging
 logger = logging.getLogger(__name__)

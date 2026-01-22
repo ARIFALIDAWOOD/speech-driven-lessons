@@ -1,8 +1,21 @@
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load environment variables FIRST before any other imports
+# Check for .env.local first (preferred), then .env
+_env_local = Path(__file__).parent / ".env.local"
+_env_file = Path(__file__).parent / ".env"
+if _env_local.exists():
+    load_dotenv(_env_local)
+else:
+    load_dotenv(_env_file)
 
 import utils.s3_utils as s3_utils
 import utils.user_utils as user_utils
 from api import api as api_blueprint
+from api.tutor_session import tutor_session_bp
 from chatbot import ChatBot
 from flask import Flask, jsonify, make_response, request
 from flask_cors import CORS
@@ -53,6 +66,7 @@ app.register_blueprint(aitutor_bp)
 app.register_blueprint(course_info_bp)
 app.register_blueprint(delete_course_bp)
 app.register_blueprint(api_blueprint, url_prefix="/api")
+app.register_blueprint(tutor_session_bp)
 
 
 @app.route("/api/initialize-chatbot", methods=["POST"])

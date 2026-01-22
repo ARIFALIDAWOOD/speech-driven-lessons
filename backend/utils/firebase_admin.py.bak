@@ -46,7 +46,7 @@ def initialize_firebase_admin():
             logger.info("Firebase Admin SDK initialized successfully")
         else:
             logger.info("Firebase Admin SDK already initialized")
-            
+
         return True
     except Exception as e:
         logger.error(f"Error initializing Firebase Admin SDK: {e}")
@@ -58,11 +58,11 @@ def verify_firebase_token(token):
         if not token:
             logger.warning("No token provided")
             return None
-            
+
         # Remove 'Bearer ' prefix if present
         if token.startswith('Bearer '):
             token = token[7:]
-            
+
         try:
             # Verify the token
             decoded_token = auth.verify_id_token(token)

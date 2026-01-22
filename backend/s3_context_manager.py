@@ -7,19 +7,21 @@ It handles loading, processing, and searching course content using FAISS vector 
 Migrated from local filesystem to Supabase Storage.
 """
 
-import tiktoken
-import openai
-import numpy as np
-from difflib import SequenceMatcher
-import time
-import os
-from dotenv import load_dotenv
 import json
+import os
 import tempfile
+import time
+from difflib import SequenceMatcher
+
+import numpy as np
+import openai
+import tiktoken
+from dotenv import load_dotenv
 
 # Try to import faiss, make it optional
 try:
     import faiss
+
     FAISS_AVAILABLE = True
 except ImportError:
     print("Warning: FAISS not available. Vector search functionality will be limited.")
@@ -51,7 +53,9 @@ class ContextManager:
         if not api_key:
             api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError("API key must be provided or set in OPENAI_API_KEY environment variable.")
+            raise ValueError(
+                "API key must be provided or set in OPENAI_API_KEY environment variable."
+            )
 
         self.api_key = api_key
         self.user = user
@@ -80,11 +84,11 @@ class ContextManager:
         current_chunk = []
         current_token_count = 0
 
-        for line in text.split('\n'):
-            line_tokens = len(encoder.encode(line + '\n'))
+        for line in text.split("\n"):
+            line_tokens = len(encoder.encode(line + "\n"))
             if current_token_count + line_tokens > max_tokens:
                 if current_chunk:
-                    chunks.append('\n'.join(current_chunk))
+                    chunks.append("\n".join(current_chunk))
                 current_chunk = [line]
                 current_token_count = line_tokens
             else:
@@ -92,7 +96,7 @@ class ContextManager:
                 current_token_count += line_tokens
 
         if current_chunk:
-            chunks.append('\n'.join(current_chunk))
+            chunks.append("\n".join(current_chunk))
         return chunks
 
     def load_saved_indices(self) -> bool:
@@ -107,7 +111,9 @@ class ContextManager:
 
             # Get S3 paths
             chunks_key = s3_utils.get_s3_file_path(self.user, self.course_title, "chunks.json")
-            inverted_index_key = s3_utils.get_s3_file_path(self.user, self.course_title, "inverted_index.json")
+            inverted_index_key = s3_utils.get_s3_file_path(
+                self.user, self.course_title, "inverted_index.json"
+            )
             faiss_index_key = s3_utils.get_s3_file_path(self.user, self.course_title, "faiss.index")
 
             # Load chunks
@@ -132,7 +138,7 @@ class ContextManager:
                     faiss_binary = s3_utils.read_binary_from_s3(self.s3_bucket, faiss_index_key)
                     if faiss_binary:
                         # Write to temp file and read with FAISS
-                        with tempfile.NamedTemporaryFile(delete=False, suffix='.index') as tmp_file:
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".index") as tmp_file:
                             tmp_file.write(faiss_binary)
                             tmp_path = tmp_file.name
 
@@ -161,7 +167,9 @@ class ContextManager:
         try:
             # Get S3 paths
             chunks_key = s3_utils.get_s3_file_path(self.user, self.course_title, "chunks.json")
-            inverted_index_key = s3_utils.get_s3_file_path(self.user, self.course_title, "inverted_index.json")
+            inverted_index_key = s3_utils.get_s3_file_path(
+                self.user, self.course_title, "inverted_index.json"
+            )
             faiss_index_key = s3_utils.get_s3_file_path(self.user, self.course_title, "faiss.index")
 
             # Save chunks
@@ -192,7 +200,7 @@ class ContextManager:
 
     def extract_quotes_from_chunk(self, chunk: str) -> list:
         """Extract well-known phrases or quotes from a chunk for indexing."""
-        return [line for line in chunk.split('\n') if line.startswith('"')]
+        return [line for line in chunk.split("\n") if line.startswith('"')]
 
     def find_approximate_quote_match(self, query: str, threshold: float = 0.65):
         """Find the closest quote in the inverted index based on similarity threshold."""
@@ -251,14 +259,19 @@ class ContextManager:
         if self.faiss_index is not None and FAISS_AVAILABLE:
             faiss_search_time = time.time()
             try:
-                query_embedding = self.client_embedding.embeddings.create(
-                    model="text-embedding-3-large",
-                    input=query
-                ).data[0].embedding
-                query_embedding_np = np.array(query_embedding).astype('float32').reshape(1, -1)
+                query_embedding = (
+                    self.client_embedding.embeddings.create(
+                        model="text-embedding-3-large", input=query
+                    )
+                    .data[0]
+                    .embedding
+                )
+                query_embedding_np = np.array(query_embedding).astype("float32").reshape(1, -1)
 
                 _, indices = self.faiss_index.search(query_embedding_np, max_chunks)
-                relevant_chunks = "\n\n".join([self.chunks[i] for i in indices[0] if i < len(self.chunks)])
+                relevant_chunks = "\n\n".join(
+                    [self.chunks[i] for i in indices[0] if i < len(self.chunks)]
+                )
                 print(f"FAISS search time: {time.time() - faiss_search_time:.2f} seconds")
                 print(f"Total query processing time: {time.time() - query_time:.2f} seconds")
                 return relevant_chunks
@@ -278,16 +291,19 @@ class ContextManager:
         embeddings = []
         for chunk in self.chunks:
             try:
-                embedding = self.client_embedding.embeddings.create(
-                    model="text-embedding-3-large",
-                    input=chunk
-                ).data[0].embedding
+                embedding = (
+                    self.client_embedding.embeddings.create(
+                        model="text-embedding-3-large", input=chunk
+                    )
+                    .data[0]
+                    .embedding
+                )
                 embeddings.append(embedding)
             except Exception as e:
                 print(f"Error generating embedding: {e}")
                 embeddings.append([0] * 3072)
 
-        embeddings_np = np.array(embeddings).astype('float32')
+        embeddings_np = np.array(embeddings).astype("float32")
 
         # Initialize FAISS index with the large vector size
         dimension = embeddings_np.shape[1]
@@ -306,11 +322,11 @@ class ContextManager:
 
             # Get list of text files in course folder
             prefix = s3_utils.get_course_s3_folder(self.user, self.course_title)
-            text_files = s3_utils.list_files_in_prefix(self.s3_bucket, prefix, 'txt')
+            text_files = s3_utils.list_files_in_prefix(self.s3_bucket, prefix, "txt")
 
             # Also check course_materials subfolder
             materials_prefix = f"{prefix}course_materials/"
-            material_files = s3_utils.list_files_in_prefix(self.s3_bucket, materials_prefix, 'txt')
+            material_files = s3_utils.list_files_in_prefix(self.s3_bucket, materials_prefix, "txt")
             text_files.extend(material_files)
 
             if not text_files:

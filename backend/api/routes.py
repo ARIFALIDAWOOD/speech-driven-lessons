@@ -5,6 +5,7 @@ from .assistant import assistant
 from .course import course
 from .course_generation import course_generation
 from .in_class import in_class
+from .tutor_session import tutor_session_bp
 from .user import user
 from .webhook import webhook
 
@@ -16,3 +17,4 @@ api.register_blueprint(in_class, url_prefix="/in-class")
 api.register_blueprint(course, url_prefix="/course")
 api.register_blueprint(user, url_prefix="/user")
 api.register_blueprint(course_generation, url_prefix="/course_generation")
+api.register_blueprint(tutor_session_bp, url_prefix="/tutor-session")
