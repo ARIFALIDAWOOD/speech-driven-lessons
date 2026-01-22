@@ -13,16 +13,21 @@ Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  Starting Next.js Frontend Server" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
-# Check if .env.local exists
-$envFile = Join-Path $projectRoot ".env.local"
-if (-not (Test-Path $envFile)) {
-    Write-Host "WARNING: .env.local file not found!" -ForegroundColor Yellow
+# Check if .env files exist (prefer .env.local, fallback to .env)
+$envLocalFile = Join-Path $projectRoot ".env.local"
+$envFile = Join-Path $projectRoot ".env"
 
-    $exampleEnv = Join-Path $projectRoot ".env.example"
-    if (Test-Path $exampleEnv) {
-        Copy-Item $exampleEnv $envFile
-        Write-Host "Created .env.local from .env.example" -ForegroundColor Yellow
-    }
+if (Test-Path $envLocalFile) {
+    Write-Host "Using .env.local" -ForegroundColor Green
+    $envFile = $envLocalFile
+}
+elseif (Test-Path $envFile) {
+    Write-Host "Using .env (fallback)" -ForegroundColor Yellow
+}
+else {
+    Write-Host "ERROR: .env.local or .env file not found!" -ForegroundColor Red
+    Write-Host "Please create one of these files before starting the frontend server." -ForegroundColor Yellow
+    exit 1
 }
 
 # Check node_modules
@@ -46,9 +51,9 @@ if ($portInUse) {
     Write-Host "WARNING: Port $Port is already in use!" -ForegroundColor Yellow
     $response = Read-Host "Kill existing process? (y/N)"
     if ($response -eq "y" -or $response -eq "Y") {
-        $pid = $portInUse.OwningProcess
-        Stop-Process -Id $pid -Force
-        Write-Host "Killed process $pid" -ForegroundColor Yellow
+        $processId = $portInUse.OwningProcess
+        Stop-Process -Id $processId -Force
+        Write-Host "Killed process $processId" -ForegroundColor Yellow
         Start-Sleep -Seconds 1
     }
     else {

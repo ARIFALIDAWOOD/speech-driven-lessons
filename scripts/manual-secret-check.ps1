@@ -34,8 +34,8 @@ $patterns = @(
 $foundSecrets = $false
 # Scan both Python and JavaScript/TypeScript files
 # Exclude virtual environments, node_modules, build directories, and git
-$codeFiles = Get-ChildItem -Path $Path -Include *.py,*.js,*.ts,*.tsx,*.jsx -Recurse -ErrorAction SilentlyContinue | 
-    Where-Object { 
+$codeFiles = Get-ChildItem -Path $Path -Include *.py,*.js,*.ts,*.tsx,*.jsx -Recurse -ErrorAction SilentlyContinue |
+    Where-Object {
         $_.FullName -notmatch '(node_modules|\.next|__pycache__|\.git|\.venv|venv|env\\)' -and
         $_.FullName -notmatch '\\site-packages\\' -and
         $_.FullName -notmatch '\\dist\\' -and
@@ -52,12 +52,12 @@ Write-Host "Found $($codeFiles.Count) files to scan (Python, JS, TS, TSX, JSX)" 
 foreach ($file in $codeFiles) {
     $content = Get-Content $file.FullName -Raw -ErrorAction SilentlyContinue
     if (-not $content) { continue }
-    
+
     foreach ($pattern in $patterns) {
         if ($content -match $pattern) {
             $foundSecrets = $true
             Write-Host "`nWARNING: Potential secret found in $($file.FullName)" -ForegroundColor Red
-            
+
             if ($Verbose) {
                 # Show the matching line
                 $lines = Get-Content $file.FullName

@@ -112,6 +112,7 @@ Write-Host ("-" * 40)
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $frontendEnv = Join-Path $projectRoot ".env.local"
+$backendEnvLocal = Join-Path $projectRoot "backend\.env.local"
 $backendEnv = Join-Path $projectRoot "backend\.env"
 
 if (Test-Path $frontendEnv) {
@@ -122,12 +123,16 @@ else {
     Write-Host "  -> Copy .env.example to .env.local and configure" -ForegroundColor Gray
 }
 
-if (Test-Path $backendEnv) {
+# Check for backend env: prefer .env.local, fallback to .env
+if (Test-Path $backendEnvLocal) {
+    Write-Status "Backend .env.local" "EXISTS"
+}
+elseif (Test-Path $backendEnv) {
     Write-Status "Backend .env" "EXISTS"
 }
 else {
-    Write-Status "Backend .env" "MISSING"
-    Write-Host "  -> Copy backend/.env.example to backend/.env and configure" -ForegroundColor Gray
+    Write-Status "Backend .env.local or .env" "MISSING"
+    Write-Host "  -> Copy backend/.env.example to backend/.env.local and configure" -ForegroundColor Gray
     $script:hasErrors = $true
 }
 

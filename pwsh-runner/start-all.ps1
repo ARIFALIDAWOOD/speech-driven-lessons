@@ -26,6 +26,31 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Starting Anantra LMS Full Stack" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
+# Function to test for .env files (prefer .env.local, fallback to .env)
+function Test-EnvFile {
+    param(
+        [string]$Directory,
+        [string]$Name
+    )
+
+    # Check for .env.local first, then .env as fallback
+    $envLocalFile = Join-Path $Directory ".env.local"
+    $envFile = Join-Path $Directory ".env"
+
+    if (Test-Path $envLocalFile) {
+        Write-Host "  Found: $Name/.env.local" -ForegroundColor Green
+        return $envLocalFile
+    }
+    elseif (Test-Path $envFile) {
+        Write-Host "  Found: $Name/.env (fallback)" -ForegroundColor Yellow
+        return $envFile
+    }
+    else {
+        Write-Host "  Missing: $Name/.env.local or $Name/.env" -ForegroundColor Red
+        return $null
+    }
+}
+
 # Run dependency check
 if ($CheckDeps) {
     Write-Host "Running dependency check..." -ForegroundColor Yellow
@@ -38,6 +63,43 @@ if ($CheckDeps) {
         exit 0
     }
 }
+
+# Check for required .env files
+Write-Host "`n--- Checking Environment Files ---" -ForegroundColor Magenta
+$envFilesMissing = $false
+$backendDir = Join-Path $projectRoot "backend"
+
+# Check backend .env files
+if (-not $SkipBackend) {
+    $backendEnvFile = Test-EnvFile -Directory $backendDir -Name "backend"
+    if (-not $backendEnvFile) {
+        $envFilesMissing = $true
+    }
+}
+
+# Check frontend .env files
+if (-not $SkipFrontend) {
+    $frontendEnvFile = Test-EnvFile -Directory $projectRoot -Name "frontend"
+    if (-not $frontendEnvFile) {
+        $envFilesMissing = $true
+    }
+}
+
+# Exit if required env files are missing
+if ($envFilesMissing) {
+    Write-Host "`nERROR: Required environment files are missing!" -ForegroundColor Red
+    Write-Host "Please create the required .env or .env.local files before starting services." -ForegroundColor Yellow
+    Write-Host "`nRequired files:" -ForegroundColor Yellow
+    if (-not $SkipBackend) {
+        Write-Host "  - backend/.env.local (or backend/.env)" -ForegroundColor White
+    }
+    if (-not $SkipFrontend) {
+        Write-Host "  - .env.local (or .env)" -ForegroundColor White
+    }
+    exit 1
+}
+
+Write-Host "`nAll required environment files found!" -ForegroundColor Green
 
 # Store PIDs for cleanup
 $script:pids = @()

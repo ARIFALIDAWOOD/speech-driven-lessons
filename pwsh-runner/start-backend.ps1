@@ -11,6 +11,44 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $backendDir = Join-Path $projectRoot "backend"
 
+# Function to import .env file and set environment variables
+function Import-EnvFile {
+    param(
+        [string]$FilePath
+    )
+
+    if (-not (Test-Path $FilePath)) {
+        return
+    }
+
+    Get-Content $FilePath | ForEach-Object {
+        $line = $_.Trim()
+
+        # Skip empty lines and comments
+        if ([string]::IsNullOrWhiteSpace($line) -or $line.StartsWith('#')) {
+            return
+        }
+
+        # Split on first = sign to handle values with = in them
+        $equalIndex = $line.IndexOf('=')
+        if ($equalIndex -gt 0) {
+            $key = $line.Substring(0, $equalIndex).Trim()
+            $value = $line.Substring($equalIndex + 1).Trim()
+
+            # Remove quotes if present (single or double)
+            if ($value.Length -ge 2) {
+                if (($value.StartsWith('"') -and $value.EndsWith('"')) -or
+                    ($value.StartsWith("'") -and $value.EndsWith("'"))) {
+                    $value = $value.Substring(1, $value.Length - 2)
+                }
+            }
+
+            # Set environment variable
+            [Environment]::SetEnvironmentVariable($key, $value, "Process")
+        }
+    }
+}
+
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  Starting Flask Backend Server" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
@@ -31,22 +69,26 @@ catch {
     exit 1
 }
 
-# Check if backend .env exists
+# Check if backend .env exists (prefer .env.local, fallback to .env)
+$envLocalFile = Join-Path $backendDir ".env.local"
 $envFile = Join-Path $backendDir ".env"
-if (-not (Test-Path $envFile)) {
-    Write-Host "WARNING: backend/.env file not found!" -ForegroundColor Yellow
-    Write-Host "Creating from .env.example..." -ForegroundColor Yellow
 
-    $exampleEnv = Join-Path $backendDir ".env.example"
-    if (Test-Path $exampleEnv) {
-        Copy-Item $exampleEnv $envFile
-        Write-Host "Created .env file. Please update it with your actual values!" -ForegroundColor Yellow
-    }
-    else {
-        Write-Host "ERROR: No .env.example found. Please create backend/.env manually." -ForegroundColor Red
-        exit 1
-    }
+if (Test-Path $envLocalFile) {
+    Write-Host "Using backend/.env.local" -ForegroundColor Green
+    $envFile = $envLocalFile
 }
+elseif (Test-Path $envFile) {
+    Write-Host "Using backend/.env (fallback)" -ForegroundColor Yellow
+}
+else {
+    Write-Host "ERROR: backend/.env.local or backend/.env file not found!" -ForegroundColor Red
+    Write-Host "Please create one of these files before starting the backend server." -ForegroundColor Yellow
+    exit 1
+}
+
+# Import environment variables from the selected .env file
+Write-Host "Loading environment variables from $(Split-Path -Leaf $envFile)..." -ForegroundColor Gray
+Import-EnvFile -FilePath $envFile
 
 # Check if port is in use
 $portInUse = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
@@ -54,9 +96,9 @@ if ($portInUse) {
     Write-Host "`nWARNING: Port $Port is already in use!" -ForegroundColor Yellow
     $response = Read-Host "Kill existing process? (y/N)"
     if ($response -eq "y" -or $response -eq "Y") {
-        $pid = $portInUse.OwningProcess
-        Stop-Process -Id $pid -Force
-        Write-Host "Killed process $pid" -ForegroundColor Yellow
+        $processId = $portInUse.OwningProcess
+        Stop-Process -Id $processId -Force
+        Write-Host "Killed process $processId" -ForegroundColor Yellow
         Start-Sleep -Seconds 1
     }
     else {
@@ -77,8 +119,9 @@ try {
     $env:FLASK_ENV = if ($Debug) { "development" } else { "production" }
     $env:FLASK_DEBUG = if ($Debug) { "1" } else { "0" }
 
-    # Run the Flask app using uv
-    uv run python app.py
+    # Use Python 3.12 to avoid LangChain/Pydantic V1 deprecation warning on 3.14+
+    # (run `uv python install 3.12` if missing)
+    uv run --python 3.12 python app.py
 }
 catch {
     Write-Host "ERROR: $_" -ForegroundColor Red

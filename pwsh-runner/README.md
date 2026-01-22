@@ -113,9 +113,8 @@ Installs all required dependencies using `npm` for Node.js and `uv` for Python.
 ### Windows
 Some features are not available on Windows:
 - **Voice Assistant (vapi)**: Requires `vapi-python` which depends on `daily-python` (Linux/macOS only)
-- **Course Generation**: Requires `course_content_generation` module (may need manual installation)
 
-The backend will start with warnings about these disabled features, but core functionality works.
+The backend uses **Python 3.12** by default (via `start-backend.ps1`) to avoid LangChain/Pydantic V1 deprecation warnings on Python 3.14+. Install it with `uv python install 3.12` if missing.
 
 ## Troubleshooting
 

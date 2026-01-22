@@ -98,7 +98,7 @@ try {
     # Run supabase status and output directly with UTF-8 encoding
     $supabaseOutput = & supabase status 2>&1
     $exitCode = $LASTEXITCODE
-    
+
     if ($exitCode -eq 0 -and $supabaseOutput) {
         # Output each line to preserve encoding
         foreach ($line in $supabaseOutput) {
