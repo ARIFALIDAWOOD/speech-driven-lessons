@@ -73,22 +73,22 @@ export function AgentControlPane({
   };
 
   return (
-    <div className="w-80 border-l border-gray-200 bg-gray-50 flex flex-col h-full">
+    <div className="w-80 border-l border-border bg-muted flex flex-col h-full">
       {/* Current Topic */}
       <Card className="m-4 mb-2">
         <CardHeader className="py-3 px-4">
-          <CardTitle className="text-sm font-medium text-gray-600">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             Current Topic
           </CardTitle>
         </CardHeader>
         <CardContent className="py-2 px-4">
           {currentTopic ? (
             <div>
-              <p className="font-medium text-gray-900">{currentTopic.subtopic}</p>
-              <p className="text-xs text-gray-500">{currentTopic.section}</p>
+              <p className="font-medium text-foreground">{currentTopic.subtopic}</p>
+              <p className="text-xs text-muted-foreground">{currentTopic.section}</p>
             </div>
           ) : (
-            <p className="text-sm text-gray-500">Loading...</p>
+            <p className="text-sm text-muted-foreground">Loading...</p>
           )}
         </CardContent>
       </Card>
@@ -119,7 +119,7 @@ export function AgentControlPane({
         <Button
           size="sm"
           variant="outline"
-          className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+          className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
           onClick={onEnd}
         >
           <X className="h-4 w-4" />
@@ -130,7 +130,7 @@ export function AgentControlPane({
       {/* Quick Actions */}
       <Card className="mx-4 my-2">
         <CardHeader className="py-3 px-4">
-          <CardTitle className="text-sm font-medium text-gray-600">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             Quick Actions
           </CardTitle>
         </CardHeader>
@@ -157,7 +157,7 @@ export function AgentControlPane({
       {upcomingTopics.length > 0 && (
         <Card className="mx-4 my-2">
           <CardHeader className="py-3 px-4">
-            <CardTitle className="text-sm font-medium text-gray-600">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Coming Up
             </CardTitle>
           </CardHeader>
@@ -166,16 +166,16 @@ export function AgentControlPane({
               {upcomingTopics.slice(0, 3).map((topic, index) => (
                 <li
                   key={index}
-                  className="text-sm text-gray-600 flex items-center gap-2"
+                  className="text-sm text-muted-foreground flex items-center gap-2"
                 >
-                  <span className="w-5 h-5 rounded-full bg-gray-200 text-xs flex items-center justify-center">
+                  <span className="w-5 h-5 rounded-full bg-muted text-xs flex items-center justify-center">
                     {index + 1}
                   </span>
                   <span className="truncate">{topic}</span>
                 </li>
               ))}
               {upcomingTopics.length > 3 && (
-                <li className="text-xs text-gray-400">
+                <li className="text-xs text-muted-foreground/70">
                   +{upcomingTopics.length - 3} more topics
                 </li>
               )}
@@ -185,7 +185,7 @@ export function AgentControlPane({
       )}
 
       {/* Response Input */}
-      <div className="mt-auto p-4 border-t border-gray-200 bg-white">
+      <div className="mt-auto p-4 border-t border-border bg-card">
         <div className="relative">
           <Textarea
             ref={textareaRef}
@@ -215,7 +215,7 @@ export function AgentControlPane({
             )}
           </Button>
         </div>
-        <p className="text-xs text-gray-400 mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           Press Enter to send, Shift+Enter for new line
         </p>
       </div>

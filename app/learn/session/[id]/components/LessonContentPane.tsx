@@ -86,7 +86,7 @@ function MessageBubble({
   if (isSystem) {
     return (
       <div className="flex justify-center">
-        <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+        <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
           {message.content}
         </span>
       </div>
@@ -100,7 +100,7 @@ function MessageBubble({
         isUser && "flex-row-reverse"
       )}
     >
-      <Avatar className={cn("h-8 w-8", isUser ? "bg-gray-100" : "bg-blue-100")}>
+      <Avatar className={cn("h-8 w-8", isUser ? "bg-muted" : "bg-primary/10")}>
         <AvatarFallback>
           {isUser ? (
             <User className="h-4 w-4 text-gray-600" />

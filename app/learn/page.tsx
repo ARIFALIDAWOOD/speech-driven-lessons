@@ -93,7 +93,7 @@ export default function LearnPage() {
       router.push(`/learn/session/${session_id}`);
     } catch (err) {
       console.error("Error starting learning session:", err);
-      
+
       // Provide more specific error messages
       let errorMessage = "Failed to start learning session";
       if (err instanceof TypeError && err.message === "Failed to fetch") {
@@ -102,7 +102,7 @@ export default function LearnPage() {
       } else if (err instanceof Error) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     } finally {
       setIsStarting(false);
@@ -111,7 +111,7 @@ export default function LearnPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <div className="flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
         </div>
@@ -121,15 +121,15 @@ export default function LearnPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Breadcrumb items={[{ label: "Start Learning" }]} className="mb-8" />
           <div className="max-w-2xl mx-auto text-center py-8">
-            <GraduationCap className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <GraduationCap className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <h1 className="text-2xl font-bold text-foreground mb-2">
               Sign in to Start Learning
             </h1>
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               Create an account or sign in to access personalized tutoring sessions.
             </p>
             <Button onClick={() => router.push("/auth/signin")}>
@@ -142,7 +142,7 @@ export default function LearnPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Main content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb navigation */}
@@ -150,11 +150,11 @@ export default function LearnPage() {
 
         {/* Page header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
             <GraduationCap className="h-8 w-8 text-emerald-600" />
             Start Learning
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-muted-foreground">
             Select your curriculum and chapter to begin an interactive tutoring session.
             Our AI tutor will guide you through the material at your own pace.
           </p>
@@ -162,8 +162,8 @@ export default function LearnPage() {
 
         {/* Error message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800">{error}</p>
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-destructive">{error}</p>
           </div>
         )}
 
@@ -225,12 +225,12 @@ function FeatureCard({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 mb-4">
+    <div className="bg-card rounded-lg border border-border p-6">
+      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
         {iconMap[icon]}
       </div>
-      <h3 className="font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-sm text-gray-600">{description}</p>
+      <h3 className="font-semibold text-foreground mb-2">{title}</h3>
+      <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }

@@ -270,7 +270,7 @@ export default function DashboardPage() {
 
   return (
     <MainLayout>
-      <div className="flex-1 bg-gray-50 relative">
+      <div className="flex-1 bg-background relative">
         <ScrollArea className="h-screen" type="hover">
           {/* Fullscreen button */}
           <FullscreenButton
@@ -279,14 +279,14 @@ export default function DashboardPage() {
           />
 
           {/* Welcome Banner */}
-          <div className="w-full bg-gradient-to-r from-slate-200 to-slate-300 mb-6">
+          <div className="w-full bg-gradient-to-r from-muted to-muted/80 mb-6">
             <div className="max-w-7xl mx-auto px-14 sm:px-20 lg:px-28 py-8 sm:py-10">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col justify-center">
-                  <h1 className="text-3xl font-bold text-emerald-800">
+                  <h1 className="text-3xl font-bold text-foreground">
                     Welcome back, User!
                   </h1>
-                  <p className="mt-2 text-lg text-emerald-700">
+                  <p className="mt-2 text-lg text-muted-foreground">
                     Track your learning progress and continue your courses.
                   </p>
 
@@ -305,7 +305,7 @@ export default function DashboardPage() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="border-2 border-emerald-800 text-emerald-800 bg-transparent hover:bg-emerald-50 font-medium px-6 py-3 rounded-md"
+                      className="border-2 border-primary text-primary bg-transparent hover:bg-primary/10 font-medium px-6 py-3 rounded-md"
                       onClick={scrollToTutorials}
                     >
                       More details
@@ -315,7 +315,7 @@ export default function DashboardPage() {
 
                 <div className="flex items-center justify-center h-full">
                   {isLoading ? (
-                    <div className="w-full max-w-md h-[270px] animate-pulse bg-slate-300 rounded-xl"></div>
+                    <div className="w-full max-w-md h-[270px] animate-pulse bg-muted rounded-xl"></div>
                   ) : (
                     <div className="w-full max-w-md h-[270px]">
                       <FeaturedRecommendationCard recommendations={featuredRecommendations} />
@@ -329,7 +329,7 @@ export default function DashboardPage() {
           {/* Main content */}
           <div className="max-w-7xl mx-auto px-14 sm:px-20 lg:px-28 pt-4 sm:pt-6 pb-8">
             {error ? (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-red-700 mb-12">
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 text-destructive mb-12">
                 <p>{error}</p>
                 <Button
                   variant="outline"
@@ -352,7 +352,7 @@ export default function DashboardPage() {
                   {isLoading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mt-4">
                       {[...Array(4)].map((_, i) => (
-                        <Card key={i} className="h-60 animate-pulse bg-gray-100 border-gray-100" />
+                        <Card key={i} className="h-60 animate-pulse bg-muted border-border" />
                       ))}
                     </div>
                   ) : (
@@ -397,7 +397,7 @@ export default function DashboardPage() {
                   {isLoading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mt-4">
                       {[...Array(4)].map((_, i) => (
-                        <Card key={i} className="h-36 animate-pulse bg-gray-100 border-gray-100" />
+                        <Card key={i} className="h-36 animate-pulse bg-muted border-border" />
                       ))}
                     </div>
                   ) : (
@@ -428,7 +428,7 @@ export default function DashboardPage() {
                   {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                       {[...Array(2)].map((_, i) => (
-                        <Card key={i} className="aspect-video animate-pulse bg-gray-100 border-gray-100" />
+                        <Card key={i} className="aspect-video animate-pulse bg-muted border-border" />
                       ))}
                     </div>
                   ) : (

@@ -326,7 +326,7 @@ export default function OnlineCourse({ params }: { params: { id: string } }) {
       />
 
       {/* Main layout */}
-      <div className="flex h-[calc(100vh-64px)] overflow-hidden gap-6 max-w-[1800px] mx-auto px-6 py-6 bg-gray-50">
+      <div className="flex h-[calc(100vh-64px)] overflow-hidden gap-6 max-w-[1800px] mx-auto px-6 py-6 bg-background">
         {/* Left panel - Course navigation */}
         <CourseNavigation
           slides={slides}
@@ -359,10 +359,10 @@ export default function OnlineCourse({ params }: { params: { id: string } }) {
 
       {/* Exit Dialog */}
       <Dialog open={isExitDialogOpen} onOpenChange={setIsExitDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-white border-slate-200">
+        <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>
             <DialogTitle>Leave Course?</DialogTitle>
-            <DialogDescription className="text-slate-500">
+            <DialogDescription className="text-muted-foreground">
               Are you sure you want to exit this course? Your progress will be saved.
             </DialogDescription>
           </DialogHeader>

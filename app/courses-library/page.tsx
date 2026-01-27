@@ -274,7 +274,7 @@ export default function CoursesLibraryPage() {
 
   return (
     <MainLayout>
-      <div className="flex-1 bg-gray-50 relative">
+      <div className="flex-1 bg-background relative">
         <ScrollArea className="h-screen" type="hover">
           {/* Fullscreen button */}
           <FullscreenButton
@@ -299,10 +299,10 @@ export default function CoursesLibraryPage() {
                     <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
                   </div>
                 ) : visibleCourses.length === 0 ? (
-                  <div className="bg-white rounded-lg p-8 text-center shadow-sm border border-gray-200">
-                    <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">No courses found</h3>
-                    <p className="text-gray-600 mb-4">
+                  <div className="bg-card rounded-lg p-8 text-center shadow-sm border border-border">
+                    <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No courses found</h3>
+                    <p className="text-muted-foreground mb-4">
                       Try adjusting your filters to find courses that match your interests.
                     </p>
                     <Button
@@ -313,7 +313,7 @@ export default function CoursesLibraryPage() {
                         });
                       }}
                       variant="outline"
-                      className="text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                      className="text-primary border-primary/20 hover:bg-primary/10"
                     >
                       Clear all filters
                     </Button>

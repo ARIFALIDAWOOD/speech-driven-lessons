@@ -101,7 +101,7 @@ export default function CoursePreviewPage({ params }: { params: { id: string } }
       </Button>
 
       {/* Main content */}
-      <div className="flex h-[calc(100vh-64px)] overflow-hidden justify-center max-w-[1800px] mx-auto px-6 py-6 bg-gray-50">
+      <div className="flex h-[calc(100vh-64px)] overflow-hidden justify-center max-w-[1800px] mx-auto px-6 py-6 bg-background">
         <div className="w-full max-w-4xl flex flex-col">
           {/* Slide viewer */}
           {slides.length > 0 && (
@@ -117,11 +117,11 @@ export default function CoursePreviewPage({ params }: { params: { id: string } }
             <Button
               onClick={goToPrevSlide}
               disabled={currentSlide === 0}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800"
+              className="bg-muted hover:bg-muted/80 text-foreground"
             >
               Previous
             </Button>
-            <div className="text-gray-600">
+            <div className="text-muted-foreground">
               Slide {currentSlide + 1} of {slides.length}
             </div>
             <Button
