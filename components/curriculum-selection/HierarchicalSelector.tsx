@@ -8,6 +8,7 @@ import { SelectionStep } from "./SelectionStep";
 import { SelectionBreadcrumb } from "./SelectionBreadcrumb";
 import { TopicSpecification } from "./TopicSpecification";
 import { CustomCourseInput } from "./CustomCourseInput";
+import { AvailableMaterials } from "./AvailableMaterials";
 import {
   CurriculumSelection,
   SelectionOption,
@@ -18,8 +19,9 @@ import {
 } from "./types";
 
 interface HierarchicalSelectorProps {
-  onStartLearning: (selection: CurriculumSelection) => void;
+  onStartLearning: (selection: CurriculumSelection, courseId?: string | null) => void;
   isStarting?: boolean;
+  accessToken?: string;
 }
 
 // Mock API functions - replace with actual API calls
@@ -141,6 +143,7 @@ async function fetchChapters(boardId: string, subjectId: string): Promise<Select
 export function HierarchicalSelector({
   onStartLearning,
   isStarting = false,
+  accessToken,
 }: HierarchicalSelectorProps) {
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [selection, setSelection] = useState<CurriculumSelection>({
@@ -155,6 +158,9 @@ export function HierarchicalSelector({
     customSubject: "",
     customChapter: "",
   });
+
+  // Selected course ID for using uploaded materials
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
   const [cities, setCities] = useState<SelectionOption[]>([]);
   const [chapters, setChapters] = useState<SelectionOption[]>([]);
@@ -198,23 +204,29 @@ export function HierarchicalSelector({
           newSelection.subject = null;
           newSelection.chapter = null;
           newSelection.topic = "";
+          // Clear course selection when curriculum changes
+          setSelectedCourseId(null);
         } else if (key === "city") {
           newSelection.city = value as SelectionOption | null;
           newSelection.board = null;
           newSelection.subject = null;
           newSelection.chapter = null;
           newSelection.topic = "";
+          setSelectedCourseId(null);
         } else if (key === "board") {
           newSelection.board = value as SelectionOption | null;
           newSelection.subject = null;
           newSelection.chapter = null;
           newSelection.topic = "";
+          setSelectedCourseId(null);
         } else if (key === "subject") {
           newSelection.subject = value as SelectionOption | null;
           newSelection.chapter = null;
           newSelection.topic = "";
+          setSelectedCourseId(null);
         } else if (key === "chapter") {
           newSelection.chapter = value as SelectionOption | null;
+          setSelectedCourseId(null);
         } else if (key === "topic") {
           newSelection.topic = value as string;
         }
@@ -275,8 +287,8 @@ export function HierarchicalSelector({
 
   const handleStartLearning = () => {
     if (isSelectionComplete) {
-      // Include the custom mode flag in the selection
-      onStartLearning({ ...selection, isCustomMode });
+      // Include the custom mode flag in the selection and pass selected course ID
+      onStartLearning({ ...selection, isCustomMode }, selectedCourseId);
     }
   };
 
@@ -287,7 +299,7 @@ export function HierarchicalSelector({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-blue-600" />
+                <BookOpen className="h-5 w-5 text-emerald-600" />
                 {isCustomMode ? "Enter Custom Course" : "Select Your Curriculum"}
               </CardTitle>
               <CardDescription>
@@ -398,11 +410,25 @@ export function HierarchicalSelector({
 
               {/* Topic Specification (shown when chapter is selected) */}
               {selection.chapter && (
-                <div className="pt-4 border-t">
+                <div className="pt-4 border-t border-border">
                   <TopicSpecification
                     value={selection.topic || ""}
                     onChange={(val) => updateSelection("topic", val)}
                     chapterName={selection.chapter.name}
+                  />
+                </div>
+              )}
+
+              {/* Available Materials (shown when board is selected and token is available) */}
+              {selection.board && accessToken && (
+                <div className="pt-4 border-t border-border">
+                  <AvailableMaterials
+                    boardId={selection.board.id}
+                    subjectId={selection.subject?.id}
+                    chapterId={selection.chapter?.id}
+                    accessToken={accessToken}
+                    onCourseSelect={setSelectedCourseId}
+                    selectedCourseId={selectedCourseId}
                   />
                 </div>
               )}
@@ -417,7 +443,7 @@ export function HierarchicalSelector({
           size="lg"
           onClick={handleStartLearning}
           disabled={!isSelectionComplete || isStarting}
-          className="gap-2"
+          className="gap-2 px-8"
         >
           {isStarting ? (
             <>
@@ -435,15 +461,15 @@ export function HierarchicalSelector({
 
       {/* Selection Summary */}
       {isSelectionComplete && (
-        <Card className="bg-green-50 border-green-200">
+        <Card className="bg-emerald-50 border-emerald-200 shadow-none">
           <CardContent className="pt-4">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                <BookOpen className="h-4 w-4 text-green-600" />
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <BookOpen className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <h3 className="font-medium text-green-800">Ready to Learn</h3>
-                <p className="text-sm text-green-700 mt-1">
+                <h3 className="font-medium text-gray-900">Ready to Learn</h3>
+                <p className="text-sm text-gray-600 mt-1">
                   {isCustomMode ? (
                     <>
                       {selection.customBoard} - {selection.customSubject} - {selection.customChapter}
@@ -454,7 +480,7 @@ export function HierarchicalSelector({
                     </>
                   )}
                   {selection.topic && (
-                    <span className="block mt-1 text-green-600">
+                    <span className="block mt-1 text-emerald-600">
                       Focus: {selection.topic}
                     </span>
                   )}

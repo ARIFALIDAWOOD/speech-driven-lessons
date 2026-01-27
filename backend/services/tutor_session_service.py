@@ -8,7 +8,7 @@ separating business logic from HTTP handling and SSE streaming.
 import logging
 import uuid
 from datetime import datetime
-from typing import Dict, Iterator, Optional
+from typing import Dict, Iterator
 
 from agent import ProactiveTutor, SessionContext, TutorState
 from services import OutlineGenerator
@@ -21,7 +21,6 @@ from .dtos import (
     ProcessResponseRequest,
 )
 from .exceptions import (
-    SessionError,
     SessionNotFoundError,
     ValidationError,
 )
@@ -92,6 +91,30 @@ class TutorSessionService:
             subject_name=request.subject,
             chapter_name=request.chapter,
         )
+
+        # If course_id is provided, load course info and set embeddings status
+        if request.course_id:
+            try:
+                from services import CourseService
+
+                course_service = CourseService(user_email=self.user_id)
+                course_response = course_service.get_course(request.course_id)
+
+                if course_response.course:
+                    context.course_id = request.course_id
+                    context.course_title = course_response.course.title
+
+                    # Check embeddings status
+                    embeddings_status = course_service.get_embeddings_status(request.course_id)
+                    context.embeddings_ready = embeddings_status.get("status") in ("ready", "unknown")
+
+                    logger.info(
+                        f"Session {session_id} linked to course {request.course_id}, "
+                        f"embeddings_ready={context.embeddings_ready}"
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to load course {request.course_id}: {e}")
+                # Continue without course - don't fail the session creation
 
         # Generate course outline
         outline_dict = None

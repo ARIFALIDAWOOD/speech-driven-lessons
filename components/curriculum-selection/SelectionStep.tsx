@@ -22,13 +22,14 @@ import { SelectionOption } from "./types";
 interface SelectionStepProps {
   label: string;
   placeholder: string;
-  description: string;
+  description?: string;
   options: SelectionOption[];
   value: SelectionOption | null;
   onChange: (option: SelectionOption | null) => void;
   disabled?: boolean;
   isLoading?: boolean;
   required?: boolean;
+  compact?: boolean;
 }
 
 export function SelectionStep({
@@ -41,18 +42,22 @@ export function SelectionStep({
   disabled = false,
   isLoading = false,
   required = true,
+  compact = false,
 }: SelectionStepProps) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="space-y-2">
+    <div className={compact ? "space-y-1" : "space-y-2"}>
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-gray-700">
+        <label className={cn(
+          "font-medium text-gray-700",
+          compact ? "text-xs" : "text-sm"
+        )}>
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       </div>
-      <p className="text-xs text-gray-500">{description}</p>
+      {description && <p className="text-xs text-gray-500">{description}</p>}
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -62,8 +67,9 @@ export function SelectionStep({
             aria-expanded={open}
             disabled={disabled || isLoading}
             className={cn(
-              "w-full justify-between h-11 text-left font-normal",
-              !value && "text-gray-500",
+              "w-full justify-between text-left font-normal border-gray-300 bg-white hover:bg-gray-50",
+              compact ? "h-8 text-sm" : "h-11",
+              !value && "text-gray-400",
               disabled && "opacity-50 cursor-not-allowed"
             )}
           >
@@ -81,7 +87,7 @@ export function SelectionStep({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
-          <Command>
+          <Command className="bg-white">
             <CommandInput placeholder={`Search ${label.toLowerCase()}...`} />
             <CommandList>
               <CommandEmpty>No {label.toLowerCase()} found.</CommandEmpty>
@@ -94,15 +100,16 @@ export function SelectionStep({
                       onChange(option.id === value?.id ? null : option);
                       setOpen(false);
                     }}
+                    className="cursor-pointer"
                   >
                     <Check
                       className={cn(
-                        "mr-2 h-4 w-4",
+                        "mr-2 h-4 w-4 text-emerald-600",
                         value?.id === option.id ? "opacity-100" : "opacity-0"
                       )}
                     />
                     <div className="flex flex-col">
-                      <span>{option.name}</span>
+                      <span className="text-gray-900">{option.name}</span>
                       {option.description && (
                         <span className="text-xs text-gray-500">
                           {option.description}

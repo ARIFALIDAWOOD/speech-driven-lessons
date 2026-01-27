@@ -19,6 +19,7 @@ class CreateSessionRequest:
     subject: str
     chapter: str
     topic: Optional[str] = None
+    course_id: Optional[str] = None  # Optional uploaded course to use for materials
 
 
 @dataclass
@@ -183,6 +184,12 @@ class SessionContext:
     is_paused: bool = False
     student_requested_end: bool = False
     needs_clarification: bool = False
+
+    # Phase 1: Orchestration integration
+    course_id: Optional[str] = None
+    embeddings_ready: bool = False
+    orchestrator_session_id: Optional[str] = None
+    course_title: str = ""
 
     def add_message(self, role: str, content: str):
         """Add a message to conversation history."""

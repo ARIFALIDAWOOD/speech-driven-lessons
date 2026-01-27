@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/auth/supabase";
-import { HeaderWithLogo } from "@/components/layout/HeaderWithLogo";
+import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { HierarchicalSelector, CurriculumSelection } from "@/components/curriculum-selection";
 import { Button } from "@/components/ui/button";
-import { Loader2, GraduationCap, ArrowLeft } from "lucide-react";
+import { Loader2, GraduationCap } from "lucide-react";
 
 export default function LearnPage() {
   const router = useRouter();
@@ -14,7 +14,7 @@ export default function LearnPage() {
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleStartLearning = async (selection: CurriculumSelection) => {
+  const handleStartLearning = async (selection: CurriculumSelection, courseId?: string | null) => {
     if (!user || !session?.access_token) {
       setError("Please log in to start a learning session");
       return;
@@ -42,6 +42,8 @@ export default function LearnPage() {
             board_name: selection.customBoard,
             subject_name: selection.customSubject,
             chapter_name: selection.customChapter,
+            // Include course_id if selected
+            course_id: courseId || null,
           }
         : {
             // Standard mode: use dropdown selections
@@ -57,6 +59,8 @@ export default function LearnPage() {
             board_name: selection.board?.name,
             subject_name: selection.subject?.name,
             chapter_name: selection.chapter?.name,
+            // Include course_id if selected
+            course_id: courseId || null,
           };
 
       // Create a new tutor session
@@ -108,9 +112,8 @@ export default function LearnPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <HeaderWithLogo />
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
         </div>
       </div>
     );
@@ -119,18 +122,20 @@ export default function LearnPage() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <HeaderWithLogo />
-        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-          <GraduationCap className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Sign in to Start Learning
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Create an account or sign in to access personalized tutoring sessions.
-          </p>
-          <Button onClick={() => router.push("/auth/signin")}>
-            Sign In
-          </Button>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Breadcrumb items={[{ label: "Start Learning" }]} className="mb-8" />
+          <div className="max-w-2xl mx-auto text-center py-8">
+            <GraduationCap className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Sign in to Start Learning
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Create an account or sign in to access personalized tutoring sessions.
+            </p>
+            <Button onClick={() => router.push("/auth/signin")}>
+              Sign In
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -138,29 +143,15 @@ export default function LearnPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <HeaderWithLogo />
-
-      {/* Top navigation */}
-      <div className="w-full border-b border-gray-200 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex items-center text-gray-600 hover:text-gray-800 -ml-2"
-            onClick={() => router.push("/dashboard")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Dashboard
-          </Button>
-        </div>
-      </div>
-
       {/* Main content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb navigation */}
+        <Breadcrumb items={[{ label: "Start Learning" }]} className="mb-6" />
+
         {/* Page header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <GraduationCap className="h-8 w-8 text-blue-600" />
+            <GraduationCap className="h-8 w-8 text-emerald-600" />
             Start Learning
           </h1>
           <p className="mt-2 text-gray-600">
@@ -180,6 +171,7 @@ export default function LearnPage() {
         <HierarchicalSelector
           onStartLearning={handleStartLearning}
           isStarting={isStarting}
+          accessToken={session?.access_token}
         />
 
         {/* Features overview */}
@@ -234,7 +226,7 @@ function FeatureCard({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4">
+      <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 mb-4">
         {iconMap[icon]}
       </div>
       <h3 className="font-semibold text-gray-900 mb-2">{title}</h3>

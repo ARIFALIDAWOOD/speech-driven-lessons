@@ -96,9 +96,20 @@ class CourseData:
     )
     progress: CourseProgress = field(default_factory=CourseProgress)
 
+    # B/S/C/T Curriculum tagging fields
+    board_id: Optional[str] = None       # e.g., "CBSE", "ICSE"
+    subject_id: Optional[str] = None     # e.g., "MATH", "PHY"
+    chapter_id: Optional[str] = None     # e.g., "CH1", "CH2"
+    curriculum_topic: Optional[str] = None  # Free-text topic
+
+    # Display names for UI
+    board_name: Optional[str] = None
+    subject_name: Optional[str] = None
+    chapter_name: Optional[str] = None
+
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
-        return {
+        result = {
             "id": self.id,
             "title": self.title,
             "description": self.description,
@@ -119,6 +130,22 @@ class CourseData:
                 "completion": self.progress.completion,
             },
         }
+        # B/S/C/T curriculum fields
+        if self.board_id:
+            result["board_id"] = self.board_id
+        if self.subject_id:
+            result["subject_id"] = self.subject_id
+        if self.chapter_id:
+            result["chapter_id"] = self.chapter_id
+        if self.curriculum_topic:
+            result["curriculum_topic"] = self.curriculum_topic
+        if self.board_name:
+            result["board_name"] = self.board_name
+        if self.subject_name:
+            result["subject_name"] = self.subject_name
+        if self.chapter_name:
+            result["chapter_name"] = self.chapter_name
+        return result
 
     @classmethod
     def from_dict(cls, data: dict) -> "CourseData":
@@ -148,6 +175,14 @@ class CourseData:
                 hours=progress_data.get("hours", 0),
                 completion=progress_data.get("completion", 0),
             ),
+            # B/S/C/T curriculum fields
+            board_id=data.get("board_id"),
+            subject_id=data.get("subject_id"),
+            chapter_id=data.get("chapter_id"),
+            curriculum_topic=data.get("curriculum_topic"),
+            board_name=data.get("board_name"),
+            subject_name=data.get("subject_name"),
+            chapter_name=data.get("chapter_name"),
         )
 
 
@@ -231,3 +266,17 @@ class SlidesResponse:
         if self.error:
             result["error"] = self.error
         return result
+
+
+@dataclass
+class UpdateTagsRequest:
+    """Request to update B/S/C/T curriculum tags for a course."""
+
+    course_id: str
+    board_id: Optional[str] = None
+    subject_id: Optional[str] = None
+    chapter_id: Optional[str] = None
+    curriculum_topic: Optional[str] = None
+    board_name: Optional[str] = None
+    subject_name: Optional[str] = None
+    chapter_name: Optional[str] = None

@@ -24,6 +24,7 @@ from models.course import (
     SyllabusResponse,
     SlideData,
     SlidesResponse,
+    UpdateTagsRequest,
 )
 
 # Re-export all session DTOs from models
@@ -51,6 +52,7 @@ __all__ = [
     "SyllabusResponse",
     "SlideData",
     "SlidesResponse",
+    "UpdateTagsRequest",
     # Session DTOs
     "CreateSessionRequest",
     "SessionInfo",

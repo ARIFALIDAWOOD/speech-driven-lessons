@@ -6,7 +6,6 @@ business logic from HTTP handling. Refactored from CourseManager.
 """
 
 import logging
-import os
 import uuid
 from datetime import datetime, timezone
 from io import BytesIO
@@ -19,15 +18,13 @@ from .dtos import (
     CourseData,
     CourseResponse,
     CreateCourseRequest,
-    FileInfo,
-    CreateCourseProcess,
-    CourseProgress,
     SyllabusResponse,
     SlidesResponse,
     UploadFileRequest,
     UploadFileMetadataRequest,
     DeleteFileRequest,
     UpdateStepRequest,
+    UpdateTagsRequest,
 )
 from .exceptions import (
     NotFoundError,
@@ -697,8 +694,8 @@ class CourseService:
         except NotFoundError:
             raise
 
-        # Update step using create_or_update
-        update_request = CreateCourseRequest(
+        # Note: CreateCourseRequest kept for potential future validation use
+        _update_request = CreateCourseRequest(
             course_title=course_info.title,
             course_id=request.course_id,
             course_description=course_info.description,
@@ -795,3 +792,360 @@ class CourseService:
             success=False,
             message="Course customization not yet implemented",
         )
+
+    # =========================================================================
+    # Phase 2: Embeddings and Plan Management
+    # =========================================================================
+
+    def update_embeddings_status(
+        self,
+        course_id: str,
+        status: str,
+        built_at: Optional[str] = None,
+        error: Optional[str] = None,
+    ) -> bool:
+        """
+        Update the embeddings status for a course.
+
+        Args:
+            course_id: The course ID
+            status: Status value ("ready", "stale", "building", "error")
+            built_at: ISO timestamp of when embeddings were built
+            error: Error message if status is "error"
+
+        Returns:
+            True if update succeeded, False otherwise
+        """
+        course_info_key = self._get_course_info_key(course_id)
+
+        try:
+            course_info = s3_utils.get_json_from_s3(self.s3_bucket, course_info_key)
+            if not course_info:
+                logger.warning(f"Course not found for embeddings update: {course_id}")
+                return False
+
+            # Update embeddings fields
+            course_info["embeddings_status"] = status
+            course_info["last_updated_at"] = self._get_current_utc_iso_string()
+
+            if built_at:
+                course_info["embeddings_built_at"] = built_at
+
+            if error:
+                course_info["embeddings_error"] = error
+            elif "embeddings_error" in course_info:
+                # Clear error on non-error status
+                del course_info["embeddings_error"]
+
+            s3_utils.upload_json_to_s3(course_info, self.s3_bucket, course_info_key)
+            logger.info(f"Updated embeddings status for {course_id}: {status}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to update embeddings status for {course_id}: {e}")
+            return False
+
+    def get_embeddings_status(self, course_id: str) -> dict:
+        """
+        Get the embeddings status for a course.
+
+        Args:
+            course_id: The course ID
+
+        Returns:
+            Dict with status, built_at, and error fields
+        """
+        course_info_key = self._get_course_info_key(course_id)
+
+        try:
+            course_info = s3_utils.get_json_from_s3(self.s3_bucket, course_info_key)
+            if not course_info:
+                return {"status": "not_found"}
+
+            return {
+                "status": course_info.get("embeddings_status", "unknown"),
+                "built_at": course_info.get("embeddings_built_at"),
+                "error": course_info.get("embeddings_error"),
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get embeddings status for {course_id}: {e}")
+            return {"status": "error", "error": str(e)}
+
+    def update_plan_status(
+        self,
+        course_id: str,
+        status: str,
+        version: Optional[int] = None,
+        generated_at: Optional[str] = None,
+        error: Optional[str] = None,
+    ) -> bool:
+        """
+        Update the plan/outline status for a course.
+
+        Args:
+            course_id: The course ID
+            status: Status value ("ready", "generating", "error")
+            version: Plan version number
+            generated_at: ISO timestamp of when plan was generated
+            error: Error message if status is "error"
+
+        Returns:
+            True if update succeeded, False otherwise
+        """
+        course_info_key = self._get_course_info_key(course_id)
+
+        try:
+            course_info = s3_utils.get_json_from_s3(self.s3_bucket, course_info_key)
+            if not course_info:
+                logger.warning(f"Course not found for plan update: {course_id}")
+                return False
+
+            # Update plan fields
+            course_info["plan_status"] = status
+            course_info["last_updated_at"] = self._get_current_utc_iso_string()
+
+            if version is not None:
+                course_info["plan_version"] = version
+
+            if generated_at:
+                course_info["plan_generated_at"] = generated_at
+
+            if error:
+                course_info["plan_error"] = error
+            elif "plan_error" in course_info:
+                del course_info["plan_error"]
+
+            s3_utils.upload_json_to_s3(course_info, self.s3_bucket, course_info_key)
+            logger.info(f"Updated plan status for {course_id}: {status}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to update plan status for {course_id}: {e}")
+            return False
+
+    def save_course_plan(self, course_id: str, plan_data: dict) -> bool:
+        """
+        Save a course plan to S3.
+
+        Args:
+            course_id: The course ID
+            plan_data: The plan data dictionary
+
+        Returns:
+            True if save succeeded, False otherwise
+        """
+        plan_key = f"{self._get_course_folder(course_id)}course_plan.json"
+
+        try:
+            s3_utils.upload_json_to_s3(plan_data, self.s3_bucket, plan_key)
+
+            # Update course info with plan metadata
+            self.update_plan_status(
+                course_id,
+                status="ready",
+                version=plan_data.get("version", 1),
+                generated_at=plan_data.get("generated_at"),
+            )
+
+            logger.info(f"Saved course plan for {course_id}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to save course plan for {course_id}: {e}")
+            return False
+
+    def load_course_plan(self, course_id: str) -> Optional[dict]:
+        """
+        Load a course plan from S3.
+
+        Args:
+            course_id: The course ID
+
+        Returns:
+            Plan data dictionary, or None if not found
+        """
+        plan_key = f"{self._get_course_folder(course_id)}course_plan.json"
+
+        try:
+            plan_data = s3_utils.get_json_from_s3(self.s3_bucket, plan_key)
+            return plan_data
+
+        except Exception as e:
+            logger.warning(f"Failed to load course plan for {course_id}: {e}")
+            return None
+
+    def get_course_status(self, course_id: str) -> dict:
+        """
+        Get comprehensive status for a course including plan and embeddings.
+
+        Args:
+            course_id: The course ID
+
+        Returns:
+            Dict with course, plan, and embeddings status
+        """
+        course_info_key = self._get_course_info_key(course_id)
+
+        try:
+            course_info = s3_utils.get_json_from_s3(self.s3_bucket, course_info_key)
+            if not course_info:
+                return {"error": "Course not found"}
+
+            return {
+                "course_id": course_id,
+                "title": course_info.get("title", ""),
+                "is_creation_complete": course_info.get("create_course_process", {}).get(
+                    "is_creation_complete", False
+                ),
+                "plan": {
+                    "status": course_info.get("plan_status", "unknown"),
+                    "version": course_info.get("plan_version"),
+                    "generated_at": course_info.get("plan_generated_at"),
+                    "error": course_info.get("plan_error"),
+                },
+                "embeddings": {
+                    "status": course_info.get("embeddings_status", "unknown"),
+                    "built_at": course_info.get("embeddings_built_at"),
+                    "error": course_info.get("embeddings_error"),
+                },
+                "last_updated_at": course_info.get("last_updated_at"),
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get course status for {course_id}: {e}")
+            return {"error": str(e)}
+
+    # =========================================================================
+    # Phase 3: B/S/C/T Curriculum Tagging
+    # =========================================================================
+
+    def update_course_tags(self, request: UpdateTagsRequest) -> CourseResponse:
+        """
+        Update B/S/C/T curriculum tags for a course.
+
+        Args:
+            request: UpdateTagsRequest with course_id and tag fields
+
+        Returns:
+            CourseResponse with the updated course data
+        """
+        logger.info(
+            f"[{self.user_email}] Updating tags for course {request.course_id}: "
+            f"board={request.board_id}, subject={request.subject_id}, chapter={request.chapter_id}"
+        )
+
+        course_info_key = self._get_course_info_key(request.course_id)
+
+        try:
+            course_info = s3_utils.get_json_from_s3(self.s3_bucket, course_info_key)
+            if not course_info:
+                raise NotFoundError("Course", request.course_id)
+
+            # Update curriculum tag fields
+            if request.board_id is not None:
+                course_info["board_id"] = request.board_id
+            if request.subject_id is not None:
+                course_info["subject_id"] = request.subject_id
+            if request.chapter_id is not None:
+                course_info["chapter_id"] = request.chapter_id
+            if request.curriculum_topic is not None:
+                course_info["curriculum_topic"] = request.curriculum_topic
+
+            # Update display names
+            if request.board_name is not None:
+                course_info["board_name"] = request.board_name
+            if request.subject_name is not None:
+                course_info["subject_name"] = request.subject_name
+            if request.chapter_name is not None:
+                course_info["chapter_name"] = request.chapter_name
+
+            course_info["last_updated_at"] = self._get_current_utc_iso_string()
+
+            s3_utils.upload_json_to_s3(course_info, self.s3_bucket, course_info_key)
+            logger.info(f"Successfully updated tags for course {request.course_id}")
+
+            return CourseResponse(
+                success=True,
+                message="Course tags updated successfully",
+                course=self._course_data_from_dict(course_info),
+            )
+
+        except NotFoundError:
+            raise
+        except Exception as e:
+            logger.error(f"Error updating course tags for {request.course_id}: {e}")
+            raise StorageError("update", f"Could not update course tags: {e}")
+
+    def find_courses_by_bsct(
+        self,
+        board_id: str,
+        subject_id: Optional[str] = None,
+        chapter_id: Optional[str] = None,
+        embeddings_ready_only: bool = True,
+    ) -> list[CourseData]:
+        """
+        Find courses matching B/S/C/T curriculum criteria.
+
+        Args:
+            board_id: Required board ID to match
+            subject_id: Optional subject ID filter
+            chapter_id: Optional chapter ID filter
+            embeddings_ready_only: Only return courses with embeddings ready (default True)
+
+        Returns:
+            List of matching CourseData objects
+        """
+        logger.info(
+            f"[{self.user_email}] Finding courses by BSCT: "
+            f"board={board_id}, subject={subject_id}, chapter={chapter_id}"
+        )
+
+        matching_courses = []
+
+        try:
+            course_ids = s3_utils.list_user_course_ids(self.user_email)
+
+            for course_id in course_ids:
+                try:
+                    response = self.get_course(course_id)
+                    if not response.course:
+                        continue
+
+                    course = response.course
+
+                    # Board is required match
+                    if course.board_id != board_id:
+                        continue
+
+                    # Subject filter (if provided)
+                    if subject_id and course.subject_id != subject_id:
+                        continue
+
+                    # Chapter filter (if provided)
+                    if chapter_id and course.chapter_id != chapter_id:
+                        continue
+
+                    # Embeddings status check
+                    if embeddings_ready_only:
+                        status = self.get_embeddings_status(course_id)
+                        if status.get("status") not in ("ready", "unknown"):
+                            continue
+
+                    matching_courses.append(course)
+
+                except NotFoundError:
+                    continue
+                except Exception as e:
+                    logger.warning(f"Error checking course {course_id}: {e}")
+                    continue
+
+            # Sort by last_updated_at descending
+            matching_courses.sort(key=lambda x: x.last_updated_at, reverse=True)
+
+            logger.info(f"Found {len(matching_courses)} matching courses")
+            return matching_courses
+
+        except Exception as e:
+            logger.error(f"Error finding courses by BSCT: {e}")
+            return []

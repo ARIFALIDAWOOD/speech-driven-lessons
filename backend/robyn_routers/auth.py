@@ -118,3 +118,32 @@ def require_auth(request: Request) -> Dict[str, Any]:
     if not user:
         raise ValueError("Authentication required")
     return user
+
+
+async def refresh_access_token(refresh_token: str) -> Optional[Dict[str, Any]]:
+    """
+    Exchange a refresh token for new access and refresh tokens.
+
+    Args:
+        refresh_token: The Supabase refresh token
+
+    Returns:
+        Dict with new access_token, refresh_token, and expires_at, or None on failure
+    """
+    try:
+        response = supabase_client.auth.refresh_session(refresh_token)
+
+        if not response.session:
+            logger.warning("Failed to refresh session - no session returned")
+            return None
+
+        return {
+            "access_token": response.session.access_token,
+            "refresh_token": response.session.refresh_token,
+            "expires_at": response.session.expires_at,
+            "expires_in": response.session.expires_in,
+        }
+
+    except Exception as e:
+        logger.error(f"Error refreshing token: {str(e)}")
+        return None

@@ -8,7 +8,7 @@ from datetime import datetime
 import requests
 from robyn import SubRouter, Request
 
-from .auth import get_auth_handler, require_auth
+from .auth import get_auth_handler, require_auth, refresh_access_token
 from chatbot import ChatBot
 from s3_context_manager import ContextManager as S3ContextManager
 import utils.s3_utils as s3_utils
@@ -64,7 +64,7 @@ async def initialize_chatbot(request: Request):
                 raise ValueError("No system prompt found in course configuration")
         except Exception as e:
             logger.error(f"Error loading course configuration: {str(e)}")
-            return {"detail": "Failed to load course configuration"}, 500, {}
+            return {"detail": "Failed to load course configuration"}, {}, 500
 
         # Create chatbot instance for this session
         chatbot = ChatBot(context_manager=new_context_manager, api_key=API_KEY)
@@ -78,7 +78,7 @@ async def initialize_chatbot(request: Request):
 
     except Exception as e:
         logger.error(f"Error initializing chatbot: {str(e)}")
-        return {"detail": str(e)}, 500, {}
+        return {"detail": str(e)}, {}, 500
 
 
 @router.post("/get-ai-response", auth_required=True)
@@ -93,7 +93,7 @@ async def get_ai_response(request: Request):
         course_title = body.get("course_title")
 
         if not course_title:
-            return {"detail": "course_title required in request"}, 400, {}
+            return {"detail": "course_title required in request"}, {}, 400
 
         start = time.time()
 
@@ -145,21 +145,20 @@ async def get_ai_response(request: Request):
 
     except Exception as e:
         logger.error(f"Error getting AI response: {str(e)}")
-        return {"detail": str(e)}, 500, {}
+        return {"detail": str(e)}, {}, 500
 
 
 @router.post("/help-center/chat", auth_required=True)
 async def help_center_chat(request: Request):
     """Handle Help Center chat requests with AI-powered responses."""
     try:
-        user = require_auth(request)
-        username = user["email"]
+        require_auth(request)  # Validate user is authenticated
 
         body = request.json()
         user_message = body.get("message", "")
 
         if not user_message:
-            return {"detail": "Message is required"}, 400, {}
+            return {"detail": "Message is required"}, {}, 400
 
         # Get conversation history for context (limited to last 5 messages)
         history = body.get("history", [])[-5:] if body.get("history") else []
@@ -225,12 +224,44 @@ Keep responses under 150 words unless the question requires a detailed explanati
                 )
                 ai_response = response.choices[0].message.content
             else:
-                return {"detail": "No AI provider configured"}, 500, {}
+                return {"detail": "No AI provider configured"}, {}, 500
 
         return {"response": ai_response}
 
     except requests.exceptions.Timeout:
-        return {"detail": "Request timed out. Please try again."}, 504, {}
+        return {"detail": "Request timed out. Please try again."}, {}, 504
     except Exception as e:
         logger.error(f"Help center chat error: {str(e)}")
-        return {"detail": "Failed to generate response. Please try again."}, 500, {}
+        return {"detail": "Failed to generate response. Please try again."}, {}, 500
+
+
+@router.post("/auth/refresh")
+async def refresh_token_endpoint(request: Request):
+    """
+    Exchange a refresh token for new access and refresh tokens.
+
+    This endpoint allows clients to refresh their JWT tokens before expiry,
+    preventing token expiration during long SSE streams.
+    """
+    try:
+        body = request.json()
+        refresh_token = body.get("refresh_token")
+
+        if not refresh_token:
+            return {"detail": "refresh_token is required"}, {}, 400
+
+        result = await refresh_access_token(refresh_token)
+
+        if not result:
+            return {"detail": "Failed to refresh token"}, {}, 401
+
+        return {
+            "access_token": result["access_token"],
+            "refresh_token": result["refresh_token"],
+            "expires_at": result["expires_at"],
+            "expires_in": result["expires_in"],
+        }
+
+    except Exception as e:
+        logger.error(f"Token refresh error: {str(e)}")
+        return {"detail": "Token refresh failed"}, {}, 500
