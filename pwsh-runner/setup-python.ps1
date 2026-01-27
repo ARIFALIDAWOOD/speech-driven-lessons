@@ -86,9 +86,9 @@ if ($realPython) {
         $pipCmd = if ($realPython -eq "py") { "py -m pip" } else { "$realPython -m pip" }
 
         $packages = @(
-            "flask",
-            "flask-socketio",
-            "flask-cors",
+            "fastapi",
+            "uvicorn[standard]",
+            "python-multipart",
             "python-dotenv",
             "openai",
             "tiktoken",
@@ -97,7 +97,7 @@ if ($realPython) {
             "supabase",
             "firebase-admin",
             "redis",
-            "eventlet"
+            "websockets"
         )
 
         Write-Host "`nInstalling packages..." -ForegroundColor Yellow

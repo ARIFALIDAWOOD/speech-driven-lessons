@@ -92,9 +92,8 @@ version = "0.1.0"
 description = "Backend for Anantra LMS Speech-Driven Lessons"
 requires-python = ">=3.10"
 dependencies = [
-    "flask>=3.0.0",
-    "flask-socketio>=5.3.0",
-    "flask-cors>=4.0.0",
+    "robyn>=0.68.0",
+    "python-multipart>=0.0.6",
     "python-dotenv>=1.0.0",
     "openai>=1.0.0",
     "tiktoken>=0.5.0",
@@ -103,7 +102,7 @@ dependencies = [
     "supabase>=2.0.0",
     "firebase-admin>=6.0.0",
     "redis>=5.0.0",
-    "eventlet>=0.33.0",
+    "websockets>=12.0",
 ]
 
 [tool.uv]

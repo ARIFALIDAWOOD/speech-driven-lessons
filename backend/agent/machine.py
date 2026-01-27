@@ -5,22 +5,12 @@ Handles state transitions and ensures valid state flow.
 """
 
 import logging
-from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Optional
 
-from .states import TutorState, SessionContext
+from models import TutorState, SessionContext, StateTransition
 
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class StateTransition:
-    """Represents a valid state transition."""
-    from_state: TutorState
-    to_state: TutorState
-    condition: Optional[Callable[[SessionContext], bool]] = None
-    trigger: str = "auto"  # "auto", "user_input", "timeout", "complete"
 
 
 # Define valid state transitions

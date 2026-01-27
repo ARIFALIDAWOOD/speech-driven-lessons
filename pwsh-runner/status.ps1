@@ -58,7 +58,7 @@ function Get-ServiceStatus {
 # Check services
 $services = @(
     @{ Name = "Next.js Frontend"; Port = 3391 },
-    @{ Name = "Flask Backend"; Port = 5000 },
+    @{ Name = "Robyn Backend"; Port = 5000 },
     @{ Name = "Supabase API"; Port = 55321 },
     @{ Name = "Supabase DB"; Port = 55322 },
     @{ Name = "Supabase Studio"; Port = 55323 },

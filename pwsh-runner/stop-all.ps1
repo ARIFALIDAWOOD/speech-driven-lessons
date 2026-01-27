@@ -15,7 +15,7 @@ Write-Host "========================================`n" -ForegroundColor Cyan
 # Define ports to check
 $services = @(
     @{ Name = "Next.js Frontend"; Port = 3391 },
-    @{ Name = "Flask Backend"; Port = 5000 }
+    @{ Name = "Robyn Backend"; Port = 5000 }
 )
 
 # Stop processes on known ports

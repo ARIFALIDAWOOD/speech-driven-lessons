@@ -101,7 +101,7 @@ catch {
 Write-Host "`nChecking Port Availability..." -ForegroundColor Yellow
 Write-Host ("-" * 40)
 Test-Port 3391 "Next.js Frontend" | Out-Null
-Test-Port 5000 "Flask Backend" | Out-Null
+Test-Port 5000 "Robyn Backend" | Out-Null
 Test-Port 55321 "Supabase API" | Out-Null
 Test-Port 55322 "Supabase DB" | Out-Null
 Test-Port 55323 "Supabase Studio" | Out-Null
@@ -175,9 +175,8 @@ if ($uvAvailable) {
 
     # Map package names to import names
     $pythonPackages = @{
-        "flask" = "flask"
-        "flask-socketio" = "flask_socketio"
-        "flask-cors" = "flask_cors"
+        "robyn" = "robyn"
+        "python-multipart" = "multipart"
         "openai" = "openai"
         "python-dotenv" = "dotenv"
         "supabase" = "supabase"

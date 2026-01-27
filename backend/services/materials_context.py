@@ -2,7 +2,10 @@
 User Materials Context Manager
 
 Integrates user-uploaded materials with the tutoring system using
-existing FAISS vector search infrastructure.
+in-memory vector search for session-based materials.
+
+Note: This uses in-memory FAISS for fast session-based lookups.
+For persistent course materials, see s3_context_manager.py which uses Supabase vector store.
 """
 
 import os
@@ -20,8 +23,11 @@ class MaterialsContextManager:
     """
     Manages user-uploaded study materials for tutoring sessions.
 
-    Uses FAISS vector search to find relevant content from uploaded PDFs
-    and integrates with the proactive tutor agent.
+    Uses in-memory FAISS vector search to find relevant content from uploaded PDFs.
+    Materials are session-scoped and stored in memory for fast access.
+    
+    For persistent course materials, use s3_context_manager.py which stores
+    embeddings in Supabase vector store.
     """
 
     def __init__(
@@ -90,11 +96,11 @@ class MaterialsContextManager:
             # Generate embeddings
             embeddings = self._generate_embeddings([c["content"] for c in text_chunks])
 
-            # Store chunks and embeddings
+            # Store chunks and embeddings in memory
             self.chunks.extend(text_chunks)
             self.embeddings.extend(embeddings)
 
-            # Rebuild FAISS index
+            # Rebuild in-memory FAISS index
             self._build_index()
 
             logger.info(f"Added {len(text_chunks)} chunks from {original_name}")
@@ -121,7 +127,7 @@ class MaterialsContextManager:
         return embeddings
 
     def _build_index(self):
-        """Build FAISS index from embeddings."""
+        """Build in-memory FAISS index from embeddings."""
         if not self.embeddings:
             return
 
@@ -132,15 +138,15 @@ class MaterialsContextManager:
             # Convert to numpy array
             embeddings_array = np.array(self.embeddings).astype("float32")
 
-            # Create FAISS index
+            # Create in-memory FAISS index
             dimension = embeddings_array.shape[1]
             self.index = faiss.IndexFlatL2(dimension)
             self.index.add(embeddings_array)
 
-            logger.info(f"Built FAISS index with {len(self.embeddings)} vectors")
+            logger.info(f"Built in-memory FAISS index with {len(self.embeddings)} vectors")
 
         except ImportError:
-            logger.warning("FAISS not available, using simple search")
+            logger.warning("FAISS not available, using simple cosine similarity search")
             self.index = None
 
     def get_relevant_context(

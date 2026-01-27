@@ -3,11 +3,12 @@ Supabase Storage Utilities Module
 
 This module provides all storage operations for the application, including:
 - File upload/download (text, binary, JSON)
-- FAISS vector index storage
 - Folder listing and deletion
 - User data management
 
 Migrated from AWS S3 to Supabase Storage.
+Note: FAISS vector index storage has been migrated to Supabase vector store (pgvector).
+See utils/vector_utils.py for vector operations.
 """
 
 import io
@@ -34,17 +35,9 @@ else:
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Try to import faiss, make it optional
-try:
-    import faiss
-    import numpy as np
-
-    FAISS_AVAILABLE = True
-except ImportError:
-    logger.warning("FAISS not available. Vector index functionality will be disabled.")
-    FAISS_AVAILABLE = False
-    faiss = None
-    np = None
+# FAISS imports removed - vector storage now uses Supabase pgvector
+# FAISS is still used for in-memory operations in materials_context.py
+# but persistent storage uses Supabase vector store (see utils/vector_utils.py)
 
 # ============================================================================
 # CONFIGURATION
@@ -251,7 +244,11 @@ def upload_json_to_s3(json_data: Union[Dict, List], bucket_name: str, s3_key: st
 
 def upload_faiss_index_to_s3(index, bucket_name: str, s3_key: str) -> bool:
     """
-    Upload a FAISS index to Supabase Storage.
+    [DEPRECATED] Upload a FAISS index to Supabase Storage.
+    
+    This function is deprecated. Vector storage now uses Supabase's native pgvector
+    extension via utils/vector_utils.py. This function is kept for backward compatibility
+    during migration but should not be used for new code.
 
     Args:
         index: FAISS index object
@@ -261,11 +258,14 @@ def upload_faiss_index_to_s3(index, bucket_name: str, s3_key: str) -> bool:
     Returns:
         True if successful, False otherwise
     """
-    if not FAISS_AVAILABLE:
-        logger.error("FAISS is not available. Cannot upload FAISS index.")
-        return False
-
+    logger.warning(
+        "upload_faiss_index_to_s3 is deprecated. Use utils.vector_utils.store_course_embeddings() instead."
+    )
+    
     try:
+        import faiss
+        import numpy as np
+        
         # Serialize the FAISS index to memory
         index_binary = faiss.serialize_index(index)
         index_bytes = index_binary.tobytes()
@@ -276,9 +276,12 @@ def upload_faiss_index_to_s3(index, bucket_name: str, s3_key: str) -> bool:
             file_options={"content-type": "application/octet-stream", "upsert": "true"},
         )
 
-        logger.info(f"FAISS index uploaded successfully to {bucket_name}/{s3_key}")
+        logger.info(f"FAISS index uploaded successfully to {bucket_name}/{s3_key} (deprecated method)")
         return True
 
+    except ImportError:
+        logger.error("FAISS is not available. Cannot upload FAISS index.")
+        return False
     except Exception as e:
         logger.error(f"Error uploading FAISS index to {bucket_name}/{s3_key}: {e}")
         return False

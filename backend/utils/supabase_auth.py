@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
@@ -9,8 +10,14 @@ from jose import JWTError, jwt
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-load_dotenv()
+# Load environment variables - match the pattern from app.py
+# Check for .env.local first (preferred), then .env
+_env_local = Path(__file__).parent.parent / ".env.local"
+_env_file = Path(__file__).parent.parent / ".env"
+if _env_local.exists():
+    load_dotenv(_env_local)
+else:
+    load_dotenv(_env_file)
 
 # Supabase JWT configuration
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
@@ -40,10 +47,20 @@ def verify_supabase_token(token: str) -> Optional[Dict[str, Any]]:
             logger.error("SUPABASE_JWT_SECRET environment variable is not set")
             return None
 
+        # Try to decode token header to see what algorithm is being used
+        try:
+            unverified_header = jwt.get_unverified_header(token)
+            token_algorithm = unverified_header.get("alg", "unknown")
+            logger.info(f"Token algorithm from header: {token_algorithm}")
+        except Exception as e:
+            logger.warning(f"Could not decode token header: {str(e)}")
+
         # Decode and verify the JWT
-        # Supabase uses HS256 algorithm by default
+        # Supabase local dev with jwt_secret uses HS256
+        # Allow both HS256 and RS256 for compatibility
+        # Note: If RS256 is used, we may need the public key instead of secret
         decoded_token = jwt.decode(
-            token, SUPABASE_JWT_SECRET, algorithms=["HS256"], audience="authenticated"
+            token, SUPABASE_JWT_SECRET, algorithms=["HS256", "RS256"], audience="authenticated"
         )
 
         # Check if token has email

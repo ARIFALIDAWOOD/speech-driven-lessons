@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 from typing import Iterator, Optional, Callable
 
-from .states import (
+from models import (
     TutorState,
     SessionContext,
     StudentLevel,
@@ -17,43 +17,18 @@ from .states import (
     AssessmentResponse,
     AssessmentDifficulty,
     TopicProgress,
+    TutorEvent,
+    LLMMessage,
+    LLMConfig,
+    MessageRole,
 )
 from .machine import TutorStateMachine
 from .prompts import get_system_prompt, get_transition_prompt
 
-from llm import get_llm_provider, LLMMessage, LLMConfig, MessageRole
+from llm import get_llm_provider
 
 
 logger = logging.getLogger(__name__)
-
-
-class TutorEvent:
-    """Represents an event from the tutor for SSE streaming."""
-
-    def __init__(
-        self,
-        event_type: str,
-        content: str = "",
-        data: Optional[dict] = None,
-        state: Optional[TutorState] = None,
-    ):
-        self.event_type = event_type
-        self.content = content
-        self.data = data or {}
-        self.state = state
-        self.timestamp = datetime.utcnow().isoformat()
-
-    def to_dict(self) -> dict:
-        return {
-            "event": self.event_type,
-            "content": self.content,
-            "data": self.data,
-            "state": self.state.value if self.state else None,
-            "timestamp": self.timestamp,
-        }
-
-    def to_json(self) -> str:
-        return json.dumps(self.to_dict())
 
 
 class ProactiveTutor:

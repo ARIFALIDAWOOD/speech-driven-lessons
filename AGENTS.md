@@ -17,9 +17,8 @@ anantra-lms-speech-driven-lessons/
 │   ├── my-courses/         # Course management pages
 │   ├── courses/            # Course viewing pages
 │   └── ...
-├── backend/                # Python Flask backend
-│   ├── api/                # API endpoints
-│   ├── routes/             # Route handlers
+├── backend/                # Python Robyn backend (Rust-powered)
+│   ├── robyn_routers/      # API routers (Robyn)
 │   ├── utils/              # Utility functions
 │   └── functions/          # Business logic functions
 ├── components/             # React components (Shadcn UI)
@@ -42,12 +41,12 @@ anantra-lms-speech-driven-lessons/
 
 **Backend:**
 - Python 3.10+
-- Flask
-- Flask-SocketIO (real-time communication)
+- Robyn (high-performance web framework powered by Rust)
+- Native WebSockets (real-time communication)
 - OpenAI API (chat/assistant)
 - Google Gemini (content generation)
-- AWS S3 (file storage)
-- FAISS (vector store for RAG)
+- Supabase Storage (file storage)
+- Supabase pgvector (vector store for RAG)
 - Supabase (authentication)
 
 **Development Tools:**
@@ -63,12 +62,12 @@ anantra-lms-speech-driven-lessons/
    - Uses Google Gemini for content generation
 
 2. **RAG-Based AI Tutor**
-   - Retrieval-Augmented Generation using FAISS vector store
+   - Retrieval-Augmented Generation using Supabase's native pgvector extension
    - Context-aware responses based on course content
-   - Conversation history stored on S3
+   - Conversation history stored in Supabase Storage
 
 3. **Real-Time In-Class Experience**
-   - Flask-SocketIO for live slide synchronization
+   - Native WebSockets for live slide synchronization
    - Real-time student engagement
    - Voice-driven interactions
 
@@ -86,20 +85,38 @@ anantra-lms-speech-driven-lessons/
 // Use Supabase session tokens (NOT Firebase getIdToken)
 const { user, session, loading } = useAuth();
 const idToken = session?.access_token ?? "";
+
+// For direct Supabase database operations (preferred):
+const { data, error } = await supabase
+  .from('tutor_sessions')
+  .select('*')
+  .eq('user_id', user.id);
 ```
 
-**Backend:**
+**Backend (Robyn):**
 ```python
-# Verify Supabase tokens
-from backend.utils.supabase_auth import verify_supabase_token
-user_id = verify_supabase_token(id_token)
+# Robyn authentication - uses auth_required decorator
+from robyn import SubRouter, Request
+from robyn_routers.auth import get_auth_handler, require_auth
+
+router = SubRouter(__file__, prefix="/api/course")
+router.configure_authentication(get_auth_handler())
+
+@router.post("/create-course", auth_required=True)
+async def create_course(request: Request):
+    user = require_auth(request)
+    user_email = user["email"]  # Automatically authenticated
+    user_id = user["id"]  # User UUID from Supabase
+    body = request.json()  # Access request body
+    # No manual JWT verification needed!
 ```
 
 ### API Endpoints
 
-- Backend API base: `http://localhost:5000/api`
+- Backend API base: `http://localhost:5000/api` (Robyn)
 - Frontend API routes: `/api/*` (Next.js API routes)
-- Authentication: Include `Authorization` header with Supabase access token
+- Authentication: Include `Authorization: Bearer <token>` header with Supabase access token
+- API Documentation: http://localhost:5000/docs (Swagger UI)
 
 ### Environment Variables
 
@@ -110,12 +127,11 @@ user_id = verify_supabase_token(id_token)
 
 **Backend (backend/.env):**
 - `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_ANON_KEY` (for authentication - replaces SUPABASE_JWT_SECRET)
+- `SUPABASE_SERVICE_ROLE_KEY` (for storage operations)
 - `OPENAI_API_KEY`
 - `GEMINI_API_KEY`
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `AWS_S3_BUCKET_NAME`
+- `SUPABASE_BUCKET_NAME` (Supabase Storage bucket name)
 
 ## Code Quality Standards
 
@@ -153,10 +169,11 @@ uv run pre-commit run --all-files
 
 ### Adding a New API Endpoint
 
-1. Create route in `backend/routes/` or `backend/api/`
-2. Use `verify_supabase_token()` for authentication
-3. Register route in `backend/app.py`
-4. Update frontend API utilities in `components/my-courses/utils/`
+1. Create route in `backend/robyn_routers/` (Robyn router)
+2. Use `auth_required=True` and `require_auth(request)` for authentication
+3. Register router in `backend/main.py` with `app.include_router()`
+4. Access request body with `request.json()`, path params with `request.path_params`
+5. Update frontend API utilities in `components/my-courses/utils/`
 
 ### Adding a New Component
 
@@ -176,14 +193,15 @@ uv run pre-commit run --all-files
 
 ### Backend Structure
 
-- `backend/api/` - API endpoint definitions
-- `backend/routes/` - Route handlers (blueprints)
-- `backend/utils/` - Utility functions (auth, S3, etc.)
+- `backend/robyn_routers/` - API routers (Robyn SubRouters)
+- `backend/utils/` - Utility functions (S3, auth, etc.)
 - `backend/functions/` - Business logic functions
+- `backend/main.py` - Robyn app entry point
 
 ## Data Storage
 
-- **AWS S3**: Course files, vector indices, conversation history
+- **Supabase Storage**: Course files, conversation history
+- **Supabase Database (pgvector)**: Vector embeddings for RAG
 - **Supabase**: User authentication and metadata
 - **Local Storage**: User preferences, session data
 
@@ -202,10 +220,10 @@ uv run pre-commit run --all-files
 
 2. **Running:**
    ```powershell
-   # Backend (port 5000)
+   # Backend (port 5000) - Robyn
    cd backend
-   uv run python app.py
-   
+   uv run python main.py
+
    # Frontend (port 3391)
    npm run dev
    ```
@@ -219,6 +237,9 @@ uv run pre-commit run --all-files
 
 - **Never commit secrets** - Use environment variables
 - **Always use `session?.access_token`** - Not `user.getIdToken()`
+- **Backend uses Robyn** - High-performance Rust-powered framework (see `backend/main.py`)
+- **Authentication via decorator** - Use `auth_required=True` and `require_auth(request)` in routes
+- **No manual JWT verification** - Supabase client handles it automatically
 - **Run pre-commit checks** - Before pushing code
 - **Update .secrets.baseline** - When adding test fixtures with secrets
 - **Use uv** - Not pip for Python package management
@@ -245,5 +266,5 @@ uv run pre-commit run --all-files
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Supabase Documentation](https://supabase.com/docs)
 - [Shadcn UI Components](https://ui.shadcn.com/)
-- [Flask Documentation](https://flask.palletsprojects.com/)
+- [Robyn Documentation](https://robyn.tech/)
 - [pre-commit Documentation](https://pre-commit.com/)

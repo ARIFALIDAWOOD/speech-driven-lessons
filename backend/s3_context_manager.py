@@ -1,15 +1,14 @@
 """
-S3/Supabase Context Manager Module
+Supabase Context Manager Module
 
-This module provides context management for course content stored in Supabase Storage.
-It handles loading, processing, and searching course content using FAISS vector indices.
+This module provides context management for course content stored in Supabase.
+It handles loading, processing, and searching course content using Supabase's native pgvector extension.
 
-Migrated from local filesystem to Supabase Storage.
+Migrated from FAISS indices stored in Supabase Storage to native database vector storage.
 """
 
 import json
 import os
-import tempfile
 import time
 from difflib import SequenceMatcher
 
@@ -18,32 +17,23 @@ import openai
 import tiktoken
 from dotenv import load_dotenv
 
-# Try to import faiss, make it optional
-try:
-    import faiss
-
-    FAISS_AVAILABLE = True
-except ImportError:
-    print("Warning: FAISS not available. Vector search functionality will be limited.")
-    FAISS_AVAILABLE = False
-    faiss = None
-
 import utils.s3_utils as s3_utils
+import utils.vector_utils as vector_utils
 
 load_dotenv()
 
 
 class ContextManager:
     """
-    Context Manager for course content stored in Supabase Storage.
+    Context Manager for course content stored in Supabase.
 
-    Handles loading course chunks, FAISS indices, and inverted indices
-    from Supabase Storage for semantic search and retrieval.
+    Handles loading course chunks and inverted indices from Supabase database
+    and uses Supabase's native pgvector extension for semantic search and retrieval.
     """
 
     def __init__(self, user: str = None, course_title: str = None, api_key: str = None):
         """
-        Initialize the S3 Context Manager.
+        Initialize the Context Manager.
 
         Args:
             user: Username/email of the user
@@ -65,7 +55,6 @@ class ContextManager:
         # Initialize data structures
         self.chunks = []
         self.inverted_index = {}
-        self.faiss_index = None
 
         # Initialize OpenAI clients
         openai.api_key = api_key
@@ -101,7 +90,7 @@ class ContextManager:
 
     def load_saved_indices(self) -> bool:
         """
-        Load previously processed indices and chunks from Supabase Storage.
+        Load previously processed chunks from Supabase database.
 
         Returns:
             True if successfully loaded, False otherwise
@@ -109,47 +98,29 @@ class ContextManager:
         try:
             print(f"Loading saved indices for user: {self.user}, course: {self.course_title}")
 
-            # Get S3 paths
-            chunks_key = s3_utils.get_s3_file_path(self.user, self.course_title, "chunks.json")
+            # Load chunks from Supabase database
+            self.chunks = vector_utils.get_course_chunks(self.user, self.course_title)
+            if not self.chunks:
+                print(f"No chunks found in database for {self.user}/{self.course_title}")
+                # Fallback to loading from storage for backward compatibility
+                chunks_key = s3_utils.get_s3_file_path(self.user, self.course_title, "chunks.json")
+                self.chunks = s3_utils.get_json_from_s3(self.s3_bucket, chunks_key) or []
+                if not self.chunks:
+                    return False
+            print(f"Loaded {len(self.chunks)} chunks from database")
+
+            # Load inverted index from database
+            # Build inverted index dict from database entries
+            self.inverted_index = {}
+            # Note: We'll load this on-demand or rebuild it if needed
+            # For now, try loading from storage as fallback
             inverted_index_key = s3_utils.get_s3_file_path(
                 self.user, self.course_title, "inverted_index.json"
             )
-            faiss_index_key = s3_utils.get_s3_file_path(self.user, self.course_title, "faiss.index")
-
-            # Load chunks
-            self.chunks = s3_utils.get_json_from_s3(self.s3_bucket, chunks_key)
-            if self.chunks is None:
-                print(f"No chunks found at {chunks_key}")
-                self.chunks = []
-                return False
-            print(f"Loaded {len(self.chunks)} chunks from S3")
-
-            # Load inverted index
-            self.inverted_index = s3_utils.get_json_from_s3(self.s3_bucket, inverted_index_key)
-            if self.inverted_index is None:
-                print(f"No inverted index found at {inverted_index_key}")
-                self.inverted_index = {}
+            stored_index = s3_utils.get_json_from_s3(self.s3_bucket, inverted_index_key)
+            if stored_index:
+                self.inverted_index = stored_index
             print(f"Loaded inverted index with {len(self.inverted_index)} entries")
-
-            # Load FAISS index if available
-            if FAISS_AVAILABLE:
-                try:
-                    # Download FAISS index to temp file
-                    faiss_binary = s3_utils.read_binary_from_s3(self.s3_bucket, faiss_index_key)
-                    if faiss_binary:
-                        # Write to temp file and read with FAISS
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=".index") as tmp_file:
-                            tmp_file.write(faiss_binary)
-                            tmp_path = tmp_file.name
-
-                        self.faiss_index = faiss.read_index(tmp_path)
-                        os.unlink(tmp_path)  # Clean up temp file
-                        print(f"Loaded FAISS index with {self.faiss_index.ntotal} vectors")
-                    else:
-                        print(f"No FAISS index found at {faiss_index_key}")
-                except Exception as e:
-                    print(f"Error loading FAISS index: {e}")
-                    self.faiss_index = None
 
             return True
 
@@ -159,31 +130,32 @@ class ContextManager:
 
     def save_indices(self) -> bool:
         """
-        Save processed indices and chunks to Supabase Storage.
+        Save processed indices and chunks to Supabase database.
+
+        Note: This method now stores embeddings in the database instead of FAISS files.
+        The embeddings are generated and stored via build_faiss_index() method.
 
         Returns:
             True if successfully saved, False otherwise
         """
         try:
-            # Get S3 paths
+            # Save chunks and inverted index to database
+            # (Embeddings are saved separately via build_faiss_index/store_embeddings)
+            
+            # Also save chunks to storage for backward compatibility
             chunks_key = s3_utils.get_s3_file_path(self.user, self.course_title, "chunks.json")
+            s3_utils.upload_json_to_s3(self.chunks, self.s3_bucket, chunks_key)
+            print(f"Saved {len(self.chunks)} chunks to storage (backward compatibility)")
+
+            # Save inverted index to database
+            vector_utils.store_inverted_index(self.user, self.course_title, self.inverted_index)
+            print(f"Saved inverted index to database")
+
+            # Also save to storage for backward compatibility
             inverted_index_key = s3_utils.get_s3_file_path(
                 self.user, self.course_title, "inverted_index.json"
             )
-            faiss_index_key = s3_utils.get_s3_file_path(self.user, self.course_title, "faiss.index")
-
-            # Save chunks
-            s3_utils.upload_json_to_s3(self.chunks, self.s3_bucket, chunks_key)
-            print(f"Saved {len(self.chunks)} chunks to S3")
-
-            # Save inverted index
             s3_utils.upload_json_to_s3(self.inverted_index, self.s3_bucket, inverted_index_key)
-            print(f"Saved inverted index to S3")
-
-            # Save FAISS index if available
-            if FAISS_AVAILABLE and self.faiss_index is not None:
-                s3_utils.upload_faiss_index_to_s3(self.faiss_index, self.s3_bucket, faiss_index_key)
-                print(f"Saved FAISS index to S3")
 
             return True
 
@@ -220,7 +192,7 @@ class ContextManager:
         """
         Retrieve the most relevant chunks based on user query.
 
-        Uses inverted index, fuzzy matching, and FAISS for retrieval.
+        Uses inverted index, fuzzy matching, and Supabase vector search for retrieval.
 
         Args:
             query: The user's query string
@@ -230,22 +202,24 @@ class ContextManager:
             Concatenated relevant chunks as a string
         """
         if not self.chunks:
-            return ""
-
-        if self.faiss_index is None and FAISS_AVAILABLE:
-            # Try to load indices if not already loaded
+            # Try to load chunks if not already loaded
             self.load_saved_indices()
+            if not self.chunks:
+                return ""
 
         query_time = time.time()
 
         # Step 1: Check for exact match in inverted index
         normalized_query = query.lower()
-        if normalized_query in self.inverted_index:
+        chunk_index = vector_utils.get_inverted_index_match(
+            self.user, self.course_title, normalized_query
+        )
+        if chunk_index is not None:
             exact_match_time = time.time()
-            chunk_index = self.inverted_index[normalized_query]
-            print(f"Exact match time: {time.time() - exact_match_time:.2f} seconds")
-            print(f"Total query processing time: {time.time() - query_time:.2f} seconds")
-            return self.chunks[chunk_index]
+            if chunk_index < len(self.chunks):
+                print(f"Exact match time: {time.time() - exact_match_time:.2f} seconds")
+                print(f"Total query processing time: {time.time() - query_time:.2f} seconds")
+                return self.chunks[chunk_index]
 
         # Step 2: Fuzzy match for approximate quotes (case-insensitive)
         fuzzy_time = time.time()
@@ -255,40 +229,54 @@ class ContextManager:
             print(f"Total query processing time: {time.time() - query_time:.2f} seconds")
             return approximate_match
 
-        # Step 3: Fall back to FAISS if no exact or approximate match is found
-        if self.faiss_index is not None and FAISS_AVAILABLE:
-            faiss_search_time = time.time()
-            try:
-                query_embedding = (
-                    self.client_embedding.embeddings.create(
-                        model="text-embedding-3-large", input=query
-                    )
-                    .data[0]
-                    .embedding
+        # Step 3: Use Supabase vector search
+        vector_search_time = time.time()
+        try:
+            # Generate query embedding
+            query_embedding = (
+                self.client_embedding.embeddings.create(
+                    model="text-embedding-3-large", input=query
                 )
-                query_embedding_np = np.array(query_embedding).astype("float32").reshape(1, -1)
+                .data[0]
+                .embedding
+            )
 
-                _, indices = self.faiss_index.search(query_embedding_np, max_chunks)
-                relevant_chunks = "\n\n".join(
-                    [self.chunks[i] for i in indices[0] if i < len(self.chunks)]
-                )
-                print(f"FAISS search time: {time.time() - faiss_search_time:.2f} seconds")
+            # Search using Supabase vector store
+            results = vector_utils.search_similar_chunks(
+                self.user,
+                self.course_title,
+                query_embedding,
+                max_results=max_chunks,
+                similarity_threshold=0.5,
+            )
+
+            if results:
+                relevant_chunks = "\n\n".join([r["chunk_text"] for r in results])
+                print(f"Vector search time: {time.time() - vector_search_time:.2f} seconds")
                 print(f"Total query processing time: {time.time() - query_time:.2f} seconds")
                 return relevant_chunks
 
-            except Exception as e:
-                print(f"Error getting relevant chunks via FAISS: {e}")
+        except Exception as e:
+            print(f"Error getting relevant chunks via vector search: {e}")
 
         # Fallback: return first chunk if available
         return self.chunks[0] if self.chunks else ""
 
     def build_faiss_index(self):
-        """Build a FAISS index with precomputed embeddings of chunks."""
-        if not FAISS_AVAILABLE:
-            print("FAISS not available, skipping index build")
+        """
+        Build embeddings and store them in Supabase vector store.
+        
+        This method generates embeddings for all chunks and stores them in the database
+        using Supabase's pgvector extension instead of creating a FAISS index file.
+        """
+        if not self.chunks:
+            print("No chunks available to build embeddings")
             return
 
         embeddings = []
+        source_files = []  # Track source files if available
+
+        print(f"Generating embeddings for {len(self.chunks)} chunks...")
         for chunk in self.chunks:
             try:
                 embedding = (
@@ -299,16 +287,26 @@ class ContextManager:
                     .embedding
                 )
                 embeddings.append(embedding)
+                source_files.append(None)  # Could be enhanced to track source files
             except Exception as e:
                 print(f"Error generating embedding: {e}")
                 embeddings.append([0] * 3072)
+                source_files.append(None)
 
-        embeddings_np = np.array(embeddings).astype("float32")
+        # Store embeddings in Supabase vector store
+        print(f"Storing {len(embeddings)} embeddings in Supabase vector store...")
+        success = vector_utils.store_course_embeddings(
+            self.user,
+            self.course_title,
+            self.chunks,
+            embeddings,
+            source_files=source_files if any(source_files) else None,
+        )
 
-        # Initialize FAISS index with the large vector size
-        dimension = embeddings_np.shape[1]
-        self.faiss_index = faiss.IndexFlatL2(dimension)
-        self.faiss_index.add(embeddings_np)
+        if success:
+            print(f"Successfully stored embeddings in Supabase vector store")
+        else:
+            print(f"Failed to store embeddings in Supabase vector store")
 
     def load_and_process_context_from_s3(self) -> bool:
         """

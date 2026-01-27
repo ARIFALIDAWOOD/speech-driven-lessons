@@ -1,5 +1,6 @@
-# Start Flask Backend Server
-# This script starts the Python Flask backend with SocketIO using uv
+# Start Robyn Backend Server
+# This script starts the Python Robyn backend using uv
+# Robyn is a high-performance web framework powered by Rust
 
 param(
     [switch]$Debug = $true,
@@ -50,7 +51,7 @@ function Import-EnvFile {
 }
 
 Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Starting Flask Backend Server" -ForegroundColor Cyan
+Write-Host "  Starting Robyn Backend Server" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
 # Check if uv is available
@@ -111,17 +112,13 @@ if ($portInUse) {
 Push-Location $backendDir
 
 try {
-    Write-Host "`nStarting Flask server on $BindAddress`:$Port..." -ForegroundColor Yellow
+    Write-Host "`nStarting Robyn server on $BindAddress`:$Port..." -ForegroundColor Yellow
     Write-Host "Press Ctrl+C to stop the server`n" -ForegroundColor Gray
-
-    # Set environment variables
-    $env:FLASK_APP = "app.py"
-    $env:FLASK_ENV = if ($Debug) { "development" } else { "production" }
-    $env:FLASK_DEBUG = if ($Debug) { "1" } else { "0" }
 
     # Use Python 3.12 to avoid LangChain/Pydantic V1 deprecation warning on 3.14+
     # (run `uv python install 3.12` if missing)
-    uv run --python 3.12 python app.py
+    # Robyn uses its own Rust-based server, not uvicorn
+    uv run --python 3.12 python main.py
 }
 catch {
     Write-Host "ERROR: $_" -ForegroundColor Red

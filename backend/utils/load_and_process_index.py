@@ -1,7 +1,8 @@
 """
-Course context processing module for FAISS index creation.
+Course context processing module for Supabase vector store.
 
-This module processes course files and creates vector embeddings for RAG.
+This module processes course files and creates vector embeddings stored in Supabase database
+using pgvector extension for RAG (Retrieval-Augmented Generation).
 """
 
 import json
@@ -18,21 +19,9 @@ from utils.s3_utils import (
     list_files_in_prefix,
     read_text_file_from_s3,
     storage,
-    upload_faiss_index_to_s3,
     upload_json_to_s3,
 )
-
-# Try to import faiss, make it optional
-try:
-    import faiss
-
-    FAISS_AVAILABLE = True
-except ImportError:
-    print(
-        "Warning: FAISS not available in load_and_process_index. Vector index functionality will be disabled."
-    )
-    FAISS_AVAILABLE = False
-    faiss = None
+import utils.vector_utils as vector_utils
 
 
 def process_course_context_s3(bucket_name, username, coursename, api_key, max_tokens=2000):
@@ -102,39 +91,42 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
         chunks.append("\n".join(current_chunk))
     del combined_text  # Free memory
 
-    # 3. Generate embeddings and build FAISS index (only if FAISS is available)
-    faiss_index = None
-    if FAISS_AVAILABLE:
-        dimension = 3072  # text-embedding-3-large dimension
-        faiss_index = faiss.IndexFlatL2(dimension)
-        embeddings = []
+    # 3. Generate embeddings and store in Supabase vector store
+    embeddings = []
+    openai_client = openai.OpenAI(api_key=api_key)
 
-        openai_client = openai.OpenAI(api_key=api_key)
+    print(f"Generating embeddings for {len(chunks)} chunks...")
+    # Process chunks in batches to control memory usage
+    batch_size = 100
+    for i in range(0, len(chunks), batch_size):
+        batch = chunks[i : i + batch_size]
+        try:
+            response = openai_client.embeddings.create(
+                model="text-embedding-3-large", input=batch
+            )
+            batch_embeddings = [e.embedding for e in response.data]
+            embeddings.extend(batch_embeddings)
+            print(f"Generated embeddings for batch {i // batch_size + 1}/{(len(chunks) + batch_size - 1) // batch_size}")
+        except Exception as e:
+            print(f"Error generating embeddings: {str(e)}")
+            # Use zero vectors as fallback
+            dimension = 3072  # text-embedding-3-large dimension
+            embeddings.extend([np.zeros(dimension).tolist()] * len(batch))
 
-        # Process chunks in batches to control memory usage
-        batch_size = 100
-        for i in range(0, len(chunks), batch_size):
-            batch = chunks[i : i + batch_size]
-            try:
-                response = openai_client.embeddings.create(
-                    model="text-embedding-3-large", input=batch
-                )
-                batch_embeddings = [e.embedding for e in response.data]
-                embeddings.extend(batch_embeddings)
-            except Exception as e:
-                print(f"Error generating embeddings: {str(e)}")
-                embeddings.extend([np.zeros(dimension).tolist()] * len(batch))
+        # Clear memory between batches
+        del batch
 
-            # Clear memory between batches
-            del batch
-
-        # Convert to numpy array and add to FAISS
-        embeddings_np = np.array(embeddings).astype("float32")
-        faiss_index.add(embeddings_np)
-        del embeddings
-        del embeddings_np
+    # Store embeddings in Supabase vector store
+    print(f"Storing {len(embeddings)} embeddings in Supabase vector store...")
+    success = vector_utils.store_course_embeddings(
+        username, coursename, chunks, embeddings
+    )
+    if success:
+        print(f"Successfully stored embeddings in Supabase vector store")
     else:
-        print("Warning: FAISS not available. Skipping vector index creation.")
+        print(f"Warning: Failed to store embeddings in Supabase vector store")
+    
+    del embeddings  # Free memory
 
     # 4. Build inverted index
     inverted_index = {}
@@ -143,23 +135,17 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
         for quote in quotes:
             inverted_index[quote.lower()] = i
 
-    # 5. Upload all artifacts to storage
+    # 5. Upload chunks and inverted index to storage (for backward compatibility)
     base_key = get_course_s3_folder(username, coursename)
 
-    # Upload chunks
+    # Upload chunks to storage (backward compatibility)
     upload_json_to_s3(chunks, bucket_name, f"{base_key}chunks.json")
     del chunks
 
-    # Upload FAISS index (only if available)
-    if FAISS_AVAILABLE and faiss_index is not None:
-        upload_faiss_index_to_s3(faiss_index, bucket_name, f"{base_key}faiss.index")
-        del faiss_index
-    else:
-        print(
-            "Warning: FAISS index not created or FAISS not available. Skipping FAISS index upload."
-        )
-
-    # Upload inverted index
+    # Store inverted index in database
+    vector_utils.store_inverted_index(username, coursename, inverted_index)
+    
+    # Also upload inverted index to storage (backward compatibility)
     upload_json_to_s3(inverted_index, bucket_name, f"{base_key}inverted_index.json")
     del inverted_index
 

@@ -148,7 +148,7 @@ try {
     # 2. Start Backend in new window
     if (-not $SkipBackend) {
         Write-Host "`n--- Starting Backend ---" -ForegroundColor Magenta
-        Start-ServiceInNewWindow -Name "Flask Backend" -Script "start-backend.ps1"
+        Start-ServiceInNewWindow -Name "Robyn Backend" -Script "start-backend.ps1"
         Start-Sleep -Seconds 2
     }
     else {

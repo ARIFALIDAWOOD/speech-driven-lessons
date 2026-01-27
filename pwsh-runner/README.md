@@ -94,7 +94,7 @@ Installs all required dependencies using `npm` for Node.js and `uv` for Python.
 | Service | Port | URL |
 |---------|------|-----|
 | Next.js Frontend | 3391 | http://localhost:3391 |
-| Flask Backend | 5000 | http://localhost:5000 |
+| Robyn Backend | 5000 | http://localhost:5000 |
 | Supabase API | 55321 | http://localhost:55321 |
 | Supabase DB | 55322 | postgresql://localhost:55322 |
 | Supabase Studio | 55323 | http://localhost:55323 |
