@@ -1,0 +1,1149 @@
+diff --git a/backend/models/session.py b/backend/models/session.py
+index eeb0b89..784cc8d 100644
+--- a/backend/models/session.py
++++ b/backend/models/session.py
+@@ -184,6 +184,12 @@ class SessionContext:
+     student_requested_end: bool = False
+     needs_clarification: bool = False
+ 
++    # Phase 1: Orchestration integration
++    course_id: Optional[str] = None
++    embeddings_ready: bool = False
++    orchestrator_session_id: Optional[str] = None
++    course_title: str = ""
++
+     def add_message(self, role: str, content: str):
+         """Add a message to conversation history."""
+         self.conversation_history.append(
+diff --git a/backend/orchestration/agents/tutor_adapter.py b/backend/orchestration/agents/tutor_adapter.py
+index d35801d..7d9ab87 100644
+--- a/backend/orchestration/agents/tutor_adapter.py
++++ b/backend/orchestration/agents/tutor_adapter.py
+@@ -39,11 +39,15 @@ class TutorAgentAdapter:
+ 
+         if session_id not in cls._active_tutors:
+             # Create new tutor with context from state
++            meta = (state.get("course_outline") or {}).get("metadata") or {}
+             context = SessionContext(
+                 session_id=session_id,
+                 user_id=state["user_id"],
++                board=meta.get("board", ""),
++                subject=meta.get("subject", ""),
++                chapter=meta.get("chapter", ""),
+                 outline=state.get("course_outline"),
+-                course_title=state.get("course_outline", {}).get("metadata", {}).get("title", ""),
++                course_title=meta.get("title", ""),
+             )
+ 
+             # Set course_id if available
+@@ -130,9 +134,9 @@ def tutor_node(state: OrchestratorState) -> Dict[str, Any]:
+     # Extract tutor context for orchestration
+     tutor_context = {
+         "current_state": tutor_state_value,
+-        "topic_index": tutor.context.current_topic_index,
++        "topic_index": tutor.context.current_section_index,
+         "subtopic_index": tutor.context.current_subtopic_index,
+-        "messages_in_state": tutor.context.messages_in_current_state,
++        "messages_in_state": len(tutor.context.conversation_history),
+     }
+ 
+     # Build state updates
+@@ -147,7 +151,7 @@ def tutor_node(state: OrchestratorState) -> Dict[str, Any]:
+         updates["messages"] = new_messages
+ 
+     # Check if tutor is doing understanding check
+-    if tutor_state_value == TutorState.CHECKING_UNDERSTANDING.value:
++    if tutor_state_value == TutorState.CHECK_UNDERSTANDING.value:
+         updates["current_phase"] = SessionPhase.ASSESSMENT
+ 
+     return updates
+@@ -158,11 +162,12 @@ def should_continue_tutoring(state: OrchestratorState) -> str:
+     Conditional edge function after tutor node.
+ 
+     Determines if tutoring should continue or if another agent should take over.
++    After tutor processes input, we should end the turn unless intervention is needed.
+     """
+     tutor_state = state.get("tutor_state", "")
+ 
+     # Check for assessment trigger
+-    if tutor_state == TutorState.CHECKING_UNDERSTANDING.value:
++    if tutor_state == TutorState.CHECK_UNDERSTANDING.value:
+         return "assessor"
+ 
+     # Check for progress intervention
+@@ -175,5 +180,6 @@ def should_continue_tutoring(state: OrchestratorState) -> str:
+     if struggles >= 3:
+         return "progress_tracker"
+ 
+-    # Continue with orchestrator for routing
+-    return "orchestrator"
++    # Turn is complete - end the graph execution for this turn
++    # Next user input will start a new graph invocation
++    return "__end__"
+diff --git a/backend/orchestration/workflow.py b/backend/orchestration/workflow.py
+index 3d9f7e7..273f5d9 100644
+--- a/backend/orchestration/workflow.py
++++ b/backend/orchestration/workflow.py
+@@ -4,10 +4,9 @@ Orchestration Workflow - Phase 1
+ Main LangGraph StateGraph definition for the multi-agent orchestration system.
+ """
+ 
+-from typing import Optional
++from typing import Optional, Any
+ import logging
+ from langgraph.graph import StateGraph, START, END
+-from langgraph.graph.graph import CompiledGraph
+ 
+ from .state import OrchestratorState, AgentType, SessionPhase
+ from .agents import (
+@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
+ def create_orchestration_graph(
+     redis_url: Optional[str] = None,
+     with_checkpointer: bool = True,
+-) -> CompiledGraph:
++) -> Any:
+     """
+     Create the orchestration workflow graph.
+ 
+@@ -70,7 +69,7 @@ def create_orchestration_graph(
+         }
+     )
+ 
+-    # Tutor returns to orchestrator (with intervention check)
++    # Tutor returns to orchestrator (with intervention check) or ends
+     builder.add_conditional_edges(
+         "tutor",
+         should_continue_tutoring,
+@@ -78,6 +77,7 @@ def create_orchestration_graph(
+             "orchestrator": "orchestrator",
+             "assessor": "assessor",
+             "progress_tracker": "progress_tracker",
++            "__end__": END,
+         }
+     )
+ 
+@@ -123,7 +123,7 @@ def _placeholder_node(agent_name: str):
+ 
+ # Async version for web handlers
+ async def process_orchestration_turn(
+-    graph: CompiledGraph,
++    graph: Any,
+     state: OrchestratorState,
+     user_input: str,
+     thread_id: str,
+diff --git a/backend/robyn_routers/assistant.py b/backend/robyn_routers/assistant.py
+index 619d7a5..a5b525e 100644
+--- a/backend/robyn_routers/assistant.py
++++ b/backend/robyn_routers/assistant.py
+@@ -64,7 +64,7 @@ async def initialize_chatbot(request: Request):
+                 raise ValueError("No system prompt found in course configuration")
+         except Exception as e:
+             logger.error(f"Error loading course configuration: {str(e)}")
+-            return {"detail": "Failed to load course configuration"}, 500, {}
++            return {"detail": "Failed to load course configuration"}, {}, 500
+ 
+         # Create chatbot instance for this session
+         chatbot = ChatBot(context_manager=new_context_manager, api_key=API_KEY)
+@@ -78,7 +78,7 @@ async def initialize_chatbot(request: Request):
+ 
+     except Exception as e:
+         logger.error(f"Error initializing chatbot: {str(e)}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.post("/get-ai-response", auth_required=True)
+@@ -93,7 +93,7 @@ async def get_ai_response(request: Request):
+         course_title = body.get("course_title")
+ 
+         if not course_title:
+-            return {"detail": "course_title required in request"}, 400, {}
++            return {"detail": "course_title required in request"}, {}, 400
+ 
+         start = time.time()
+ 
+@@ -145,7 +145,7 @@ async def get_ai_response(request: Request):
+ 
+     except Exception as e:
+         logger.error(f"Error getting AI response: {str(e)}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.post("/help-center/chat", auth_required=True)
+@@ -159,7 +159,7 @@ async def help_center_chat(request: Request):
+         user_message = body.get("message", "")
+ 
+         if not user_message:
+-            return {"detail": "Message is required"}, 400, {}
++            return {"detail": "Message is required"}, {}, 400
+ 
+         # Get conversation history for context (limited to last 5 messages)
+         history = body.get("history", [])[-5:] if body.get("history") else []
+@@ -225,12 +225,12 @@ Keep responses under 150 words unless the question requires a detailed explanati
+                 )
+                 ai_response = response.choices[0].message.content
+             else:
+-                return {"detail": "No AI provider configured"}, 500, {}
++                return {"detail": "No AI provider configured"}, {}, 500
+ 
+         return {"response": ai_response}
+ 
+     except requests.exceptions.Timeout:
+-        return {"detail": "Request timed out. Please try again."}, 504, {}
++        return {"detail": "Request timed out. Please try again."}, {}, 504
+     except Exception as e:
+         logger.error(f"Help center chat error: {str(e)}")
+-        return {"detail": "Failed to generate response. Please try again."}, 500, {}
++        return {"detail": "Failed to generate response. Please try again."}, {}, 500
+diff --git a/backend/robyn_routers/course.py b/backend/robyn_routers/course.py
+index 15f1482..6824f39 100644
+--- a/backend/robyn_routers/course.py
++++ b/backend/robyn_routers/course.py
+@@ -30,18 +30,18 @@ def _get_api_key() -> str | None:
+     return os.getenv("OPENAI_API_KEY")
+ 
+ 
+-def _handle_service_error(e: Exception) -> tuple[dict, int, dict]:
++def _handle_service_error(e: Exception) -> tuple[dict, dict, int]:
+     """Convert service exceptions to HTTP responses."""
+     if isinstance(e, NotFoundError):
+-        return {"detail": str(e)}, 404, {}
++        return {"detail": str(e)}, {}, 404
+     elif isinstance(e, ValidationError):
+-        return {"detail": str(e)}, 400, {}
++        return {"detail": str(e)}, {}, 400
+     elif isinstance(e, (StorageError, ProcessingError)):
+         logger.error(f"Service error: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+     else:
+         logger.error(f"Unexpected error: {e}")
+-        return {"detail": "An unexpected error occurred"}, 500, {}
++        return {"detail": "An unexpected error occurred"}, {}, 500
+ 
+ 
+ @router.post("/create-course", auth_required=True)
+@@ -73,7 +73,7 @@ async def create_course(request: Request):
+         return _handle_service_error(e)
+     except Exception as e:
+         logger.error(f"Error creating/updating course: {e}")
+-        return {"detail": "An unexpected error occurred during course creation/update"}, 500, {}
++        return {"detail": "An unexpected error occurred during course creation/update"}, {}, 500
+ 
+ 
+ @router.post("/customize", auth_required=True)
+@@ -103,7 +103,7 @@ async def customize_course(request: Request):
+         return _handle_service_error(e)
+     except Exception as e:
+         logger.error(f"Error customizing course: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.post("/generate-course-syllabus", auth_required=True)
+@@ -124,7 +124,7 @@ async def generate_course_syllabus(request: Request):
+         return _handle_service_error(e)
+     except Exception as e:
+         logger.error(f"Error generating syllabus: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.post("/generate-course-slides", auth_required=True)
+@@ -141,7 +141,7 @@ async def generate_course_slides(request: Request):
+         if response.success:
+             return {"message": response.message}
+         else:
+-            return {"detail": response.message}, 500, {}
++            return {"detail": response.message}, {}, 500
+ 
+     except (NotFoundError, ValidationError, StorageError) as e:
+         return _handle_service_error(e)
+@@ -208,7 +208,7 @@ async def delete_course_endpoint(request: Request):
+         return _handle_service_error(e)
+     except Exception as e:
+         logger.error(f"Error deleting course: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.post("/upload-file", auth_required=True)
+@@ -223,18 +223,18 @@ async def upload_file(request: Request):
+ 
+         course_id = form_data.get("course_id")
+         if not course_id:
+-            return {"detail": "course_id is required"}, 400, {}
++            return {"detail": "course_id is required"}, {}, 400
+ 
+         # Get the uploaded file
+         if not files or "file" not in files:
+-            return {"detail": "No file uploaded"}, 400, {}
++            return {"detail": "No file uploaded"}, {}, 400
+ 
+         file_info = files["file"]
+         filename = file_info.get("filename", "")
+         file_content = file_info.get("body", b"")
+ 
+         if not filename:
+-            return {"detail": "No selected file"}, 400, {}
++            return {"detail": "No selected file"}, {}, 400
+ 
+         service = CourseService(user_email=user["email"])
+         req = UploadFileRequest(
+@@ -246,17 +246,41 @@ async def upload_file(request: Request):
+         response = service.upload_file(req)
+ 
+         if response.success:
++            # Phase 2: Emit file upload event for embedding rebuild
++            try:
++                from events import CourseEvent, CourseEventType, get_event_bus
++                from workers import get_embedding_worker
++                import asyncio
++
++                event_bus = get_event_bus()
++                event_bus.emit(
++                    CourseEvent(
++                        event_type=CourseEventType.FILE_UPLOADED,
++                        course_id=course_id,
++                        user_email=user["email"],
++                        data={"filename": filename},
++                    )
++                )
++
++                # Schedule embedding rebuild
++                worker = get_embedding_worker()
++                asyncio.create_task(
++                    worker.schedule_rebuild(course_id, user["email"])
++                )
++            except Exception as event_error:
++                logger.warning(f"Failed to emit file upload event: {event_error}")
++
+             return {"message": response.message, "filename": filename}
+         else:
+-            return {"detail": response.message}, 500, {}
++            return {"detail": response.message}, {}, 500
+ 
+     except ValidationError as e:
+-        return {"detail": str(e)}, 400, {}
++        return {"detail": str(e)}, {}, 400
+     except (NotFoundError, StorageError) as e:
+         return _handle_service_error(e)
+     except Exception as e:
+         logger.error(f"Error uploading file: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.delete("/delete-file", auth_required=True)
+@@ -266,30 +290,57 @@ async def delete_file(request: Request):
+         user = require_auth(request)
+         body = request.json()
+ 
++        course_id = body.get("course_id")
++        filename = body.get("filename")
++
+         service = CourseService(user_email=user["email"])
+         req = DeleteFileRequest(
+-            course_id=body.get("course_id"),
+-            filename=body.get("filename"),
++            course_id=course_id,
++            filename=filename,
+         )
+ 
+         response = service.delete_file(req)
+ 
+         if response.success:
++            # Phase 2: Emit file delete event for embedding rebuild
++            try:
++                from events import CourseEvent, CourseEventType, get_event_bus
++                from workers import get_embedding_worker
++                import asyncio
++
++                event_bus = get_event_bus()
++                event_bus.emit(
++                    CourseEvent(
++                        event_type=CourseEventType.FILE_DELETED,
++                        course_id=course_id,
++                        user_email=user["email"],
++                        data={"filename": filename},
++                    )
++                )
++
++                # Schedule embedding rebuild
++                worker = get_embedding_worker()
++                asyncio.create_task(
++                    worker.schedule_rebuild(course_id, user["email"])
++                )
++            except Exception as event_error:
++                logger.warning(f"Failed to emit file delete event: {event_error}")
++
+             return {"message": response.message}
+         else:
+-            return {"detail": response.message}, 500, {}
++            return {"detail": response.message}, {}, 500
+ 
+     except (NotFoundError, StorageError) as e:
+         return _handle_service_error(e)
+     except Exception as e:
+         logger.error(f"Error deleting file: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.get("/get-file", auth_required=True)
+ async def get_file(request: Request):
+     """Get file endpoint - placeholder."""
+-    return {"detail": "Get file endpoint not implemented"}, 501, {}
++    return {"detail": "Get file endpoint not implemented"}, {}, 501
+ 
+ 
+ @router.post("/process-content/:course_id", auth_required=True)
+@@ -301,7 +352,7 @@ async def process_course_content_endpoint(request: Request):
+ 
+         api_key = _get_api_key()
+         if not api_key:
+-            return {"detail": "Missing API key"}, 500, {}
++            return {"detail": "Missing API key"}, {}, 500
+ 
+         logger.info(f"Starting content processing for course {course_id}")
+         service = CourseService(user_email=user["email"], api_key=api_key)
+@@ -312,15 +363,15 @@ async def process_course_content_endpoint(request: Request):
+         if response.success:
+             return {"message": "Course content processed successfully"}
+         else:
+-            return {"detail": response.message}, 500, {}
++            return {"detail": response.message}, {}, 500
+ 
+     except ValidationError as e:
+-        return {"detail": str(e)}, 400, {}
++        return {"detail": str(e)}, {}, 400
+     except (NotFoundError, StorageError, ProcessingError) as e:
+         return _handle_service_error(e)
+     except Exception as e:
+         logger.error(f"Error processing content: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.post("/auto-save-content", auth_required=True)
+@@ -343,12 +394,12 @@ async def auto_save_content(request: Request):
+         }
+ 
+     except NotFoundError as e:
+-        return {"detail": f"Course {e.resource_id} not found or does not exist"}, 404, {}
++        return {"detail": f"Course {e.resource_id} not found or does not exist"}, {}, 404
+     except ValidationError as e:
+-        return {"detail": str(e)}, 400, {}
++        return {"detail": str(e)}, {}, 400
+     except Exception as e:
+         logger.error(f"Error auto-saving content: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.post("/update-step", auth_required=True)
+@@ -364,7 +415,7 @@ async def update_course_step(request: Request):
+         is_creation_complete = create_course_process.get("is_creation_complete", False)
+ 
+         if not isinstance(creation_step, int) or creation_step < 1 or creation_step > 6:
+-            return {"detail": "Valid step number (1-6) is required"}, 400, {}
++            return {"detail": "Valid step number (1-6) is required"}, {}, 400
+ 
+         service = CourseService(user_email=user["email"])
+         req = UpdateStepRequest(
+@@ -380,9 +431,158 @@ async def update_course_step(request: Request):
+         }
+ 
+     except NotFoundError as e:
+-        return {"detail": f"Course {e.resource_id} not found"}, 404, {}
++        return {"detail": f"Course {e.resource_id} not found"}, {}, 404
+     except ValidationError as e:
+-        return {"detail": str(e)}, 400, {}
++        return {"detail": str(e)}, {}, 400
+     except Exception as e:
+         logger.error(f"Error updating course step: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
++
++
++# =========================================================================
++# Phase 2: Course Status and Embeddings Endpoints
++# =========================================================================
++
++
++@router.get("/status/:course_id", auth_required=True)
++async def get_course_status(request: Request):
++    """
++    Get comprehensive course status including plan and embeddings status.
++
++    Returns plan generation status, embeddings status, and overall course info.
++    """
++    try:
++        user = require_auth(request)
++        course_id = request.path_params.get("course_id")
++
++        service = CourseService(user_email=user["email"])
++        status = service.get_course_status(course_id)
++
++        if "error" in status:
++            return {"detail": status["error"]}, {}, 404
++
++        return status
++
++    except Exception as e:
++        logger.error(f"Error getting course status: {e}")
++        return {"detail": str(e)}, {}, 500
++
++
++@router.post("/rebuild-embeddings/:course_id", auth_required=True)
++async def rebuild_embeddings(request: Request):
++    """
++    Force rebuild of course embeddings.
++
++    This bypasses the debounce and starts an immediate rebuild.
++    """
++    try:
++        user = require_auth(request)
++        course_id = request.path_params.get("course_id")
++
++        # Verify course exists
++        service = CourseService(user_email=user["email"])
++        try:
++            service.get_course(course_id)
++        except NotFoundError:
++            return {"detail": "Course not found"}, {}, 404
++
++        # Mark as building and start rebuild
++        service.update_embeddings_status(course_id, "building")
++
++        from workers import get_embedding_worker
++
++        worker = get_embedding_worker()
++        correlation_id = await worker.force_rebuild_now(course_id, user["email"])
++
++        return {
++            "message": "Embeddings rebuild started",
++            "correlation_id": correlation_id,
++        }
++
++    except Exception as e:
++        logger.error(f"Error rebuilding embeddings: {e}")
++        return {"detail": str(e)}, {}, 500
++
++
++@router.get("/embeddings-status/:course_id", auth_required=True)
++async def get_embeddings_status(request: Request):
++    """Get just the embeddings status for a course."""
++    try:
++        user = require_auth(request)
++        course_id = request.path_params.get("course_id")
++
++        service = CourseService(user_email=user["email"])
++        status = service.get_embeddings_status(course_id)
++
++        return status
++
++    except Exception as e:
++        logger.error(f"Error getting embeddings status: {e}")
++        return {"detail": str(e)}, {}, 500
++
++
++@router.post("/generate-plan/:course_id", auth_required=True)
++async def generate_course_plan(request: Request):
++    """
++    Generate a course plan/outline using AI.
++
++    Uses PDF content if available, otherwise uses search-based generation.
++    """
++    try:
++        user = require_auth(request)
++        course_id = request.path_params.get("course_id")
++
++        # Verify course exists
++        service = CourseService(user_email=user["email"])
++        try:
++            service.get_course(course_id)
++        except NotFoundError:
++            return {"detail": "Course not found"}, {}, 404
++
++        # Mark as generating
++        service.update_plan_status(course_id, "generating")
++
++        # Generate plan
++        from services.plan_generator import PlanGenerator
++
++        generator = PlanGenerator()
++        plan = await generator.generate_async(course_id, user["email"])
++
++        return {
++            "message": "Course plan generated successfully",
++            "plan_id": plan.id,
++            "sections": len(plan.sections),
++            "total_minutes": plan.total_estimated_minutes,
++        }
++
++    except Exception as e:
++        logger.error(f"Error generating course plan: {e}")
++
++        # Update status to error
++        try:
++            service = CourseService(user_email=user["email"])
++            service.update_plan_status(course_id, "error", error=str(e))
++        except Exception:
++            pass
++
++        return {"detail": str(e)}, {}, 500
++
++
++@router.get("/plan/:course_id", auth_required=True)
++async def get_course_plan(request: Request):
++    """Get the generated course plan."""
++    try:
++        user = require_auth(request)
++        course_id = request.path_params.get("course_id")
++
++        service = CourseService(user_email=user["email"])
++        plan = service.load_course_plan(course_id)
++
++        if not plan:
++            return {"detail": "Course plan not found"}, {}, 404
++
++        return plan
++
++    except Exception as e:
++        logger.error(f"Error getting course plan: {e}")
++        return {"detail": str(e)}, {}, 500
+diff --git a/backend/robyn_routers/tutor_session.py b/backend/robyn_routers/tutor_session.py
+index 992e80b..6471edb 100644
+--- a/backend/robyn_routers/tutor_session.py
++++ b/backend/robyn_routers/tutor_session.py
+@@ -26,15 +26,15 @@ def _get_user_id(user: dict) -> str:
+     return user.get("email") or user.get("id")
+ 
+ 
+-def _handle_session_error(e: Exception) -> tuple[dict, int, dict]:
++def _handle_session_error(e: Exception) -> tuple[dict, dict, int]:
+     """Convert session exceptions to HTTP responses."""
+     if isinstance(e, SessionNotFoundError):
+-        return {"detail": "Session not found"}, 404, {}
++        return {"detail": "Session not found"}, {}, 404
+     elif isinstance(e, ValidationError):
+-        return {"detail": str(e)}, 400, {}
++        return {"detail": str(e)}, {}, 400
+     else:
+         logger.error(f"Unexpected error: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.post("/create", auth_required=True)
+@@ -43,8 +43,37 @@ async def create_session(request: Request):
+     try:
+         user = require_auth(request)
+         body = request.json()
+-
+-        service = TutorSessionService(user_id=_get_user_id(user))
++        user_email = _get_user_id(user)
++
++        # Phase 2: Check embeddings if course_id provided
++        course_id = body.get("course_id")
++        if course_id:
++            from services import CourseService
++
++            course_service = CourseService(user_email=user_email)
++            embeddings_status = course_service.get_embeddings_status(course_id)
++
++            if embeddings_status.get("status") == "not_found":
++                return {"detail": "Course not found"}, {}, 404
++
++            if embeddings_status.get("status") not in ("ready", "unknown"):
++                # Allow unknown for backward compatibility
++                status = embeddings_status.get("status")
++                if status == "building":
++                    return {
++                        "detail": "Course embeddings are being built. Please wait.",
++                        "status": status,
++                    }, {}, 409
++                elif status == "stale":
++                    # Allow stale but warn
++                    logger.warning(f"Starting session with stale embeddings for {course_id}")
++                elif status == "error":
++                    return {
++                        "detail": f"Embeddings build failed: {embeddings_status.get('error')}",
++                        "status": status,
++                    }, {}, 409
++
++        service = TutorSessionService(user_id=user_email)
+         req = CreateSessionRequest(
+             board=body.get("selection_board", ""),
+             subject=body.get("selection_subject", ""),
+@@ -54,18 +83,22 @@ async def create_session(request: Request):
+ 
+         response = service.create_session(req)
+ 
+-        return {
+-            "session_id": response.session.session_id if response.session else None,
+-            "context": response.session.to_dict() if response.session else None,
+-            "outline": response.outline,
+-            "message": response.message,
+-        }, 201, {}
++        return (
++            {
++                "session_id": response.session.session_id if response.session else None,
++                "context": response.session.to_dict() if response.session else None,
++                "outline": response.outline,
++                "message": response.message,
++            },
++            {},
++            201,
++        )
+ 
+     except ValidationError as e:
+-        return {"detail": str(e)}, 400, {}
++        return {"detail": str(e)}, {}, 400
+     except Exception as e:
+         logger.error(f"Error creating session: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.get("/:session_id/stream", auth_required=True)
+@@ -75,7 +108,7 @@ async def stream_session(request: Request):
+ 
+     # Check if session exists
+     if not TutorSessionService.session_exists(session_id):
+-        return {"detail": "Session not found"}, 404, {}
++        return {"detail": "Session not found"}, {}, 404
+ 
+     user = require_auth(request)
+     service = TutorSessionService(user_id=_get_user_id(user))
+@@ -103,13 +136,13 @@ async def respond_to_tutor(request: Request):
+ 
+     # Check if session exists
+     if not TutorSessionService.session_exists(session_id):
+-        return {"detail": "Session not found"}, 404, {}
++        return {"detail": "Session not found"}, {}, 404
+ 
+     body = request.json()
+     message = body.get("message")
+ 
+     if not message:
+-        return {"detail": "Message is required"}, 400, {}
++        return {"detail": "Message is required"}, {}, 400
+ 
+     user = require_auth(request)
+     service = TutorSessionService(user_id=_get_user_id(user))
+@@ -161,10 +194,10 @@ async def get_session_status(request: Request):
+         }
+ 
+     except SessionNotFoundError:
+-        return {"detail": "Session not found"}, 404, {}
++        return {"detail": "Session not found"}, {}, 404
+     except Exception as e:
+         logger.error(f"Error getting session status: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.post("/:session_id/pause", auth_required=True)
+@@ -183,10 +216,10 @@ async def pause_session(request: Request):
+         }
+ 
+     except SessionNotFoundError:
+-        return {"detail": "Session not found"}, 404, {}
++        return {"detail": "Session not found"}, {}, 404
+     except Exception as e:
+         logger.error(f"Error pausing session: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.post("/:session_id/resume", auth_required=True)
+@@ -196,7 +229,7 @@ async def resume_session(request: Request):
+ 
+     # Check if session exists
+     if not TutorSessionService.session_exists(session_id):
+-        return {"detail": "Session not found"}, 404, {}
++        return {"detail": "Session not found"}, {}, 404
+ 
+     user = require_auth(request)
+     service = TutorSessionService(user_id=_get_user_id(user))
+@@ -233,10 +266,10 @@ async def end_session(request: Request):
+         }
+ 
+     except SessionNotFoundError:
+-        return {"detail": "Session not found"}, 404, {}
++        return {"detail": "Session not found"}, {}, 404
+     except Exception as e:
+         logger.error(f"Error ending session: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.get("/:session_id/history", auth_required=True)
+@@ -255,10 +288,10 @@ async def get_session_history(request: Request):
+         }
+ 
+     except SessionNotFoundError:
+-        return {"detail": "Session not found"}, 404, {}
++        return {"detail": "Session not found"}, {}, 404
+     except Exception as e:
+         logger.error(f"Error getting session history: {e}")
+-        return {"detail": str(e)}, 500, {}
++        return {"detail": str(e)}, {}, 500
+ 
+ 
+ @router.get("/progress", auth_required=True)
+diff --git a/backend/services/course_service.py b/backend/services/course_service.py
+index 63090f5..c0fd6e9 100644
+--- a/backend/services/course_service.py
++++ b/backend/services/course_service.py
+@@ -795,3 +795,226 @@ class CourseService:
+             success=False,
+             message="Course customization not yet implemented",
+         )
++
++    # =========================================================================
++    # Phase 2: Embeddings and Plan Management
++    # =========================================================================
++
++    def update_embeddings_status(
++        self,
++        course_id: str,
++        status: str,
++        built_at: Optional[str] = None,
++        error: Optional[str] = None,
++    ) -> bool:
++        """
++        Update the embeddings status for a course.
++
++        Args:
++            course_id: The course ID
++            status: Status value ("ready", "stale", "building", "error")
++            built_at: ISO timestamp of when embeddings were built
++            error: Error message if status is "error"
++
++        Returns:
++            True if update succeeded, False otherwise
++        """
++        course_info_key = self._get_course_info_key(course_id)
++
++        try:
++            course_info = s3_utils.get_json_from_s3(self.s3_bucket, course_info_key)
++            if not course_info:
++                logger.warning(f"Course not found for embeddings update: {course_id}")
++                return False
++
++            # Update embeddings fields
++            course_info["embeddings_status"] = status
++            course_info["last_updated_at"] = self._get_current_utc_iso_string()
++
++            if built_at:
++                course_info["embeddings_built_at"] = built_at
++
++            if error:
++                course_info["embeddings_error"] = error
++            elif "embeddings_error" in course_info:
++                # Clear error on non-error status
++                del course_info["embeddings_error"]
++
++            s3_utils.upload_json_to_s3(course_info, self.s3_bucket, course_info_key)
++            logger.info(f"Updated embeddings status for {course_id}: {status}")
++            return True
++
++        except Exception as e:
++            logger.error(f"Failed to update embeddings status for {course_id}: {e}")
++            return False
++
++    def get_embeddings_status(self, course_id: str) -> dict:
++        """
++        Get the embeddings status for a course.
++
++        Args:
++            course_id: The course ID
++
++        Returns:
++            Dict with status, built_at, and error fields
++        """
++        course_info_key = self._get_course_info_key(course_id)
++
++        try:
++            course_info = s3_utils.get_json_from_s3(self.s3_bucket, course_info_key)
++            if not course_info:
++                return {"status": "not_found"}
++
++            return {
++                "status": course_info.get("embeddings_status", "unknown"),
++                "built_at": course_info.get("embeddings_built_at"),
++                "error": course_info.get("embeddings_error"),
++            }
++
++        except Exception as e:
++            logger.error(f"Failed to get embeddings status for {course_id}: {e}")
++            return {"status": "error", "error": str(e)}
++
++    def update_plan_status(
++        self,
++        course_id: str,
++        status: str,
++        version: Optional[int] = None,
++        generated_at: Optional[str] = None,
++        error: Optional[str] = None,
++    ) -> bool:
++        """
++        Update the plan/outline status for a course.
++
++        Args:
++            course_id: The course ID
++            status: Status value ("ready", "generating", "error")
++            version: Plan version number
++            generated_at: ISO timestamp of when plan was generated
++            error: Error message if status is "error"
++
++        Returns:
++            True if update succeeded, False otherwise
++        """
++        course_info_key = self._get_course_info_key(course_id)
++
++        try:
++            course_info = s3_utils.get_json_from_s3(self.s3_bucket, course_info_key)
++            if not course_info:
++                logger.warning(f"Course not found for plan update: {course_id}")
++                return False
++
++            # Update plan fields
++            course_info["plan_status"] = status
++            course_info["last_updated_at"] = self._get_current_utc_iso_string()
++
++            if version is not None:
++                course_info["plan_version"] = version
++
++            if generated_at:
++                course_info["plan_generated_at"] = generated_at
++
++            if error:
++                course_info["plan_error"] = error
++            elif "plan_error" in course_info:
++                del course_info["plan_error"]
++
++            s3_utils.upload_json_to_s3(course_info, self.s3_bucket, course_info_key)
++            logger.info(f"Updated plan status for {course_id}: {status}")
++            return True
++
++        except Exception as e:
++            logger.error(f"Failed to update plan status for {course_id}: {e}")
++            return False
++
++    def save_course_plan(self, course_id: str, plan_data: dict) -> bool:
++        """
++        Save a course plan to S3.
++
++        Args:
++            course_id: The course ID
++            plan_data: The plan data dictionary
++
++        Returns:
++            True if save succeeded, False otherwise
++        """
++        plan_key = f"{self._get_course_folder(course_id)}course_plan.json"
++
++        try:
++            s3_utils.upload_json_to_s3(plan_data, self.s3_bucket, plan_key)
++
++            # Update course info with plan metadata
++            self.update_plan_status(
++                course_id,
++                status="ready",
++                version=plan_data.get("version", 1),
++                generated_at=plan_data.get("generated_at"),
++            )
++
++            logger.info(f"Saved course plan for {course_id}")
++            return True
++
++        except Exception as e:
++            logger.error(f"Failed to save course plan for {course_id}: {e}")
++            return False
++
++    def load_course_plan(self, course_id: str) -> Optional[dict]:
++        """
++        Load a course plan from S3.
++
++        Args:
++            course_id: The course ID
++
++        Returns:
++            Plan data dictionary, or None if not found
++        """
++        plan_key = f"{self._get_course_folder(course_id)}course_plan.json"
++
++        try:
++            plan_data = s3_utils.get_json_from_s3(self.s3_bucket, plan_key)
++            return plan_data
++
++        except Exception as e:
++            logger.warning(f"Failed to load course plan for {course_id}: {e}")
++            return None
++
++    def get_course_status(self, course_id: str) -> dict:
++        """
++        Get comprehensive status for a course including plan and embeddings.
++
++        Args:
++            course_id: The course ID
++
++        Returns:
++            Dict with course, plan, and embeddings status
++        """
++        course_info_key = self._get_course_info_key(course_id)
++
++        try:
++            course_info = s3_utils.get_json_from_s3(self.s3_bucket, course_info_key)
++            if not course_info:
++                return {"error": "Course not found"}
++
++            return {
++                "course_id": course_id,
++                "title": course_info.get("title", ""),
++                "is_creation_complete": course_info.get("create_course_process", {}).get(
++                    "is_creation_complete", False
++                ),
++                "plan": {
++                    "status": course_info.get("plan_status", "unknown"),
++                    "version": course_info.get("plan_version"),
++                    "generated_at": course_info.get("plan_generated_at"),
++                    "error": course_info.get("plan_error"),
++                },
++                "embeddings": {
++                    "status": course_info.get("embeddings_status", "unknown"),
++                    "built_at": course_info.get("embeddings_built_at"),
++                    "error": course_info.get("embeddings_error"),
++                },
++                "last_updated_at": course_info.get("last_updated_at"),
++            }
++
++        except Exception as e:
++            logger.error(f"Failed to get course status for {course_id}: {e}")
++            return {"error": str(e)}
+diff --git a/backend/utils/vector_utils.py b/backend/utils/vector_utils.py
+index 77311fa..a06c798 100644
+--- a/backend/utils/vector_utils.py
++++ b/backend/utils/vector_utils.py
+@@ -192,7 +192,10 @@ def search_similar_chunks(
+     similarity_threshold: float = 0.5,
+ ) -> List[Dict[str, Any]]:
+     """
+-    Search for similar chunks using vector similarity.
++    Search for similar chunks using vector similarity via pgvector RPC.
++
++    This function uses the Supabase RPC call to leverage pgvector's
++    optimized HNSW index for fast similarity search.
+ 
+     Args:
+         user_email: User's email address
+@@ -219,12 +222,35 @@ def search_similar_chunks(
+             else:
+                 query_embedding = query_embedding[:3072]
+ 
+-        # Use the database function for vector search
+-        # Note: Supabase Python client doesn't directly support calling PostgreSQL functions
+-        # So we'll use a direct SQL query via RPC or raw query
+-        # For now, we'll use the table directly with vector operations
++        # Try using pgvector RPC function first (optimized)
++        try:
++            response = supabase.rpc(
++                "match_course_embeddings",
++                {
++                    "p_user_email": user_email,
++                    "p_course_title": course_title,
++                    "p_query_embedding": query_embedding,
++                    "p_match_threshold": similarity_threshold,
++                    "p_match_count": max_results,
++                }
++            ).execute()
++
++            if response.data:
++                logger.debug(f"RPC search returned {len(response.data)} results")
++                return [
++                    {
++                        "chunk_text": row["chunk_text"],
++                        "chunk_index": row["chunk_index"],
++                        "similarity": row["similarity"],
++                        "source_file": row.get("source_file"),
++                    }
++                    for row in response.data
++                ]
++        except Exception as rpc_error:
++            logger.debug(f"RPC search failed, falling back to Python: {rpc_error}")
+ 
+-        # Get embeddings for this course
++        # Fallback: Python-side similarity calculation
++        # This is less efficient but works when RPC function doesn't exist
+         response = (
+             supabase.table("course_embeddings")
+             .select("chunk_text, chunk_index, embedding, source_file")
+@@ -237,18 +263,25 @@ def search_similar_chunks(
+             logger.info(f"No embeddings found for {user_email}/{course_title}")
+             return []
+ 
+-        # Calculate similarities (using cosine similarity via pgvector)
+-        # We'll use the match_course_embeddings function via RPC
+-        # But since Supabase client may not support custom functions directly,
+-        # we'll calculate similarity in Python for now (less efficient but works)
+-
+         results = []
+         query_vec = np.array(query_embedding, dtype=np.float32)
++        query_norm = np.linalg.norm(query_vec)
++
++        if query_norm == 0:
++            logger.warning("Query embedding has zero norm")
++            return []
+ 
+         for row in response.data:
+             embedding_vec = np.array(row["embedding"], dtype=np.float32)
++            embedding_norm = np.linalg.norm(embedding_vec)
++
++            if embedding_norm == 0:
++                continue
++
+             # Calculate cosine similarity
+-            similarity = float(np.dot(query_vec, embedding_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(embedding_vec)))
++            similarity = float(
++                np.dot(query_vec, embedding_vec) / (query_norm * embedding_norm)
++            )
+ 
+             if similarity >= similarity_threshold:
+                 results.append(
+@@ -269,6 +302,31 @@ def search_similar_chunks(
+         return []
+ 
+ 
++def get_embeddings_count(user_email: str, course_title: str) -> int:
++    """
++    Get the count of embeddings for a course.
++
++    Args:
++        user_email: User's email address
++        course_title: Course title/ID
++
++    Returns:
++        Number of embeddings, or 0 if error
++    """
++    try:
++        response = (
++            supabase.table("course_embeddings")
++            .select("id", count="exact")
++            .eq("user_email", user_email)
++            .eq("course_title", course_title)
++            .execute()
++        )
++        return response.count or 0
++    except Exception as e:
++        logger.error(f"Error getting embeddings count: {e}")
++        return 0
++
++
+ def get_course_chunks(
+     user_email: str,
+     course_title: str,

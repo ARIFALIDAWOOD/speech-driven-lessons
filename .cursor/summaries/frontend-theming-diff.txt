@@ -1,0 +1,736 @@
+diff --git a/app/globals.css b/app/globals.css
+index 65cce33..efc43cb 100644
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -22,15 +22,7 @@ body {
+   }
+ 
+   .emerald-glow {
+-    text-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+-  }
+-
+-  .emerald-progress {
+-    filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.4));
+-  }
+-
+-  .progress-ring {
+-    transition: stroke-dashoffset 0.5s ease;
++    text-shadow: 0 0 10px rgba(122, 158, 126, 0.6);
+   }
+ 
+   .bg-circuit-pattern {
+@@ -40,83 +32,64 @@ body {
+ 
+ @layer base {
+   :root {
+-    --background: 0 0% 100%;
+-    --foreground: 0 0% 3.9%;
++    --background: 158 20% 98%; /* Very light sage */
++    --foreground: 158 40% 10%;
+     --card: 0 0% 100%;
+-    --card-foreground: 0 0% 3.9%;
++    --card-foreground: 158 40% 10%;
+     --popover: 0 0% 100%;
+-    --popover-foreground: 0 0% 3.9%;
+-    --primary: 0 0% 9%;
+-    --primary-foreground: 0 0% 98%;
+-    --secondary: 0 0% 96.1%;
+-    --secondary-foreground: 0 0% 9%;
+-    --muted: 0 0% 96.1%;
+-    --muted-foreground: 0 0% 45.1%;
+-    --accent: 0 0% 96.1%;
+-    --accent-foreground: 0 0% 9%;
++    --popover-foreground: 158 40% 10%;
++    --primary: 158 20% 55%; /* Sage Green (#7A9E7E) */
++    --primary-foreground: 0 0% 100%;
++    --secondary: 158 20% 93%;
++    --secondary-foreground: 158 40% 25%;
++    --muted: 158 15% 94%;
++    --muted-foreground: 158 15% 45%;
++    --accent: 158 20% 93%;
++    --accent-foreground: 158 40% 25%;
+     --destructive: 0 84.2% 60.2%;
+     --destructive-foreground: 0 0% 98%;
+-    --border: 0 0% 89.8%;
+-    --input: 0 0% 89.8%;
+-    --ring: 0 0% 3.9%;
+-    --radius: 0.5rem;
+-    --color-1: 0 100% 63%;
+-    --color-2: 270 100% 63%;
+-    --color-3: 210 100% 63%;
+-    --color-4: 195 100% 63%;
+-    --color-5: 90 100% 63%;
+-    --chart-1: 12 76% 61%;
+-    --chart-2: 173 58% 39%;
+-    --chart-3: 197 37% 24%;
+-    --chart-4: 43 74% 66%;
+-    --chart-5: 27 87% 67%;
+-    --sidebar-background: 0 0% 98%;
+-    --sidebar-foreground: 240 5.3% 26.1%;
+-    --sidebar-primary: 240 5.9% 10%;
+-    --sidebar-primary-foreground: 0 0% 98%;
+-    --sidebar-accent: 240 4.8% 95.9%;
+-    --sidebar-accent-foreground: 240 5.9% 10%;
+-    --sidebar-border: 220 13% 91%;
+-    --sidebar-ring: 217.2 91.2% 59.8%;
++    --border: 158 20% 88%;
++    --input: 158 20% 88%;
++    --ring: 158 20% 55%;
++    --radius: 0.75rem;
++    --sidebar-background: 158 20% 97%;
++    --sidebar-foreground: 158 30% 20%;
++    --sidebar-primary: 158 20% 55%;
++    --sidebar-primary-foreground: 0 0% 100%;
++    --sidebar-accent: 158 20% 93%;
++    --sidebar-accent-foreground: 158 40% 25%;
++    --sidebar-border: 158 20% 90%;
++    --sidebar-ring: 158 20% 55%;
+   }
++
+   .dark {
+-    --background: 0 0% 3.9%;
+-    --foreground: 0 0% 98%;
+-    --card: 0 0% 3.9%;
+-    --card-foreground: 0 0% 98%;
+-    --popover: 0 0% 3.9%;
+-    --popover-foreground: 0 0% 98%;
+-    --primary: 0 0% 98%;
+-    --primary-foreground: 0 0% 9%;
+-    --secondary: 0 0% 14.9%;
+-    --secondary-foreground: 0 0% 98%;
+-    --muted: 0 0% 14.9%;
+-    --muted-foreground: 0 0% 63.9%;
+-    --accent: 0 0% 14.9%;
+-    --accent-foreground: 0 0% 98%;
++    --background: 158 30% 8%; /* Deep dark green-slate */
++    --foreground: 158 10% 98%;
++    --card: 158 30% 12%;
++    --card-foreground: 158 10% 98%;
++    --popover: 158 30% 12%;
++    --popover-foreground: 158 10% 98%;
++    --primary: 158 20% 55%; /* Sage Green */
++    --primary-foreground: 0 0% 100%;
++    --secondary: 158 25% 20%;
++    --secondary-foreground: 158 10% 98%;
++    --muted: 158 25% 20%;
++    --muted-foreground: 158 15% 65%;
++    --accent: 158 25% 20%;
++    --accent-foreground: 158 10% 98%;
+     --destructive: 0 62.8% 30.6%;
+-    --destructive-foreground: 0 0% 98%;
+-    --border: 0 0% 14.9%;
+-    --input: 0 0% 14.9%;
+-    --ring: 0 0% 83.1%;
+-    --color-1: 0 100% 63%;
+-    --color-2: 270 100% 63%;
+-    --color-3: 210 100% 63%;
+-    --color-4: 195 100% 63%;
+-    --color-5: 90 100% 63%;
+-    --chart-1: 220 70% 50%;
+-    --chart-2: 160 60% 45%;
+-    --chart-3: 30 80% 55%;
+-    --chart-4: 280 65% 60%;
+-    --chart-5: 340 75% 55%;
+-    --sidebar-background: 240 5.9% 10%;
+-    --sidebar-foreground: 240 4.8% 95.9%;
+-    --sidebar-primary: 224.3 76.3% 48%;
++    --destructive-foreground: 158 10% 98%;
++    --border: 158 25% 20%;
++    --input: 158 25% 20%;
++    --ring: 158 20% 55%;
++    --sidebar-background: 158 30% 10%;
++    --sidebar-foreground: 158 10% 95%;
++    --sidebar-primary: 158 20% 55%;
+     --sidebar-primary-foreground: 0 0% 100%;
+-    --sidebar-accent: 240 3.7% 15.9%;
+-    --sidebar-accent-foreground: 240 4.8% 95.9%;
+-    --sidebar-border: 240 3.7% 15.9%;
+-    --sidebar-ring: 217.2 91.2% 59.8%;
++    --sidebar-accent: 158 25% 20%;
++    --sidebar-accent-foreground: 158 10% 98%;
++    --sidebar-border: 158 25% 20%;
++    --sidebar-ring: 158 20% 55%;
+   }
+ }
+ 
+diff --git a/app/layout.tsx b/app/layout.tsx
+index e2baeb7..5de3293 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -11,17 +11,26 @@ export const metadata: Metadata = {
+   description: 'A comprehensive learning platform with AI tutors',
+ }
+ 
++import { ThemeProvider } from '@/components/providers/theme-provider'
++
+ export default function RootLayout({
+   children,
+ }: {
+   children: React.ReactNode
+ }) {
+   return (
+-    <html lang="en">
++    <html lang="en" suppressHydrationWarning>
+       <body className={inter.className}>
+-        <AuthProvider>
+-          {children}
+-        </AuthProvider>
++        <ThemeProvider
++          attribute="class"
++          defaultTheme="light"
++          enableSystem={false}
++          disableTransitionOnChange
++        >
++          <AuthProvider>
++            {children}
++          </AuthProvider>
++        </ThemeProvider>
+       </body>
+     </html>
+   )
+diff --git a/app/learn/page.tsx b/app/learn/page.tsx
+index 4b49b20..1921903 100644
+--- a/app/learn/page.tsx
++++ b/app/learn/page.tsx
+@@ -107,10 +107,10 @@ export default function LearnPage() {
+ 
+   if (authLoading) {
+     return (
+-      <div className="min-h-screen bg-gray-50">
++      <div className="min-h-screen bg-background">
+         <HeaderWithLogo />
+         <div className="flex items-center justify-center min-h-[60vh]">
+-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
++          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+         </div>
+       </div>
+     );
+@@ -118,14 +118,14 @@ export default function LearnPage() {
+ 
+   if (!user) {
+     return (
+-      <div className="min-h-screen bg-gray-50">
++      <div className="min-h-screen bg-background">
+         <HeaderWithLogo />
+         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+-          <GraduationCap className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
++          <GraduationCap className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
++          <h1 className="text-2xl font-bold text-foreground mb-2">
+             Sign in to Start Learning
+           </h1>
+-          <p className="text-gray-600 mb-6">
++          <p className="text-muted-foreground mb-6">
+             Create an account or sign in to access personalized tutoring sessions.
+           </p>
+           <Button onClick={() => router.push("/auth/signin")}>
+@@ -137,16 +137,16 @@ export default function LearnPage() {
+   }
+ 
+   return (
+-    <div className="min-h-screen bg-gray-50">
++    <div className="min-h-screen bg-background">
+       <HeaderWithLogo />
+ 
+       {/* Top navigation */}
+-      <div className="w-full border-b border-gray-200 bg-white">
++      <div className="w-full border-b border-border bg-card">
+         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+           <Button
+             variant="ghost"
+             size="sm"
+-            className="flex items-center text-gray-600 hover:text-gray-800 -ml-2"
++            className="flex items-center text-muted-foreground hover:text-foreground -ml-2"
+             onClick={() => router.push("/dashboard")}
+           >
+             <ArrowLeft className="h-4 w-4 mr-1" />
+@@ -159,11 +159,11 @@ export default function LearnPage() {
+       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+         {/* Page header */}
+         <div className="mb-8">
+-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+-            <GraduationCap className="h-8 w-8 text-blue-600" />
++          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
++            <GraduationCap className="h-8 w-8 text-primary" />
+             Start Learning
+           </h1>
+-          <p className="mt-2 text-gray-600">
++          <p className="mt-2 text-muted-foreground">
+             Select your curriculum and chapter to begin an interactive tutoring session.
+             Our AI tutor will guide you through the material at your own pace.
+           </p>
+@@ -233,12 +233,12 @@ function FeatureCard({
+   };
+ 
+   return (
+-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+-      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4">
++    <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
++      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
+         {iconMap[icon]}
+       </div>
+-      <h3 className="font-semibold text-gray-900 mb-2">{title}</h3>
+-      <p className="text-sm text-gray-600">{description}</p>
++      <h3 className="font-semibold text-foreground mb-2">{title}</h3>
++      <p className="text-sm text-muted-foreground">{description}</p>
+     </div>
+   );
+ }
+diff --git a/app/login/page.tsx b/app/login/page.tsx
+index c584dae..eb542d8 100644
+--- a/app/login/page.tsx
++++ b/app/login/page.tsx
+@@ -86,21 +86,21 @@ function LoginPageContent() {
+ 
+     if (loading) {
+         return (
+-            <div className="min-h-screen bg-gradient-to-br from-[#7A9E7E] via-[#E8EFE8] to-[#F5F7F5] flex items-center justify-center">
++            <div className="min-h-screen bg-background flex items-center justify-center">
+                 <div className="text-center">
+-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7A9E7E] mx-auto"></div>
+-                    <p className="mt-4 text-[#5D745F]">Loading...</p>
++                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
++                    <p className="mt-4 text-muted-foreground">Loading...</p>
+                 </div>
+             </div>
+         )
+     }
+ 
+     return (
+-        <div className="min-h-screen bg-gradient-to-br from-[#7A9E7E] via-[#E8EFE8] to-[#F5F7F5] flex font-sans antialiased flex-col lg:flex-row">
++        <div className="min-h-screen bg-background flex font-sans antialiased flex-col lg:flex-row">
+             {/* Left Section */}
+-            <div className="w-full lg:w-3/5 flex flex-col items-center justify-center relative overflow-hidden p-4 lg:p-12 bg-gradient-to-br from-[#4c7b54] to-[#5C7E60]">
++            <div className="w-full lg:w-3/5 flex flex-col items-center justify-center relative overflow-hidden p-4 lg:p-12 bg-primary">
+                 <AnimatedBackground />
+-                <div className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#E8EFE8] to-[#F5F7F5] w-full flex flex-col items-center">
++                <div className="relative z-10 w-full flex flex-col items-center">
+                     <motion.div
+                         className="text-center mb-8 lg:mb-16 w-full"
+                         initial={{ opacity: 0, y: -50 }}
+@@ -109,7 +109,7 @@ function LoginPageContent() {
+                     >
+                         <div className="w-full">
+                             <h1
+-                                className="font-extrabold tracking-tight bg-clip-text bg-gradient-to-r from-[#A5C0A7] to-[#F5F7F5] text-transparent mb-4 lg:mb-6 pb-2"
++                                className="font-extrabold tracking-tight text-white mb-4 lg:mb-6 pb-2"
+                                 style={{
+                                     fontSize: 'clamp(1.875rem, 4vw + 1rem, 4.5rem)',
+                                     lineHeight: '1.2',
+@@ -123,7 +123,7 @@ function LoginPageContent() {
+                                 Beyond Traditional Learning
+                             </h1>
+                         </div>
+-                        <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-light tracking-wide text-[#F5F7F5] max-w-3xl mx-auto mt-6">
++                        <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-light tracking-wide text-white/90 max-w-3xl mx-auto mt-6">
+                             Experience AI-driven education that adapts to your pace, learns from your style, and guides your journey
+                         </p>
+                     </motion.div>
+@@ -142,9 +142,9 @@ function LoginPageContent() {
+                                 animate={{ opacity: 1, y: 0 }}
+                                 transition={{ duration: 0.5, delay: index * 0.2 }}
+                             >
+-                                <div className="mb-3 sm:mb-4 lg:mb-6 p-3 sm:p-4 bg-[#7A9E7E] rounded-full">
++                                <div className="mb-3 sm:mb-4 lg:mb-6 p-3 sm:p-4 bg-white/20 rounded-full backdrop-blur-sm">
+                                     <svg
+-                                        className="w-6 h-6 sm:w-8 sm:h-8 lg:w-12 lg:h-12 text-[#F5F7F5]"
++                                        className="w-6 h-6 sm:w-8 sm:h-8 lg:w-12 lg:h-12 text-white"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor"
+@@ -152,10 +152,10 @@ function LoginPageContent() {
+                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
+                                     </svg>
+                                 </div>
+-                                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-2 lg:mb-3 tracking-wide text-[#F5F7F5]">
++                                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-2 lg:mb-3 tracking-wide text-white">
+                                     {text}
+                                 </h3>
+-                                <p className="text-sm sm:text-base lg:text-lg text-[#E8EFE8] font-light leading-relaxed">
++                                <p className="text-sm sm:text-base lg:text-lg text-white/80 font-light leading-relaxed">
+                                     {description}
+                                 </p>
+                             </motion.div>
+@@ -165,32 +165,32 @@ function LoginPageContent() {
+             </div>
+ 
+             {/* Right Section */}
+-            <div className="w-full lg:w-2/5 bg-[#E8EFE8] flex items-center justify-center min-h-screen lg:min-h-0">
++            <div className="w-full lg:w-2/5 bg-background flex items-center justify-center min-h-screen lg:min-h-0">
+                 <motion.div
+-                    className="w-full max-w-md p-6 lg:p-12 bg-[#F5F7F5] shadow-lg rounded-lg border border-[#BED0BF]"
++                    className="w-full max-w-md p-6 lg:p-12 bg-card shadow-lg rounded-xl border border-border"
+                     initial={{ opacity: 0, x: 50 }}
+                     animate={{ opacity: 1, x: 0 }}
+                     transition={{ duration: 0.5 }}
+                 >
+-                    <h2 className="text-2xl lg:text-3xl font-bold mb-6 lg:mb-8 text-center text-[#2C3E50] tracking-tight">
++                    <h2 className="text-2xl lg:text-3xl font-bold mb-6 lg:mb-8 text-center text-foreground tracking-tight">
+                         Welcome
+                     </h2>
+ 
+                     {error && (
+-                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+-                            <p className="text-red-600 text-sm">{error}</p>
++                        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
++                            <p className="text-destructive text-sm">{error}</p>
+                         </div>
+                     )}
+ 
+                     {successMessage && (
+-                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
++                        <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-md">
+                             <div className="flex items-center gap-2 mb-2">
+-                                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
++                                <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                 </svg>
+-                                <p className="text-green-700 font-medium">Check your email!</p>
++                                <p className="text-primary font-medium">Check your email!</p>
+                             </div>
+-                            <p className="text-green-600 text-sm">
++                            <p className="text-muted-foreground text-sm">
+                                 We've sent a magic link to your email. Click the link to sign in.
+                             </p>
+                         </div>
+@@ -199,7 +199,7 @@ function LoginPageContent() {
+                     {!successMessage && (
+                         <form onSubmit={handleMagicLinkSignIn} className="space-y-4 lg:space-y-6">
+                             <div>
+-                                <Label htmlFor="email" className="text-sm font-medium text-[#5D745F] tracking-wide">
++                                <Label htmlFor="email" className="text-sm font-medium text-muted-foreground tracking-wide">
+                                     Email Address
+                                 </Label>
+                                 <Input
+@@ -207,7 +207,7 @@ function LoginPageContent() {
+                                     type="email"
+                                     value={email}
+                                     onChange={(e) => setEmail(e.target.value)}
+-                                    className="mt-1 font-light border border-[#BED0BF] rounded-md"
++                                    className="mt-1 font-light"
+                                     placeholder="Enter your email address"
+                                     required
+                                     disabled={localLoading}
+@@ -216,7 +216,7 @@ function LoginPageContent() {
+                             <Button
+                                 type="submit"
+                                 disabled={localLoading || !email}
+-                                className="w-full bg-gradient-to-br from-[#7A9E7E] to-[#5C7E60] hover:from-[#5C7E60] hover:to-[#7A9E7E] transition-colors duration-300 py-4 lg:py-6 text-base lg:text-lg font-medium tracking-wide text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
++                                className="w-full py-4 lg:py-6 text-base lg:text-lg font-medium tracking-wide rounded-lg"
+                             >
+                                 {localLoading ? (
+                                     <span className="flex items-center justify-center gap-2">
+@@ -243,14 +243,14 @@ function LoginPageContent() {
+                                     setSuccessMessage('')
+                                     setError('')
+                                 }}
+-                                className="w-full py-4 lg:py-6 text-base lg:text-lg font-medium tracking-wide border border-[#BED0BF] bg-[#F5F7F5] text-[#7A9E7E] rounded-lg hover:bg-[#E8EFE8]"
++                                className="w-full py-4 lg:py-6 text-base lg:text-lg font-medium tracking-wide rounded-lg"
+                             >
+                                 Try a different email
+                             </Button>
+                         </div>
+                     )}
+ 
+-                    <p className="mt-6 lg:mt-8 text-center text-sm text-[#5D745F] tracking-wide">
++                    <p className="mt-6 lg:mt-8 text-center text-sm text-muted-foreground tracking-wide">
+                         No password needed! We'll send a secure link to your email.
+                     </p>
+                 </motion.div>
+@@ -261,10 +261,10 @@ function LoginPageContent() {
+ 
+ function LoginLoadingFallback() {
+     return (
+-        <div className="min-h-screen bg-gradient-to-br from-[#7A9E7E] via-[#E8EFE8] to-[#F5F7F5] flex items-center justify-center">
++        <div className="min-h-screen bg-background flex items-center justify-center">
+             <div className="text-center">
+-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7A9E7E] mx-auto"></div>
+-                <p className="mt-4 text-[#5D745F]">Loading...</p>
++                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
++                <p className="mt-4 text-muted-foreground">Loading...</p>
+             </div>
+         </div>
+     )
+diff --git a/app/my-courses/page.tsx b/app/my-courses/page.tsx
+index 374af8f..536735e 100644
+--- a/app/my-courses/page.tsx
++++ b/app/my-courses/page.tsx
+@@ -144,9 +144,9 @@ export default function CoursesPage() {
+   if (authLoading) {
+     return (
+       <MainLayout>
+-        <div className="flex-1 bg-gray-50 relative">
++        <div className="flex-1 bg-background relative">
+           <div className="flex justify-center items-center h-[calc(100vh-64px)]">
+-            <p className="text-gray-500">Loading...</p>
++            <p className="text-muted-foreground">Loading...</p>
+           </div>
+         </div>
+       </MainLayout>
+@@ -155,7 +155,7 @@ export default function CoursesPage() {
+ 
+   return (
+     <MainLayout>
+-      <div className="flex-1 bg-gray-50 relative">
++      <div className="flex-1 bg-background relative">
+         {/* Status message display */}
+         <StatusMessage
+           message={statusMessage}
+@@ -179,11 +179,11 @@ export default function CoursesPage() {
+ 
+             {isLoading ? (
+               <div className="flex justify-center items-center h-64">
+-                <p className="text-gray-500">Loading courses...</p>
++                <p className="text-muted-foreground">Loading courses...</p>
+               </div>
+             ) : error ? (
+               <div className="flex justify-center items-center h-64">
+-                <p className="text-red-500">Error: {error}</p>
++                <p className="text-destructive">Error: {error}</p>
+               </div>
+             ) : (
+               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+@@ -209,7 +209,7 @@ export default function CoursesPage() {
+                 ))}
+                 { !creatingCourse && drafts.length === 0 && courses.length === 0 && (
+                    <div className="col-span-full flex justify-center items-center h-40">
+-                      <p className="text-gray-500">You haven't created any courses yet.</p>
++                      <p className="text-muted-foreground">You haven't created any courses yet.</p>
+                    </div>
+                 )}
+               </div>
+diff --git a/components/curriculum-selection/HierarchicalSelector.tsx b/components/curriculum-selection/HierarchicalSelector.tsx
+index d8b18f7..0df6f2b 100644
+--- a/components/curriculum-selection/HierarchicalSelector.tsx
++++ b/components/curriculum-selection/HierarchicalSelector.tsx
+@@ -287,7 +287,7 @@ export function HierarchicalSelector({
+           <div className="flex items-center justify-between">
+             <div>
+               <CardTitle className="flex items-center gap-2">
+-                <BookOpen className="h-5 w-5 text-blue-600" />
++                <BookOpen className="h-5 w-5 text-primary" />
+                 {isCustomMode ? "Enter Custom Course" : "Select Your Curriculum"}
+               </CardTitle>
+               <CardDescription>
+@@ -398,7 +398,7 @@ export function HierarchicalSelector({
+ 
+               {/* Topic Specification (shown when chapter is selected) */}
+               {selection.chapter && (
+-                <div className="pt-4 border-t">
++                <div className="pt-4 border-t border-border">
+                   <TopicSpecification
+                     value={selection.topic || ""}
+                     onChange={(val) => updateSelection("topic", val)}
+@@ -417,7 +417,7 @@ export function HierarchicalSelector({
+           size="lg"
+           onClick={handleStartLearning}
+           disabled={!isSelectionComplete || isStarting}
+-          className="gap-2"
++          className="gap-2 px-8"
+         >
+           {isStarting ? (
+             <>
+@@ -435,15 +435,15 @@ export function HierarchicalSelector({
+ 
+       {/* Selection Summary */}
+       {isSelectionComplete && (
+-        <Card className="bg-green-50 border-green-200">
++        <Card className="bg-primary/10 border-primary/20 shadow-none">
+           <CardContent className="pt-4">
+             <div className="flex items-start gap-3">
+-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+-                <BookOpen className="h-4 w-4 text-green-600" />
++              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
++                <BookOpen className="h-4 w-4 text-primary" />
+               </div>
+               <div>
+-                <h3 className="font-medium text-green-800">Ready to Learn</h3>
+-                <p className="text-sm text-green-700 mt-1">
++                <h3 className="font-medium text-foreground">Ready to Learn</h3>
++                <p className="text-sm text-muted-foreground mt-1">
+                   {isCustomMode ? (
+                     <>
+                       {selection.customBoard} - {selection.customSubject} - {selection.customChapter}
+@@ -454,7 +454,7 @@ export function HierarchicalSelector({
+                     </>
+                   )}
+                   {selection.topic && (
+-                    <span className="block mt-1 text-green-600">
++                    <span className="block mt-1 text-primary">
+                       Focus: {selection.topic}
+                     </span>
+                   )}
+diff --git a/components/curriculum-selection/SelectionStep.tsx b/components/curriculum-selection/SelectionStep.tsx
+index 57a99e9..ce0884c 100644
+--- a/components/curriculum-selection/SelectionStep.tsx
++++ b/components/curriculum-selection/SelectionStep.tsx
+@@ -47,12 +47,12 @@ export function SelectionStep({
+   return (
+     <div className="space-y-2">
+       <div className="flex items-center justify-between">
+-        <label className="text-sm font-medium text-gray-700">
++        <label className="text-sm font-medium text-foreground">
+           {label}
+-          {required && <span className="text-red-500 ml-1">*</span>}
++          {required && <span className="text-destructive ml-1">*</span>}
+         </label>
+       </div>
+-      <p className="text-xs text-gray-500">{description}</p>
++      <p className="text-xs text-muted-foreground">{description}</p>
+ 
+       <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+@@ -62,8 +62,8 @@ export function SelectionStep({
+             aria-expanded={open}
+             disabled={disabled || isLoading}
+             className={cn(
+-              "w-full justify-between h-11 text-left font-normal",
+-              !value && "text-gray-500",
++              "w-full justify-between h-11 text-left font-normal border-border bg-card hover:bg-accent hover:text-accent-foreground",
++              !value && "text-muted-foreground",
+               disabled && "opacity-50 cursor-not-allowed"
+             )}
+           >
+@@ -81,7 +81,7 @@ export function SelectionStep({
+           </Button>
+         </PopoverTrigger>
+         <PopoverContent className="w-full p-0" align="start">
+-          <Command>
++          <Command className="bg-card">
+             <CommandInput placeholder={`Search ${label.toLowerCase()}...`} />
+             <CommandList>
+               <CommandEmpty>No {label.toLowerCase()} found.</CommandEmpty>
+@@ -94,17 +94,18 @@ export function SelectionStep({
+                       onChange(option.id === value?.id ? null : option);
+                       setOpen(false);
+                     }}
++                    className="cursor-pointer"
+                   >
+                     <Check
+                       className={cn(
+-                        "mr-2 h-4 w-4",
++                        "mr-2 h-4 w-4 text-primary",
+                         value?.id === option.id ? "opacity-100" : "opacity-0"
+                       )}
+                     />
+                     <div className="flex flex-col">
+-                      <span>{option.name}</span>
++                      <span className="text-foreground">{option.name}</span>
+                       {option.description && (
+-                        <span className="text-xs text-gray-500">
++                        <span className="text-xs text-muted-foreground">
+                           {option.description}
+                         </span>
+                       )}
+diff --git a/components/layout/MainLayout.tsx b/components/layout/MainLayout.tsx
+index 4461e4f..43de1bb 100644
+--- a/components/layout/MainLayout.tsx
++++ b/components/layout/MainLayout.tsx
+@@ -4,6 +4,7 @@ import { ReactNode } from "react";
+ import Link from "next/link";
+ import { Home, BookOpen, Upload, User, HelpCircle, GraduationCap } from "lucide-react";
+ import { UserMenu } from "./UserMenu";
++import { ModeToggle } from "@/components/mode-toggle";
+ 
+ interface MainLayoutProps {
+   children: ReactNode;
+@@ -20,11 +21,12 @@ const navItems = [
+ 
+ export function MainLayout({ children }: MainLayoutProps) {
+   return (
+-    <div className="flex h-screen bg-gray-50">
++    <div className="flex h-screen bg-background text-foreground transition-colors duration-300">
+       {/* Sidebar */}
+-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
+-        <div className="p-4 border-b">
+-          <h1 className="text-xl font-bold text-emerald-700">Anantra LMS</h1>
++      <aside className="w-64 bg-card/50 backdrop-blur-md border-r border-border flex flex-col z-20 shadow-sm">
++        <div className="p-4 border-b border-border flex justify-between items-center">
++          <h1 className="text-xl font-bold text-primary">Anantra LMS</h1>
++          <ModeToggle />
+         </div>
+         <nav className="flex-1 p-4">
+           <ul className="space-y-2">
+@@ -32,7 +34,7 @@ export function MainLayout({ children }: MainLayoutProps) {
+               <li key={item.href}>
+                 <Link
+                   href={item.href}
+-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
++                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200"
+                 >
+                   <item.icon className="w-5 h-5" />
+                   <span>{item.label}</span>
+@@ -41,13 +43,15 @@ export function MainLayout({ children }: MainLayoutProps) {
+             ))}
+           </ul>
+         </nav>
+-        <div className="mt-auto border-t p-4">
++        <div className="mt-auto border-t border-border p-4">
+           <UserMenu />
+         </div>
+       </aside>
+       {/* Main content */}
+-      <main className="flex-1 overflow-auto">
+-        {children}
++      <main className="flex-1 overflow-auto bg-muted/20">
++        <div className="h-full w-full">
++            {children}
++        </div>
+       </main>
+     </div>
+   );
+diff --git a/components/my-courses/CourseCard.tsx b/components/my-courses/CourseCard.tsx
+index a6b1c60..efdda99 100644
+--- a/components/my-courses/CourseCard.tsx
++++ b/components/my-courses/CourseCard.tsx
+@@ -25,17 +25,17 @@ export function CourseCard({ course, onRequestAssistant }: CourseCardProps) {
+         </div>
+       </CardHeader>
+       <CardContent>
+-        <p className="text-sm text-gray-500 mb-3">By {course.author}</p>
++        <p className="text-sm text-muted-foreground mb-3">By {course.author}</p>
+ 
+         {/* Progress bar */}
+         <div className="mb-3">
+           <div className="flex justify-between text-sm mb-1">
+-            <span className="text-gray-600">Progress</span>
++            <span className="text-muted-foreground">Progress</span>
+             <span className="font-medium">{progress}%</span>
+           </div>
+-          <div className="w-full bg-gray-200 rounded-full h-2">
++          <div className="w-full bg-muted rounded-full h-2">
+             <div
+-              className="bg-emerald-600 h-2 rounded-full transition-all"
++              className="bg-primary h-2 rounded-full transition-all"
+               style={{ width: `${progress}%` }}
+             />
+           </div>
+diff --git a/components/my-courses/create-course-card.tsx b/components/my-courses/create-course-card.tsx
+index 0848e39..3cc2c52 100644
+--- a/components/my-courses/create-course-card.tsx
++++ b/components/my-courses/create-course-card.tsx
+@@ -11,19 +11,19 @@ interface CreateCourseCardProps {
+ export function CreateCourseCard({ onClick }: CreateCourseCardProps) {
+   return (
+     <Card
+-      className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-400"
++      className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-dashed border-border hover:border-primary/50"
+       onClick={onClick}
+     >
+       <CardContent className="flex flex-col items-center justify-center h-full min-h-[200px] p-6">
+         <div className="flex flex-col items-center gap-4">
+-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+-            <Plus className="w-8 h-8 text-gray-600" />
++          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
++            <Plus className="w-8 h-8 text-muted-foreground" />
+           </div>
+           <div className="text-center">
+-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
++            <h3 className="text-lg font-semibold text-foreground mb-1">
+               Start Learning
+             </h3>
+-            <p className="text-sm text-gray-600">
++            <p className="text-sm text-muted-foreground">
+               Select your curriculum and begin
+             </p>
+           </div>
