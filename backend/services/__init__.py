@@ -2,8 +2,8 @@
 Backend services for the Agent-Driven Teaching System.
 """
 
-from .brave_search import BraveSearchClient, SearchResult
-from .outline_generator import OutlineGenerator, CourseOutline, OutlineSection
+from .brave_search import BraveSearchClient
+from .outline_generator import OutlineGenerator
 from .materials_context import (
     MaterialsContextManager,
     get_materials_manager,
@@ -14,8 +14,9 @@ from .materials_context import (
 from .course_service import CourseService
 from .tutor_session_service import TutorSessionService
 
-# DTOs
-from .dtos import (
+# Re-export DTOs from models for backward compatibility
+from models import (
+    # Course DTOs
     CreateCourseRequest,
     UpdateStepRequest,
     UploadFileRequest,
@@ -25,15 +26,19 @@ from .dtos import (
     CourseResponse,
     SyllabusResponse,
     SlidesResponse,
+    # Session DTOs
     CreateSessionRequest,
     SessionInfo,
     SessionResponse,
     SessionStatusResponse,
     ProcessResponseRequest,
-)
-
-# Exceptions
-from .exceptions import (
+    # Search & Outline DTOs
+    SearchResult,
+    SearchResponse,
+    CourseOutline,
+    OutlineSection,
+    SubTopic,
+    # Exceptions
     ServiceError,
     NotFoundError,
     ValidationError,
@@ -48,9 +53,11 @@ __all__ = [
     # Search & Outline
     "BraveSearchClient",
     "SearchResult",
+    "SearchResponse",
     "OutlineGenerator",
     "CourseOutline",
     "OutlineSection",
+    "SubTopic",
     # Materials
     "MaterialsContextManager",
     "get_materials_manager",
