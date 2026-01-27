@@ -1,92 +1,120 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { MainLayout } from "@/components/layout/MainLayout"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { CustomizeCourseModal } from "@/components/my-uploads/create-course-modal-v2"
 import { MyCoursesHeader } from "@/components/my-uploads/my-courses-section-header"
 import { CourseCard } from "@/components/my-uploads/CourseCard"
 import { FullscreenButton } from "@/components/layout/fullscreen-button"
+import { useAuth } from "@/auth/supabase"
+import { Loader2 } from "lucide-react"
 
-// Sample courses data without course codes
-// TODO: Replace with API call to fetch courses
-// This is temporary mock data that will be replaced with actual data from the backend
-const courses = [
-  {
-    id: 1,
-    title: "Introduction to AI",
-    hoursCompleted: 7.5,
-    enrolled: 485,
-    views: 1250,
-    isPublished: true
-  },
-  {
-    id: 2,
-    title: "Machine Learning Fundamentals",
-    hoursCompleted: 4.5,
-    enrolled: 320,
-    views: 890,
-    isPublished: true
-  },
-  {
-    id: 3,
-    title: "Deep Learning with Python",
-    hoursCompleted: 2,
-    enrolled: 156,
-    views: 430,
-    isPublished: false
-  },
-  {
-    id: 4,
-    title: "Natural Language Processing and Contextual Understanding in Modern Applications",
-    hoursCompleted: 6,
-    enrolled: 278,
-    views: 615,
-    isPublished: true
-  },
-  {
-    id: 5,
-    title: "CV",  // Very short title to test that case
-    hoursCompleted: 3,
-    enrolled: 92,
-    views: 205,
-    isPublished: false
-  },
-  {
-    id: 6,
-    title: "Frontend Development with React and TypeScript",
-    hoursCompleted: 5,
-    enrolled: 347,
-    views: 780,
-    isPublished: false
-  }
-]
+interface Course {
+  id: string | number;
+  title: string;
+  hoursCompleted?: number;
+  enrolled?: number;
+  views?: number;
+  isPublished?: boolean;
+  description?: string;
+  create_course_process?: {
+    current_step?: number;
+    is_creation_complete?: boolean;
+  };
+}
 
 export default function CoursesPage() {
+  const { session, loading: authLoading } = useAuth()
   const [isFullScreen, setIsFullScreen] = useState(false)
-  // TODO: Add state for courses
-  // const [courses, setCourses] = useState([])
-  // const [isLoading, setIsLoading] = useState(true)
-  // const [error, setError] = useState(null)
+  const [courses, setCourses] = useState<Course[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // TODO: API endpoint - Fetch courses from backend
-  // useEffect(() => {
-  //   async function fetchCourses() {
-  //     try {
-  //       setIsLoading(true);
-  //       // const response = await fetch('/api/courses');
-  //       // if (!response.ok) throw new Error('Failed to fetch courses');
-  //       // const data = await response.json();
-  //       // setCourses(data);
-  //     } catch (error) {
-  //       // setError(error.message);
-  //       console.error('Error fetching courses:', error);
-  //     } finally {
-  //       // setIsLoading(false);
-  //     }
-  //   }
-  //   fetchCourses();
-  // }, []);
+  // Fetch courses from backend
+  const fetchCourses = useCallback(async () => {
+    if (!session?.access_token) {
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const apiUrl = `${process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"}/api/course/courses`
+      
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "Unknown error")
+        throw new Error(`Failed to fetch courses: ${response.status} ${response.statusText}. ${errorText}`)
+      }
+
+      const data = await response.json()
+
+      // Transform backend data to match expected CourseCard format
+      const transformedCourses: Course[] = [
+        ...(data.complete_courses || []).map((c: any) => ({
+          id: c.course_id || c.id,
+          title: c.title || "Untitled Course",
+          hoursCompleted: c.hours_completed || 0,
+          enrolled: c.enrolled || 0,
+          views: c.views || 0,
+          isPublished: c.is_published ?? true,
+          description: c.description,
+        })),
+        ...(data.incomplete_courses || []).map((c: any) => ({
+          id: c.course_id || c.id,
+          title: c.title || "Untitled Course",
+          hoursCompleted: c.hours_completed || 0,
+          enrolled: c.enrolled || 0,
+          views: c.views || 0,
+          isPublished: false,
+          description: c.description,
+          create_course_process: c.create_course_process,
+        })),
+      ]
+
+      setCourses(transformedCourses)
+    } catch (err) {
+      console.error("Error fetching courses:", err)
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to fetch courses"
+      if (err instanceof TypeError && err.message === "Failed to fetch") {
+        const apiUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"
+        errorMessage = `Cannot connect to backend server at ${apiUrl}. Please ensure the backend server is running.`
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [session?.access_token])
+
+  useEffect(() => {
+    // Wait for auth to finish loading
+    if (authLoading) {
+      return
+    }
+
+    // Only fetch if we have a session with an access token
+    if (session?.access_token) {
+      fetchCourses()
+    } else {
+      // No session available, stop loading
+      setIsLoading(false)
+    }
+  }, [session, authLoading, fetchCourses])
 
   // Function to toggle fullscreen mode
   const toggleFullScreen = () => {
@@ -135,12 +163,38 @@ export default function CoursesPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mt-6">
-              <CustomizeCourseModal />
-              {courses.map((course) => (
-                <CourseCard key={course.id} course={course} />
-              ))}
-            </div>
+            {/* Error state */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-800">{error}</p>
+                <button
+                  onClick={fetchCourses}
+                  className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {/* Loading state */}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <span className="ml-2 text-gray-600">Loading courses...</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mt-6">
+                <CustomizeCourseModal />
+                {courses.map((course) => (
+                  <CourseCard key={course.id} course={course} />
+                ))}
+                {courses.length === 0 && !error && (
+                  <div className="col-span-full text-center py-8 text-gray-500">
+                    <p>No courses yet. Create your first course to get started.</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </ScrollArea>
       </div>

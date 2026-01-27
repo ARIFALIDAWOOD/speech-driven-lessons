@@ -30,6 +30,13 @@ export function SelectionBreadcrumb({
       {selectedSteps.map((step, index) => {
         const value = selection[step.id];
         const isLast = index === selectedSteps.length - 1;
+        
+        // Handle different value types
+        const displayName = typeof value === 'object' && value !== null && 'name' in value 
+          ? (value as { name: string }).name 
+          : typeof value === 'string' 
+            ? value 
+            : '';
 
         return (
           <div key={step.id} className="flex items-center">
@@ -41,7 +48,7 @@ export function SelectionBreadcrumb({
                   : "bg-gray-100 text-gray-700"
               )}
             >
-              <span className="truncate max-w-[120px]">{value?.name}</span>
+              <span className="truncate max-w-[120px]">{displayName}</span>
               {onClearFrom && (
                 <button
                   onClick={() => onClearFrom(step.id)}

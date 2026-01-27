@@ -15,6 +15,11 @@ export interface CurriculumSelection {
   subject: SelectionOption | null;
   chapter: SelectionOption | null;
   topic?: string; // Optional free-text topic specification
+  // Custom mode fields - for manually entering course details
+  isCustomMode?: boolean;
+  customBoard?: string;
+  customSubject?: string;
+  customChapter?: string;
 }
 
 export interface SelectionStepConfig {

@@ -54,3 +54,7 @@ backend/.env
 
 
 .venv
+
+# Test Environment
+backend/.env.test
+.pytest_cache/

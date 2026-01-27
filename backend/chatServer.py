@@ -213,7 +213,7 @@ CORS(
     app,
     resources={
         r"/*": {  # Changed from r"/api/*" to r"/*"
-            "origins": ["http://localhost:3000"],
+            "origins": ["http://localhost:3391"],
             "methods": ["POST", "OPTIONS"],
             "allow_headers": ["Content-Type"],
         }

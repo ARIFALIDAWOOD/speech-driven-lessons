@@ -22,6 +22,7 @@ export interface CourseDetailsProps {
   course?: Appointment
   selectedDate?: Date
   onClose?: () => void
+  onResume?: () => void
   // Simple display props
   title?: string
   description?: string
@@ -34,6 +35,7 @@ export function CourseDetails({
   course,
   selectedDate,
   onClose,
+  onResume,
   title = "Course Title",
   description = "Course description",
   duration = 0,
@@ -75,6 +77,11 @@ export function CourseDetails({
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Join Meeting
               </a>
+            </Button>
+          )}
+          {onResume && (
+            <Button size="sm" className="w-full" onClick={onResume}>
+              Resume Session
             </Button>
           )}
         </CardContent>

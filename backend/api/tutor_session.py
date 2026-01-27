@@ -421,3 +421,48 @@ def get_chapter_progress(board: str, subject: str, chapter: str):
     except Exception as e:
         logger.error(f"Chapter progress error: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@tutor_session_bp.route("/scheduled", methods=["GET"])
+@require_auth
+def get_scheduled_sessions():
+    """Get scheduled/upcoming tutoring sessions for the current user.
+
+    In the future, this will query a database for scheduled sessions.
+    Currently returns active in-memory sessions as appointments.
+    """
+    try:
+        user = request.user
+        user_id = user.get("email") or user.get("sub")
+
+        # Build list of sessions from active sessions that belong to this user
+        scheduled = []
+        for session_id, tutor in active_sessions.items():
+            if tutor.context.user_id == user_id:
+                ctx = tutor.context
+                scheduled.append({
+                    "id": session_id,
+                    "title": f"{ctx.subject_name} - {ctx.chapter_name}",
+                    "tutor": "AI Tutor",
+                    "email": "tutor@anantra.ai",
+                    "zoomLink": "",  # Not applicable for AI tutor
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "startTime": "08:00",
+                    "endTime": "09:00",
+                    "description": f"Learning session for {ctx.chapter_name} in {ctx.subject_name} ({ctx.board_name})",
+                    "board": ctx.board,
+                    "subject": ctx.subject,
+                    "chapter": ctx.chapter,
+                    "currentState": ctx.current_state.value,
+                    "isPaused": ctx.is_paused,
+                })
+
+        return jsonify({
+            "user_id": user_id,
+            "sessions": scheduled,
+            "total": len(scheduled),
+        })
+
+    except Exception as e:
+        logger.error(f"Scheduled sessions error: {e}")
+        return jsonify({"error": str(e)}), 500

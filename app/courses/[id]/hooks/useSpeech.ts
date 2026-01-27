@@ -4,6 +4,8 @@
 import { useRef, useState } from "react"
 import { SpeechRecognition, SpeechRecognitionEvent } from "../types"
 
+const API_BASE = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"
+
 export const useSpeech = (handleConversationCycle: (text: string) => Promise<string | null>) => {
     const [isListening, setIsListening] = useState(false)
     const [isMuted, setIsMuted] = useState(false)
@@ -62,7 +64,7 @@ export const useSpeech = (handleConversationCycle: (text: string) => Promise<str
                 formData.append('audio', audioBlob)
 
                 try {
-                    const recognizeResponse = await fetch('http://localhost:5000/api/recognize-openai', {
+                    const recognizeResponse = await fetch(`${API_BASE}/api/recognize-openai`, {
                         method: 'POST',
                         credentials: "include",
                         body: formData,
@@ -148,7 +150,7 @@ export const useSpeech = (handleConversationCycle: (text: string) => Promise<str
                     for (const sentence of sentences) {
                         if (!sentence.trim()) continue
 
-                        const audioResponse = await fetch('http://localhost:5000/api/generate-audio', {
+                        const audioResponse = await fetch(`${API_BASE}/api/generate-audio`, {
                             method: 'POST',
                             credentials: "include",
                             headers: { 'Content-Type': 'application/json' },

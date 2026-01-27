@@ -6,6 +6,8 @@ import { Message } from "../types"
 import { useRouter } from 'next/navigation'
 import { useSpeech } from './useSpeech'
 
+const API_BASE = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"
+
 export const useConversation = (courseId: string) => {
   const { speakResponse } = useSpeech(async () => null)
   const router = useRouter()
@@ -28,7 +30,7 @@ export const useConversation = (courseId: string) => {
     const initializeChatbot = async () => {
       try {
         const decodedTitle = decodeURIComponent(courseId)
-        const response = await fetch("http://localhost:5000/api/initialize-chatbot", {
+        const response = await fetch(`${API_BASE}/api/initialize-chatbot`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -71,7 +73,7 @@ export const useConversation = (courseId: string) => {
     }])
 
     try {
-      const response = await fetch("http://localhost:5000/api/get-ai-response", {
+      const response = await fetch(`${API_BASE}/api/get-ai-response`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -114,7 +116,7 @@ export const useConversation = (courseId: string) => {
       }
 
       // After streaming is done, request slides
-      const slidesResponse = await fetch("http://localhost:5000/api/get-slides", {
+      const slidesResponse = await fetch(`${API_BASE}/api/get-slides`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

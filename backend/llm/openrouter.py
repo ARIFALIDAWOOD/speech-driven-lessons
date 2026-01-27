@@ -47,7 +47,7 @@ class OpenRouterProvider(LLMProvider):
 
         super().__init__(api_key, default_model or self.DEFAULT_MODEL)
 
-        self.site_url = site_url or os.getenv("SITE_URL", "http://localhost:3000")
+        self.site_url = site_url or os.getenv("SITE_URL", "http://localhost:3391")
         self.site_name = site_name or os.getenv("SITE_NAME", "Speech-Driven Lessons")
 
     @property

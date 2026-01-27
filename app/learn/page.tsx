@@ -26,16 +26,25 @@ export default function LearnPage() {
     try {
       const idToken = session.access_token;
 
-      // Create a new tutor session
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"}/api/tutor-session/create`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({
+      // Build request body based on whether custom mode is used
+      const requestBody = selection.isCustomMode
+        ? {
+            // Custom mode: use manually entered values
+            selection_state: "CUSTOM",
+            selection_city: "CUSTOM",
+            selection_board: selection.customBoard,
+            selection_subject: selection.customSubject,
+            selection_chapter: selection.customChapter,
+            selection_topic: selection.topic || null,
+            // Names are same as IDs for custom mode
+            state_name: "Custom",
+            city_name: "Custom",
+            board_name: selection.customBoard,
+            subject_name: selection.customSubject,
+            chapter_name: selection.customChapter,
+          }
+        : {
+            // Standard mode: use dropdown selections
             selection_state: selection.state?.id,
             selection_city: selection.city?.id,
             selection_board: selection.board?.id,
@@ -48,13 +57,30 @@ export default function LearnPage() {
             board_name: selection.board?.name,
             subject_name: selection.subject?.name,
             chapter_name: selection.chapter?.name,
-          }),
+          };
+
+      // Create a new tutor session
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"}/api/tutor-session/create`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify(requestBody),
         }
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to create learning session");
+        const errorText = await response.text().catch(() => "Unknown error");
+        let errorData: any = {};
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          // If not JSON, use the text as error message
+        }
+        throw new Error(errorData.message || `Failed to create learning session: ${response.status} ${response.statusText}`);
       }
 
       const { session_id } = await response.json();
@@ -63,7 +89,17 @@ export default function LearnPage() {
       router.push(`/learn/session/${session_id}`);
     } catch (err) {
       console.error("Error starting learning session:", err);
-      setError(err instanceof Error ? err.message : "Failed to start learning session");
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to start learning session";
+      if (err instanceof TypeError && err.message === "Failed to fetch") {
+        const apiUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
+        errorMessage = `Cannot connect to backend server at ${apiUrl}. Please ensure the backend server is running.`;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsStarting(false);
     }

@@ -39,4 +39,7 @@ dev = [
     "flake8-bugbear>=24.0.0",
     "isort>=5.13.0",
     "detect-secrets>=1.4.0",
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "pytest-mock>=3.14.0",
 ]

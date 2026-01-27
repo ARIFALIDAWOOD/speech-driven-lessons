@@ -17,11 +17,18 @@ export async function fetchCourseSlides(courseId: string): Promise<Slide[]> {
   try {
     const response = await fetch(`${API_BASE}/api/courses/${courseId}/slides`);
     if (!response.ok) {
-      throw new Error(`Failed to fetch slides: ${response.statusText}`);
+      const errorText = await response.text().catch(() => "Unknown error");
+      throw new Error(`Failed to fetch slides: ${response.status} ${response.statusText}. ${errorText}`);
     }
     return await response.json();
   } catch (error) {
     console.error("Error fetching course slides:", error);
+    
+    // Provide more specific error messages for network errors
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(`Cannot connect to backend server at ${API_BASE}. Please ensure the backend server is running.`);
+    }
+    
     throw error;
   }
 }

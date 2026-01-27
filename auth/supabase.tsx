@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, createContext, useContext, useCallback } from "react"
+import { useState, useEffect, createContext, useContext, useCallback, useRef } from "react"
 import { User, Session, AuthChangeEvent } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 
@@ -31,37 +31,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+  const hasInitialized = useRef(false)
 
   useEffect(() => {
-    // Get initial session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        setSession(session)
-        setUser(session?.user ?? null)
+    // Prevent double initialization in React StrictMode
+    if (hasInitialized.current) return
+    hasInitialized.current = true
 
-        // Set user_email cookie if user is logged in
-        if (session?.user?.email) {
-          document.cookie = `user_email=${encodeURIComponent(session.user.email)}; Path=/; SameSite=Lax; max-age=86400`
-        }
-      } catch (error) {
-        console.error("Error getting session:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    initializeAuth()
-
-    // Listen for auth changes
+    // Set up auth state change listener BEFORE checking initial session
+    // This ensures we catch auth events from URL fragments (magic links)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: AuthChangeEvent, session: Session | null) => {
-        setSession(session)
-        setUser(session?.user ?? null)
+      async (event: AuthChangeEvent, currentSession: Session | null) => {
+        console.log("[AuthProvider] Auth state changed:", event, currentSession?.user?.email)
+
+        setSession(currentSession)
+        setUser(currentSession?.user ?? null)
 
         // Update user_email cookie based on auth state
-        if (session?.user?.email) {
-          document.cookie = `user_email=${encodeURIComponent(session.user.email)}; Path=/; SameSite=Lax; max-age=86400`
+        if (currentSession?.user?.email) {
+          document.cookie = `user_email=${encodeURIComponent(currentSession.user.email)}; Path=/; SameSite=Lax; max-age=86400`
         } else {
           document.cookie = "user_email=; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
         }
@@ -69,6 +57,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false)
       }
     )
+
+    // Get initial auth state - try getSession first (reads from cookies/storage)
+    // then validate with getUser if session exists
+    const initializeAuth = async () => {
+      try {
+        // First check for existing session in cookies/storage
+        const { data: { session: existingSession } } = await supabase.auth.getSession()
+
+        if (existingSession?.user) {
+          console.log("[AuthProvider] Session found from storage:", existingSession.user.email)
+          setSession(existingSession)
+          setUser(existingSession.user)
+
+          // Set user_email cookie if user is logged in
+          if (existingSession.user.email) {
+            document.cookie = `user_email=${encodeURIComponent(existingSession.user.email)}; Path=/; SameSite=Lax; max-age=86400`
+          }
+        } else {
+          // No session in storage, try getUser to check with server
+          const { data: { user }, error } = await supabase.auth.getUser()
+
+          if (error) {
+            console.log("[AuthProvider] No session found (expected if not logged in)")
+            setUser(null)
+            setSession(null)
+          } else if (user) {
+            console.log("[AuthProvider] User found via getUser:", user.email)
+            // Refresh session object
+            const { data: { session } } = await supabase.auth.getSession()
+            setUser(user)
+            setSession(session)
+
+            if (user.email) {
+              document.cookie = `user_email=${encodeURIComponent(user.email)}; Path=/; SameSite=Lax; max-age=86400`
+            }
+          } else {
+            setUser(null)
+            setSession(null)
+          }
+        }
+      } catch (error) {
+        console.error("[AuthProvider] Error during initialization:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initializeAuth()
 
     return () => {
       subscription.unsubscribe()
@@ -116,48 +152,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-// Hook that requires AuthProvider context
-function useAuthWithProvider(): AuthContextType {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
-}
-
-// Standalone useAuth hook that works without provider (for login page)
+// Single useAuth hook that uses context when available, otherwise creates standalone state
 export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext)
+
+  // If we have context, use it
+  if (context) {
+    return context
+  }
+
+  // Fallback for components outside AuthProvider (like login page)
+  // This is a simplified version - the full logic is in AuthProvider
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+  const hasInitialized = useRef(false)
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        setSession(session)
-        setUser(session?.user ?? null)
+    // Prevent double initialization in React StrictMode
+    if (hasInitialized.current) return
+    hasInitialized.current = true
 
-        if (session?.user?.email) {
-          document.cookie = `user_email=${encodeURIComponent(session.user.email)}; Path=/; SameSite=Lax; max-age=86400`
-        }
-      } catch (error) {
-        console.error("Error getting session:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    initializeAuth()
-
+    // Set up listener first to catch URL-based auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: AuthChangeEvent, session: Session | null) => {
-        setSession(session)
-        setUser(session?.user ?? null)
+      async (event: AuthChangeEvent, currentSession: Session | null) => {
+        console.log("[useAuth standalone] Auth state changed:", event, currentSession?.user?.email)
 
-        if (session?.user?.email) {
-          document.cookie = `user_email=${encodeURIComponent(session.user.email)}; Path=/; SameSite=Lax; max-age=86400`
+        setSession(currentSession)
+        setUser(currentSession?.user ?? null)
+
+        if (currentSession?.user?.email) {
+          document.cookie = `user_email=${encodeURIComponent(currentSession.user.email)}; Path=/; SameSite=Lax; max-age=86400`
         } else {
           document.cookie = "user_email=; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
         }
@@ -165,6 +191,50 @@ export function useAuth(): AuthContextType {
         setLoading(false)
       }
     )
+
+    const initializeAuth = async () => {
+      try {
+        // First check for existing session in cookies/storage
+        const { data: { session: existingSession } } = await supabase.auth.getSession()
+
+        if (existingSession?.user) {
+          console.log("[useAuth standalone] Session found from storage:", existingSession.user.email)
+          setSession(existingSession)
+          setUser(existingSession.user)
+
+          if (existingSession.user.email) {
+            document.cookie = `user_email=${encodeURIComponent(existingSession.user.email)}; Path=/; SameSite=Lax; max-age=86400`
+          }
+        } else {
+          // No session in storage, try getUser to check with server
+          const { data: { user }, error } = await supabase.auth.getUser()
+
+          if (error) {
+            console.log("[useAuth standalone] No session found (expected if not logged in)")
+            setUser(null)
+            setSession(null)
+          } else if (user) {
+            console.log("[useAuth standalone] User found via getUser:", user.email)
+            const { data: { session } } = await supabase.auth.getSession()
+            setUser(user)
+            setSession(session)
+
+            if (user.email) {
+              document.cookie = `user_email=${encodeURIComponent(user.email)}; Path=/; SameSite=Lax; max-age=86400`
+            }
+          } else {
+            setUser(null)
+            setSession(null)
+          }
+        }
+      } catch (error) {
+        console.error("[useAuth standalone] Error during initialization:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initializeAuth()
 
     return () => {
       subscription.unsubscribe()

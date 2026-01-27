@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { motion } from "framer-motion"
 import AnimatedBackground from "@/components/AnimatedBackground"
-import { useAuth, auth } from "@/auth/supabase"
+import { useAuth } from "@/auth/supabase"
 
 function LoginPageContent() {
     const [email, setEmail] = useState("")
@@ -52,12 +52,8 @@ function LoginPageContent() {
         }
     }, [user, loading, router, searchParams])
 
-    useEffect(() => {
-        // On first render, sign out to ensure no lingering session interferes before explicit sign-in
-        auth.signOut().catch(err => {
-            console.warn("Initial sign-out failed (might be expected if not logged in):", err)
-        })
-    }, [])
+    // Removed auto sign-out on mount - it was interfering with magic link auth callback
+    // Only sign out when there's an explicit auth_callback_error
 
     const handleMagicLinkSignIn = async (e: React.FormEvent) => {
         e.preventDefault()

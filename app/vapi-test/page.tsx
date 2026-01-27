@@ -5,7 +5,7 @@ import Vapi from "@vapi-ai/web";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
-const BASE_URL = "http://localhost:5000/api/assistant"; // Flask API base URL
+const BASE_URL = `${process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"}/api/assistant`; // Flask API base URL
 
 export default function VoiceChat() {
     const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);

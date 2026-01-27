@@ -92,7 +92,8 @@ export default function OnlineCourse({ params }: { params: OnlineCourseParams })
   useEffect(() => {
     if (!assistantId) return;
 
-    const newSocket = io('http://localhost:5000');
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
+    const newSocket = io(socketUrl);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {

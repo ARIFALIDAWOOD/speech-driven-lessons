@@ -14,7 +14,7 @@ Write-Host "========================================`n" -ForegroundColor Cyan
 
 # Define ports to check
 $services = @(
-    @{ Name = "Next.js Frontend"; Port = 3000 },
+    @{ Name = "Next.js Frontend"; Port = 3391 },
     @{ Name = "Flask Backend"; Port = 5000 }
 )
 

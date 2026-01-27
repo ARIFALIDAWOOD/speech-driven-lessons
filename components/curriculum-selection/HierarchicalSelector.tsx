@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ArrowRight, BookOpen, Loader2 } from "lucide-react";
+import { ArrowRight, BookOpen, Loader2, PenLine, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SelectionStep } from "./SelectionStep";
 import { SelectionBreadcrumb } from "./SelectionBreadcrumb";
 import { TopicSpecification } from "./TopicSpecification";
+import { CustomCourseInput } from "./CustomCourseInput";
 import {
   CurriculumSelection,
   SelectionOption,
@@ -141,6 +142,7 @@ export function HierarchicalSelector({
   onStartLearning,
   isStarting = false,
 }: HierarchicalSelectorProps) {
+  const [isCustomMode, setIsCustomMode] = useState(false);
   const [selection, setSelection] = useState<CurriculumSelection>({
     state: null,
     city: null,
@@ -148,6 +150,10 @@ export function HierarchicalSelector({
     subject: null,
     chapter: null,
     topic: "",
+    isCustomMode: false,
+    customBoard: "",
+    customSubject: "",
+    customChapter: "",
   });
 
   const [cities, setCities] = useState<SelectionOption[]>([]);
@@ -226,17 +232,51 @@ export function HierarchicalSelector({
     [updateSelection]
   );
 
-  const isSelectionComplete = Boolean(
-    selection.state &&
-    selection.city &&
-    selection.board &&
-    selection.subject &&
-    selection.chapter
+  // Toggle between custom and dropdown mode
+  const toggleCustomMode = useCallback(() => {
+    setIsCustomMode((prev) => !prev);
+    // Reset selection when toggling
+    setSelection({
+      state: null,
+      city: null,
+      board: null,
+      subject: null,
+      chapter: null,
+      topic: "",
+      isCustomMode: !isCustomMode,
+      customBoard: "",
+      customSubject: "",
+      customChapter: "",
+    });
+  }, [isCustomMode]);
+
+  // Custom input handlers
+  const updateCustomField = useCallback(
+    (field: "customBoard" | "customSubject" | "customChapter" | "topic", value: string) => {
+      setSelection((prev) => ({ ...prev, [field]: value }));
+    },
+    []
   );
+
+  // Check if selection is complete based on mode
+  const isSelectionComplete = isCustomMode
+    ? Boolean(
+        selection.customBoard?.trim() &&
+        selection.customSubject?.trim() &&
+        selection.customChapter?.trim()
+      )
+    : Boolean(
+        selection.state &&
+        selection.city &&
+        selection.board &&
+        selection.subject &&
+        selection.chapter
+      );
 
   const handleStartLearning = () => {
     if (isSelectionComplete) {
-      onStartLearning(selection);
+      // Include the custom mode flag in the selection
+      onStartLearning({ ...selection, isCustomMode });
     }
   };
 
@@ -244,89 +284,129 @@ export function HierarchicalSelector({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-blue-600" />
-            Select Your Curriculum
-          </CardTitle>
-          <CardDescription>
-            Choose what you want to learn today. Navigate through state, city, board, subject, and chapter.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-blue-600" />
+                {isCustomMode ? "Enter Custom Course" : "Select Your Curriculum"}
+              </CardTitle>
+              <CardDescription>
+                {isCustomMode
+                  ? "Enter your own course details manually."
+                  : "Choose what you want to learn today. Navigate through state, city, board, subject, and chapter."}
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleCustomMode}
+              className="flex items-center gap-2"
+            >
+              {isCustomMode ? (
+                <>
+                  <List className="h-4 w-4" />
+                  Use Dropdowns
+                </>
+              ) : (
+                <>
+                  <PenLine className="h-4 w-4" />
+                  Enter Custom
+                </>
+              )}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Breadcrumb */}
-          <SelectionBreadcrumb
-            selection={selection}
-            onClearFrom={clearFromStep}
-          />
-
-          {/* Selection Steps Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* State */}
-            <SelectionStep
-              label="State"
-              placeholder="Select your state..."
-              description="Choose the state for your curriculum"
-              options={INITIAL_STATES}
-              value={selection.state}
-              onChange={(val) => updateSelection("state", val)}
+          {isCustomMode ? (
+            /* Custom Course Input Mode */
+            <CustomCourseInput
+              customBoard={selection.customBoard || ""}
+              customSubject={selection.customSubject || ""}
+              customChapter={selection.customChapter || ""}
+              topic={selection.topic || ""}
+              onCustomBoardChange={(val) => updateCustomField("customBoard", val)}
+              onCustomSubjectChange={(val) => updateCustomField("customSubject", val)}
+              onCustomChapterChange={(val) => updateCustomField("customChapter", val)}
+              onTopicChange={(val) => updateCustomField("topic", val)}
             />
-
-            {/* City */}
-            <SelectionStep
-              label="City"
-              placeholder="Select your city..."
-              description="Choose your city"
-              options={cities}
-              value={selection.city}
-              onChange={(val) => updateSelection("city", val)}
-              disabled={!selection.state}
-              isLoading={isLoadingCities}
-            />
-
-            {/* Board */}
-            <SelectionStep
-              label="Education Board"
-              placeholder="Select board..."
-              description="CBSE, ICSE, State Board, etc."
-              options={EDUCATION_BOARDS}
-              value={selection.board}
-              onChange={(val) => updateSelection("board", val)}
-              disabled={!selection.city}
-            />
-
-            {/* Subject */}
-            <SelectionStep
-              label="Subject"
-              placeholder="Select subject..."
-              description="Choose the subject to learn"
-              options={SUBJECTS}
-              value={selection.subject}
-              onChange={(val) => updateSelection("subject", val)}
-              disabled={!selection.board}
-            />
-
-            {/* Chapter */}
-            <SelectionStep
-              label="Chapter"
-              placeholder="Select chapter..."
-              description="Choose the chapter to study"
-              options={chapters}
-              value={selection.chapter}
-              onChange={(val) => updateSelection("chapter", val)}
-              disabled={!selection.subject}
-              isLoading={isLoadingChapters}
-            />
-          </div>
-
-          {/* Topic Specification (shown when chapter is selected) */}
-          {selection.chapter && (
-            <div className="pt-4 border-t">
-              <TopicSpecification
-                value={selection.topic || ""}
-                onChange={(val) => updateSelection("topic", val)}
-                chapterName={selection.chapter.name}
+          ) : (
+            <>
+              {/* Breadcrumb */}
+              <SelectionBreadcrumb
+                selection={selection}
+                onClearFrom={clearFromStep}
               />
-            </div>
+
+              {/* Selection Steps Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* State */}
+                <SelectionStep
+                  label="State"
+                  placeholder="Select your state..."
+                  description="Choose the state for your curriculum"
+                  options={INITIAL_STATES}
+                  value={selection.state}
+                  onChange={(val) => updateSelection("state", val)}
+                />
+
+                {/* City */}
+                <SelectionStep
+                  label="City"
+                  placeholder="Select your city..."
+                  description="Choose your city"
+                  options={cities}
+                  value={selection.city}
+                  onChange={(val) => updateSelection("city", val)}
+                  disabled={!selection.state}
+                  isLoading={isLoadingCities}
+                />
+
+                {/* Board */}
+                <SelectionStep
+                  label="Education Board"
+                  placeholder="Select board..."
+                  description="CBSE, ICSE, State Board, etc."
+                  options={EDUCATION_BOARDS}
+                  value={selection.board}
+                  onChange={(val) => updateSelection("board", val)}
+                  disabled={!selection.city}
+                />
+
+                {/* Subject */}
+                <SelectionStep
+                  label="Subject"
+                  placeholder="Select subject..."
+                  description="Choose the subject to learn"
+                  options={SUBJECTS}
+                  value={selection.subject}
+                  onChange={(val) => updateSelection("subject", val)}
+                  disabled={!selection.board}
+                />
+
+                {/* Chapter */}
+                <SelectionStep
+                  label="Chapter"
+                  placeholder="Select chapter..."
+                  description="Choose the chapter to study"
+                  options={chapters}
+                  value={selection.chapter}
+                  onChange={(val) => updateSelection("chapter", val)}
+                  disabled={!selection.subject}
+                  isLoading={isLoadingChapters}
+                />
+              </div>
+
+              {/* Topic Specification (shown when chapter is selected) */}
+              {selection.chapter && (
+                <div className="pt-4 border-t">
+                  <TopicSpecification
+                    value={selection.topic || ""}
+                    onChange={(val) => updateSelection("topic", val)}
+                    chapterName={selection.chapter.name}
+                  />
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -364,7 +444,15 @@ export function HierarchicalSelector({
               <div>
                 <h3 className="font-medium text-green-800">Ready to Learn</h3>
                 <p className="text-sm text-green-700 mt-1">
-                  {selection.board?.name} - {selection.subject?.name} - {selection.chapter?.name}
+                  {isCustomMode ? (
+                    <>
+                      {selection.customBoard} - {selection.customSubject} - {selection.customChapter}
+                    </>
+                  ) : (
+                    <>
+                      {selection.board?.name} - {selection.subject?.name} - {selection.chapter?.name}
+                    </>
+                  )}
                   {selection.topic && (
                     <span className="block mt-1 text-green-600">
                       Focus: {selection.topic}

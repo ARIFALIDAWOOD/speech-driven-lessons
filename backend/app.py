@@ -37,7 +37,10 @@ CORS(
     app,
     resources={
         r"/*": {
-            "origins": ["http://localhost:3000"],
+            "origins": [
+                "http://localhost:3391",
+                "http://127.0.0.1:3391",
+            ],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization", "X-API-Key"],
             "supports_credentials": True,
@@ -202,6 +205,97 @@ def get_ai_response():
         print(f"Error saving conversation history: {str(e)}")
         # Still return the response even if saving history fails
         return jsonify(response)
+
+
+@app.route("/api/help-center/chat", methods=["POST"])
+def help_center_chat():
+    """Handle Help Center chat requests with AI-powered responses."""
+    import os
+    import requests
+
+    username = user_utils.get_current_user(request)
+    if not username:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    user_message = data.get("message", "")
+
+    if not user_message:
+        return jsonify({"error": "Message is required"}), 400
+
+    # Get conversation history for context (limited to last 5 messages)
+    history = data.get("history", [])[-5:]
+
+    # Build conversation messages
+    messages = [
+        {
+            "role": "system",
+            "content": """You are a helpful AI assistant for Tutorion, an AI-powered learning management system.
+You help users with questions about:
+- Creating and managing courses
+- Understanding learning paths and progress tracking
+- Using the AI tutor features for personalized learning
+- Technical support and troubleshooting
+- Account and settings management
+
+Be friendly, concise, and helpful. If you don't know something specific about Tutorion's features,
+provide general guidance and suggest the user contact support for detailed help.
+Keep responses under 150 words unless the question requires a detailed explanation."""
+        }
+    ]
+
+    # Add conversation history
+    for msg in history:
+        role = "user" if msg.get("type") == "user" else "assistant"
+        messages.append({"role": role, "content": msg.get("content", "")})
+
+    # Add current user message
+    messages.append({"role": "user", "content": user_message})
+
+    try:
+        # Use OpenRouter API (primary LLM provider)
+        openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        if openrouter_key:
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {openrouter_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "openai/gpt-4o-mini",
+                    "messages": messages,
+                    "max_tokens": 500,
+                    "temperature": 0.7,
+                },
+                timeout=30,
+            )
+            response.raise_for_status()
+            result = response.json()
+            ai_response = result["choices"][0]["message"]["content"]
+        else:
+            # Fallback: Use OpenAI directly if available
+            openai_key = os.getenv("OPENAI_API_KEY")
+            if openai_key:
+                import openai
+                openai.api_key = openai_key
+                response = openai.ChatCompletion.create(
+                    model="gpt-4o-mini",
+                    messages=messages,
+                    max_tokens=500,
+                    temperature=0.7,
+                )
+                ai_response = response.choices[0].message.content
+            else:
+                return jsonify({"error": "No AI provider configured"}), 500
+
+        return jsonify({"response": ai_response})
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Request timed out. Please try again."}), 504
+    except Exception as e:
+        print(f"Help center chat error: {str(e)}")
+        return jsonify({"error": "Failed to generate response. Please try again."}), 500
 
 
 # Socket.IO event handlers

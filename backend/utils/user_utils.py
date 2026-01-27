@@ -12,7 +12,13 @@ logger = logging.getLogger(__name__)
 
 
 def get_current_user(request):
-    """Get the current user's email from the request."""
+    """Get the current user's email from the request.
+
+    Supports authentication via:
+    1. Cookies (user_email)
+    2. Authorization header (Bearer token)
+    3. Query parameter (token) - for SSE endpoints since EventSource doesn't support headers
+    """
     try:
         # For OPTIONS requests, return None to allow CORS preflight
         if request.method == "OPTIONS":
@@ -23,17 +29,24 @@ def get_current_user(request):
         if user_email:
             return user_email
 
-        # If not in cookies, try to get from Authorization header
+        # Try to get token from Authorization header
         auth_header = request.headers.get("Authorization")
-        if not auth_header:
-            logger.warning("No authorization header provided")
-            return None
+        token = None
 
-        # Remove 'Bearer ' prefix if present
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:]
-        else:
-            token = auth_header
+        if auth_header:
+            # Remove 'Bearer ' prefix if present
+            if auth_header.startswith("Bearer "):
+                token = auth_header[7:]
+            else:
+                token = auth_header
+
+        # If no token from header, try query parameter (for SSE endpoints)
+        if not token:
+            token = request.args.get("token")
+
+        if not token:
+            logger.warning("No authorization header or token query param provided")
+            return None
 
         # Verify the token and get the email
         decoded_token = verify_supabase_token(token)
@@ -66,7 +79,7 @@ def handle_verify_user():
     if request.method == "OPTIONS":
         response = make_response()
         response.headers.add(
-            "Access-Control-Allow-Origin", request.headers.get("Origin", "http://localhost:3000")
+            "Access-Control-Allow-Origin", request.headers.get("Origin", "http://localhost:3391")
         )
         response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
         response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -121,7 +134,7 @@ def handle_verify_user():
 
         # Set CORS headers
         response.headers.add(
-            "Access-Control-Allow-Origin", request.headers.get("Origin", "http://localhost:3000")
+            "Access-Control-Allow-Origin", request.headers.get("Origin", "http://localhost:3391")
         )
         response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
         response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")

@@ -1,6 +1,7 @@
 // app/services/chatService.ts
 export const initializeChatbot = async (courseTitle: string) => {
-    const response = await fetch("http://localhost:5000/api/initialize-chatbot", {
+    const apiUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
+    const response = await fetch(`${apiUrl}/api/initialize-chatbot`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ course_title: courseTitle }),

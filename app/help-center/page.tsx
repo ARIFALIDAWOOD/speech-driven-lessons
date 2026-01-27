@@ -17,6 +17,7 @@ import { MainLayout } from "@/components/layout/MainLayout"
 import { HelpHeader } from "@/components/help-center/HelpHeader"
 import { motion } from "framer-motion"
 import { FullscreenButton } from "@/components/layout/fullscreen-button"
+import { useAuth } from "@/auth/supabase"
 
 type Message = {
   type: "user" | "bot"
@@ -25,6 +26,7 @@ type Message = {
 }
 
 export default function HelpCenterPage() {
+  const { session } = useAuth()
   const [messages, setMessages] = useState<Message[]>([
     {
       type: "bot",
@@ -34,6 +36,7 @@ export default function HelpCenterPage() {
   ])
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [isFullScreen, setIsFullScreen] = useState(false)
@@ -52,6 +55,73 @@ export default function HelpCenterPage() {
     return () => clearTimeout(timeoutId);
   }, [messages, isTyping, scrollToBottom])
 
+  // Function to send message to AI backend
+  const sendToAI = useCallback(async (userMessage: string, currentMessages: Message[]) => {
+    if (!session?.access_token) {
+      setError("Please log in to use the help center.")
+      setIsTyping(false)
+      return
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"}/api/help-center/chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            message: userMessage,
+            history: currentMessages.slice(-10).map(m => ({
+              type: m.type,
+              content: m.content,
+            })),
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "Unknown error")
+        throw new Error(`Failed to get AI response: ${response.status} ${response.statusText}. ${errorText}`)
+      }
+
+      const data = await response.json()
+
+      setMessages(prev => [
+        ...prev,
+        {
+          type: "bot" as const,
+          content: data.response || "I'm sorry, I couldn't generate a response. Please try again.",
+          id: `bot-${Date.now()}`
+        }
+      ])
+    } catch (err) {
+      console.error("Help center chat error:", err)
+      
+      // Provide more specific error messages
+      let errorMessage = "I'm sorry, I encountered an error. Please try again or contact support if the issue persists.";
+      if (err instanceof TypeError && err.message === "Failed to fetch") {
+        const apiUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
+        errorMessage = `Cannot connect to backend server at ${apiUrl}. Please ensure the backend server is running.`;
+      } else if (err instanceof Error && err.message.includes("Failed to get AI response")) {
+        errorMessage = err.message;
+      }
+      
+      setMessages(prev => [
+        ...prev,
+        {
+          type: "bot" as const,
+          content: errorMessage,
+          id: `bot-${Date.now()}`
+        }
+      ])
+    } finally {
+      setIsTyping(false)
+    }
+  }, [session?.access_token])
+
   const handleSend = () => {
     if (input.trim()) {
       const userMessage = {
@@ -59,22 +129,14 @@ export default function HelpCenterPage() {
         content: input,
         id: `user-${Date.now()}`
       }
-      setMessages(prev => [...prev, userMessage])
+      const newMessages = [...messages, userMessage]
+      setMessages(newMessages)
       setInput("")
       setIsTyping(true)
+      setError(null)
 
-      // Simulate bot response
-      setTimeout(() => {
-        setIsTyping(false)
-        setMessages(prev => [
-          ...prev,
-          {
-            type: "bot" as const,
-            content: "Thanks for your question. I'll help you with that. Let me provide some information about this topic...",
-            id: `bot-${Date.now()}`
-          }
-        ])
-      }, 2000)
+      // Send to AI backend
+      sendToAI(input, newMessages)
     }
   }
 
@@ -84,20 +146,13 @@ export default function HelpCenterPage() {
       content: question,
       id: `user-${Date.now()}`
     }
-    setMessages(prev => [...prev, userMessage])
+    const newMessages = [...messages, userMessage]
+    setMessages(newMessages)
     setIsTyping(true)
+    setError(null)
 
-    setTimeout(() => {
-      setIsTyping(false)
-      setMessages(prev => [
-        ...prev,
-        {
-          type: "bot" as const,
-          content: `Here's information about ${question.toLowerCase()}...`,
-          id: `bot-${Date.now()}`
-        }
-      ])
-    }, 2000)
+    // Send to AI backend
+    sendToAI(question, newMessages)
   }
 
   // Typing indicator animation

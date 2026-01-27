@@ -100,7 +100,7 @@ catch {
 # Check Port Availability
 Write-Host "`nChecking Port Availability..." -ForegroundColor Yellow
 Write-Host ("-" * 40)
-Test-Port 3000 "Next.js Frontend" | Out-Null
+Test-Port 3391 "Next.js Frontend" | Out-Null
 Test-Port 5000 "Flask Backend" | Out-Null
 Test-Port 55321 "Supabase API" | Out-Null
 Test-Port 55322 "Supabase DB" | Out-Null

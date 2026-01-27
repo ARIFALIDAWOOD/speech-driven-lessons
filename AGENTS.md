@@ -206,7 +206,7 @@ uv run pre-commit run --all-files
    cd backend
    uv run python app.py
    
-   # Frontend (port 3000)
+   # Frontend (port 3391)
    npm run dev
    ```
 

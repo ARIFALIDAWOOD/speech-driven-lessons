@@ -6,12 +6,17 @@ import { PlayCircle, MoreVertical, Eye, Users, Clock } from "lucide-react"
 import Link from "next/link"
 
 interface Course {
-  id: number
+  id: string | number
   title: string
-  hoursCompleted: number
-  enrolled: number
-  views: number
-  isPublished: boolean
+  hoursCompleted?: number
+  enrolled?: number
+  views?: number
+  isPublished?: boolean
+  description?: string
+  create_course_process?: {
+    current_step?: number
+    is_creation_complete?: boolean
+  }
 }
 
 interface CourseCardProps {
@@ -35,15 +40,15 @@ export function CourseCard({ course }: CourseCardProps) {
           <div className="flex gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              <span>{course.hoursCompleted}h</span>
+              <span>{course.hoursCompleted ?? 0}h</span>
             </div>
             <div className="flex items-center gap-1">
               <Users className="w-4 h-4" />
-              <span>{course.enrolled}</span>
+              <span>{course.enrolled ?? 0}</span>
             </div>
             <div className="flex items-center gap-1">
               <Eye className="w-4 h-4" />
-              <span>{course.views}</span>
+              <span>{course.views ?? 0}</span>
             </div>
           </div>
 

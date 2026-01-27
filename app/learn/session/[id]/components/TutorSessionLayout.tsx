@@ -93,7 +93,8 @@ export function TutorSessionLayout({
     setError(null);
 
     try {
-      const url = `${process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"}/api/tutor-session/${sessionId}/stream`;
+      // Pass token as query parameter since EventSource doesn't support custom headers
+      const url = `${process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"}/api/tutor-session/${sessionId}/stream?token=${encodeURIComponent(accessToken)}`;
 
       const eventSource = new EventSource(url);
       eventSourceRef.current = eventSource;
@@ -123,7 +124,7 @@ export function TutorSessionLayout({
       setError("Failed to connect to tutor");
       setIsConnecting(false);
     }
-  }, [sessionId]);
+  }, [sessionId, accessToken]);
 
   // Handle tutor events
   const handleTutorEvent = (event: TutorEvent) => {

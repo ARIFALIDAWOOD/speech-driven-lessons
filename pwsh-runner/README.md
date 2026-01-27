@@ -93,7 +93,7 @@ Installs all required dependencies using `npm` for Node.js and `uv` for Python.
 
 | Service | Port | URL |
 |---------|------|-----|
-| Next.js Frontend | 3000 | http://localhost:3000 |
+| Next.js Frontend | 3391 | http://localhost:3391 |
 | Flask Backend | 5000 | http://localhost:5000 |
 | Supabase API | 55321 | http://localhost:55321 |
 | Supabase DB | 55322 | postgresql://localhost:55322 |
@@ -124,7 +124,7 @@ Start Docker Desktop before running the scripts.
 ### Port already in use
 The scripts will prompt you to kill existing processes. You can also manually check:
 ```powershell
-netstat -ano | findstr ":3000"
+netstat -ano | findstr ":3391"
 netstat -ano | findstr ":5000"
 ```
 
