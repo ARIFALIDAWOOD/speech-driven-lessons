@@ -1,0 +1,11 @@
+services:
+  - name: speech-driven-lessons-api
+    type: web
+    env: docker
+    dockerfilePath: backend/docker/Dockerfile
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8000"
