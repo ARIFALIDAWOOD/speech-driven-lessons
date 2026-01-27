@@ -4,19 +4,13 @@ Cerebras LLM Provider
 Fallback provider using llama3.1-70b via Cerebras inference API.
 """
 
-import os
 import json
+import os
 from typing import AsyncIterator, Iterator, Optional
 
 import httpx
 
-from .base import (
-    LLMProvider,
-    LLMMessage,
-    LLMResponse,
-    LLMConfig,
-    StreamChunk,
-)
+from .base import LLMConfig, LLMMessage, LLMProvider, LLMResponse, StreamChunk
 
 
 class CerebrasProvider(LLMProvider):

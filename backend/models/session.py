@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
-from .enums import TutorState, StudentLevel
+from .enums import StudentLevel, TutorState
 
 
 @dataclass

@@ -1,0 +1,17 @@
+[build]
+  base = "speech-driven-lessons"
+  command = "npm run build"
+  publish = ".next"
+
+[[redirects]]
+  from = "/api/realtime/*"
+  to = "https://realtime-voice-chat-api.onrender.com/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/lessons/*"
+  to = "https://speech-driven-lessons-api.onrender.com/:splat"
+  status = 200
+  force = true
+

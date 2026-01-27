@@ -4,28 +4,22 @@ LLM Provider Factory
 Factory pattern for provider selection with automatic fallback support.
 """
 
-import os
 import logging
-from typing import Optional, Iterator, AsyncIterator
+import os
 from enum import Enum
+from typing import AsyncIterator, Iterator, Optional
 
-from .base import (
-    LLMProvider,
-    LLMMessage,
-    LLMResponse,
-    LLMConfig,
-    StreamChunk,
-)
-from .openrouter import OpenRouterProvider
-from .groq import GroqProvider
+from .base import LLMConfig, LLMMessage, LLMProvider, LLMResponse, StreamChunk
 from .cerebras import CerebrasProvider
-
+from .groq import GroqProvider
+from .openrouter import OpenRouterProvider
 
 logger = logging.getLogger(__name__)
 
 
 class ProviderType(str, Enum):
     """Available LLM provider types."""
+
     OPENROUTER = "openrouter"
     GROQ = "groq"
     CEREBRAS = "cerebras"
@@ -142,8 +136,7 @@ class FallbackLLMProvider(LLMProvider):
     def default_model(self) -> Optional[str]:
         """Return default model."""
         return self._default_model or (
-            self._available_providers[0].default_model
-            if self._available_providers else None
+            self._available_providers[0].default_model if self._available_providers else None
         )
 
     def complete(

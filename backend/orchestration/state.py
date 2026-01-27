@@ -4,14 +4,16 @@ Orchestration State Schema - Phase 1
 Defines the shared state TypedDict for all agents in the multi-agent orchestration system.
 """
 
-from typing import Annotated, TypedDict, Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
+from typing import Annotated, Any, Dict, List, Optional, TypedDict
+
 from langgraph.graph import add_messages
 
 
 class AgentType(str, Enum):
     """Types of agents in the orchestration system."""
+
     ORCHESTRATOR = "orchestrator"
     COURSE_CREATOR = "course_creator"
     CURRICULUM_DESIGNER = "curriculum_designer"
@@ -22,6 +24,7 @@ class AgentType(str, Enum):
 
 class SessionPhase(str, Enum):
     """Phases of a learning session."""
+
     INITIALIZATION = "initialization"
     COURSE_CREATION = "course_creation"
     CURRICULUM_DESIGN = "curriculum_design"
@@ -33,6 +36,7 @@ class SessionPhase(str, Enum):
 
 class ProgressHealth(str, Enum):
     """Health status of student progress."""
+
     EXCELLENT = "excellent"
     GOOD = "good"
     MODERATE = "moderate"
@@ -47,6 +51,7 @@ class OrchestratorState(TypedDict):
     This state is passed between all agents and contains all context
     needed for coordinated tutoring, assessment, and progress tracking.
     """
+
     # Session identification
     session_id: str
     user_id: str

@@ -4,8 +4,8 @@ Orchestration Configuration - Phase 1
 Configuration settings for the multi-agent orchestration system.
 """
 
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 
 
 @dataclass

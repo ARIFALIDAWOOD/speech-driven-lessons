@@ -6,7 +6,7 @@ This module provides the handler and utility functions.
 
 import json
 import logging
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 from robyn import WebSocket as RobynWebSocket
 
@@ -85,30 +85,22 @@ def register_websocket(app):
                 assistant_id = payload.get("assistant_id")
                 position = payload.get("position")
                 if assistant_id and position is not None:
-                    logger.info(
-                        f"Received slide update for {assistant_id}: {position}"
-                    )
+                    logger.info(f"Received slide update for {assistant_id}: {position}")
                     update_viewing_slide(assistant_id, position)
                     return json.dumps({"event": "slide_updated", "position": position})
 
             elif event_type == "welcome_block_start":
                 assistant_id = payload.get("assistant_id")
                 if assistant_id:
-                    logger.info(
-                        f"Welcome block start requested for {assistant_id}"
-                    )
-                    user_course_data = s3_utils.load_assistant_user_from_s3(
-                        assistant_id
-                    )
+                    logger.info(f"Welcome block start requested for {assistant_id}")
+                    user_course_data = s3_utils.load_assistant_user_from_s3(assistant_id)
                     if user_course_data:
                         starting_slide_response = go_to_starting_slide(
                             assistant_id,
                             user_course_data["course_id"],
                             user_course_data["username"],
                         )
-                        logger.info(
-                            f"Starting slide response: {starting_slide_response}"
-                        )
+                        logger.info(f"Starting slide response: {starting_slide_response}")
                         return json.dumps({"event": "welcome_started"})
 
             elif event_type == "ping":
@@ -144,6 +136,8 @@ def register_websocket(app):
 # Dummy router for compatibility with import structure
 class DummyRouter:
     """Placeholder router since WebSockets use main app."""
+
     pass
+
 
 router = DummyRouter()

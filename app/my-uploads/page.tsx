@@ -43,7 +43,7 @@ export default function CoursesPage() {
       setError(null)
 
       const apiUrl = `${process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"}/api/course/courses`
-      
+
       const response = await fetch(apiUrl, {
         method: "GET",
         headers: {
@@ -85,7 +85,7 @@ export default function CoursesPage() {
       setCourses(transformedCourses)
     } catch (err) {
       console.error("Error fetching courses:", err)
-      
+
       // Provide more specific error messages
       let errorMessage = "Failed to fetch courses"
       if (err instanceof TypeError && err.message === "Failed to fetch") {
@@ -94,7 +94,7 @@ export default function CoursesPage() {
       } else if (err instanceof Error) {
         errorMessage = err.message
       }
-      
+
       setError(errorMessage)
     } finally {
       setIsLoading(false)

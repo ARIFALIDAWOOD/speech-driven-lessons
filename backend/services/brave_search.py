@@ -4,14 +4,12 @@ Brave Search API Client
 Provides web search capabilities for gathering curriculum data and topic information.
 """
 
-import os
 import logging
+import os
 from typing import Optional
 
 import httpx
-
-from models import SearchResult, SearchResponse
-
+from models import SearchResponse, SearchResult
 
 logger = logging.getLogger(__name__)
 

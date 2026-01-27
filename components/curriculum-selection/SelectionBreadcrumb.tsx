@@ -30,12 +30,12 @@ export function SelectionBreadcrumb({
       {selectedSteps.map((step, index) => {
         const value = selection[step.id];
         const isLast = index === selectedSteps.length - 1;
-        
+
         // Handle different value types
-        const displayName = typeof value === 'object' && value !== null && 'name' in value 
-          ? (value as { name: string }).name 
-          : typeof value === 'string' 
-            ? value 
+        const displayName = typeof value === 'object' && value !== null && 'name' in value
+          ? (value as { name: string }).name
+          : typeof value === 'string'
+            ? value
             : '';
 
         return (

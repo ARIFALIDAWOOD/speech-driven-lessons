@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from robyn import Robyn, ALLOW_CORS
+from robyn import ALLOW_CORS, Robyn
 
 # Load environment variables FIRST before any other imports
 # Check for .env.local first (preferred), then .env
@@ -39,7 +39,7 @@ ALLOW_CORS(
 )
 
 # Import and include routers
-from robyn_routers import course, tutor_session, assistant, websocket_router
+from robyn_routers import assistant, course, tutor_session, websocket_router
 
 app.include_router(course.router)
 app.include_router(tutor_session.router)
@@ -50,6 +50,7 @@ websocket_router.register_websocket(app)
 
 # Initialize WebSocket utilities
 from utils import socket_utils
+
 socket_utils.set_websocket_broadcast_func(websocket_router.broadcast_to_room)
 
 

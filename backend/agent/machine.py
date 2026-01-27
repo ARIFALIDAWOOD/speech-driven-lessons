@@ -7,8 +7,7 @@ Handles state transitions and ensures valid state flow.
 import logging
 from typing import Optional
 
-from models import TutorState, SessionContext, StateTransition
-
+from models import SessionContext, StateTransition, TutorState
 
 logger = logging.getLogger(__name__)
 
@@ -18,64 +17,84 @@ VALID_TRANSITIONS: list[StateTransition] = [
     # Initial setup flow
     StateTransition(TutorState.IDLE, TutorState.COURSE_SETUP, trigger="start"),
     StateTransition(TutorState.COURSE_SETUP, TutorState.INITIAL_ASSESSMENT, trigger="auto"),
-
     # Assessment flow
-    StateTransition(TutorState.INITIAL_ASSESSMENT, TutorState.ASSESSMENT_REVIEW, trigger="complete"),
+    StateTransition(
+        TutorState.INITIAL_ASSESSMENT, TutorState.ASSESSMENT_REVIEW, trigger="complete"
+    ),
     StateTransition(TutorState.ASSESSMENT_REVIEW, TutorState.LESSON_INTRODUCTION, trigger="auto"),
-
     # Main teaching flow
     StateTransition(TutorState.LESSON_INTRODUCTION, TutorState.CONCEPT_EXPLANATION, trigger="auto"),
-    StateTransition(TutorState.CONCEPT_EXPLANATION, TutorState.EXAMPLE_DEMONSTRATION, trigger="auto"),
+    StateTransition(
+        TutorState.CONCEPT_EXPLANATION, TutorState.EXAMPLE_DEMONSTRATION, trigger="auto"
+    ),
     StateTransition(TutorState.EXAMPLE_DEMONSTRATION, TutorState.GUIDED_PRACTICE, trigger="auto"),
     StateTransition(TutorState.GUIDED_PRACTICE, TutorState.CHECK_UNDERSTANDING, trigger="complete"),
     StateTransition(TutorState.CHECK_UNDERSTANDING, TutorState.TOPIC_SUMMARY, trigger="auto"),
-
     # Topic completion flow
     StateTransition(
         TutorState.TOPIC_SUMMARY,
         TutorState.LESSON_INTRODUCTION,
         condition=lambda ctx: not ctx.is_lesson_complete() and not ctx.should_suggest_break(),
-        trigger="auto"
+        trigger="auto",
     ),
     StateTransition(
         TutorState.TOPIC_SUMMARY,
         TutorState.BREAK_SUGGESTION,
         condition=lambda ctx: ctx.should_suggest_break() and not ctx.is_lesson_complete(),
-        trigger="auto"
+        trigger="auto",
     ),
     StateTransition(
         TutorState.TOPIC_SUMMARY,
         TutorState.LESSON_COMPLETE,
         condition=lambda ctx: ctx.is_lesson_complete(),
-        trigger="auto"
+        trigger="auto",
     ),
-
     # Break handling
     StateTransition(TutorState.BREAK_SUGGESTION, TutorState.SESSION_PAUSED, trigger="user_accept"),
-    StateTransition(TutorState.BREAK_SUGGESTION, TutorState.LESSON_INTRODUCTION, trigger="user_decline"),
+    StateTransition(
+        TutorState.BREAK_SUGGESTION, TutorState.LESSON_INTRODUCTION, trigger="user_decline"
+    ),
     StateTransition(TutorState.SESSION_PAUSED, TutorState.LESSON_INTRODUCTION, trigger="resume"),
-
     # Lesson completion
     StateTransition(TutorState.LESSON_COMPLETE, TutorState.SESSION_COMPLETE, trigger="auto"),
-
     # Interruption handling (from any teaching state)
-    StateTransition(TutorState.CONCEPT_EXPLANATION, TutorState.ANSWERING_QUESTION, trigger="user_question"),
-    StateTransition(TutorState.EXAMPLE_DEMONSTRATION, TutorState.ANSWERING_QUESTION, trigger="user_question"),
-    StateTransition(TutorState.GUIDED_PRACTICE, TutorState.ANSWERING_QUESTION, trigger="user_question"),
-    StateTransition(TutorState.CHECK_UNDERSTANDING, TutorState.HANDLING_CONFUSION, trigger="user_confused"),
-
+    StateTransition(
+        TutorState.CONCEPT_EXPLANATION, TutorState.ANSWERING_QUESTION, trigger="user_question"
+    ),
+    StateTransition(
+        TutorState.EXAMPLE_DEMONSTRATION, TutorState.ANSWERING_QUESTION, trigger="user_question"
+    ),
+    StateTransition(
+        TutorState.GUIDED_PRACTICE, TutorState.ANSWERING_QUESTION, trigger="user_question"
+    ),
+    StateTransition(
+        TutorState.CHECK_UNDERSTANDING, TutorState.HANDLING_CONFUSION, trigger="user_confused"
+    ),
     # Return from interruptions
-    StateTransition(TutorState.ANSWERING_QUESTION, TutorState.CONCEPT_EXPLANATION, trigger="return"),
-    StateTransition(TutorState.ANSWERING_QUESTION, TutorState.EXAMPLE_DEMONSTRATION, trigger="return"),
+    StateTransition(
+        TutorState.ANSWERING_QUESTION, TutorState.CONCEPT_EXPLANATION, trigger="return"
+    ),
+    StateTransition(
+        TutorState.ANSWERING_QUESTION, TutorState.EXAMPLE_DEMONSTRATION, trigger="return"
+    ),
     StateTransition(TutorState.ANSWERING_QUESTION, TutorState.GUIDED_PRACTICE, trigger="return"),
-    StateTransition(TutorState.HANDLING_CONFUSION, TutorState.CONCEPT_EXPLANATION, trigger="return"),
-
+    StateTransition(
+        TutorState.HANDLING_CONFUSION, TutorState.CONCEPT_EXPLANATION, trigger="return"
+    ),
     # Early termination (from any state)
-    StateTransition(TutorState.LESSON_INTRODUCTION, TutorState.SESSION_COMPLETE, trigger="user_end"),
-    StateTransition(TutorState.CONCEPT_EXPLANATION, TutorState.SESSION_COMPLETE, trigger="user_end"),
-    StateTransition(TutorState.EXAMPLE_DEMONSTRATION, TutorState.SESSION_COMPLETE, trigger="user_end"),
+    StateTransition(
+        TutorState.LESSON_INTRODUCTION, TutorState.SESSION_COMPLETE, trigger="user_end"
+    ),
+    StateTransition(
+        TutorState.CONCEPT_EXPLANATION, TutorState.SESSION_COMPLETE, trigger="user_end"
+    ),
+    StateTransition(
+        TutorState.EXAMPLE_DEMONSTRATION, TutorState.SESSION_COMPLETE, trigger="user_end"
+    ),
     StateTransition(TutorState.GUIDED_PRACTICE, TutorState.SESSION_COMPLETE, trigger="user_end"),
-    StateTransition(TutorState.CHECK_UNDERSTANDING, TutorState.SESSION_COMPLETE, trigger="user_end"),
+    StateTransition(
+        TutorState.CHECK_UNDERSTANDING, TutorState.SESSION_COMPLETE, trigger="user_end"
+    ),
     StateTransition(TutorState.TOPIC_SUMMARY, TutorState.SESSION_COMPLETE, trigger="user_end"),
 ]
 
@@ -160,9 +179,7 @@ class TutorStateMachine:
             True if transition was successful
         """
         if not self.can_transition_to(target_state):
-            logger.warning(
-                f"Invalid transition: {self.context.current_state} -> {target_state}"
-            )
+            logger.warning(f"Invalid transition: {self.context.current_state} -> {target_state}")
             return False
 
         self.context.previous_state = self.context.current_state
@@ -243,7 +260,9 @@ class TutorStateMachine:
         """Get information about the current state."""
         return {
             "current_state": self.current_state.value,
-            "previous_state": self.context.previous_state.value if self.context.previous_state else None,
+            "previous_state": (
+                self.context.previous_state.value if self.context.previous_state else None
+            ),
             "valid_transitions": [s.value for s in self.get_valid_transitions()],
             "is_terminal": self.is_terminal_state(),
             "is_teaching": self.is_teaching_state(),

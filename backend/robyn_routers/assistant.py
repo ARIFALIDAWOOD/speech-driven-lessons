@@ -6,12 +6,12 @@ import time
 from datetime import datetime
 
 import requests
-from robyn import SubRouter, Request
-
-from .auth import get_auth_handler, require_auth, refresh_access_token
-from chatbot import ChatBot
-from s3_context_manager import ContextManager as S3ContextManager
 import utils.s3_utils as s3_utils
+from chatbot import ChatBot
+from robyn import Request, SubRouter
+from s3_context_manager import ContextManager as S3ContextManager
+
+from .auth import get_auth_handler, refresh_access_token, require_auth
 
 router = SubRouter(__file__, prefix="/api")
 logger = logging.getLogger(__name__)
@@ -26,6 +26,7 @@ s3_bucket = "anantra-lms-store"
 def process_course_context_s3(bucket, username, course_title, api_key):
     """Process course context from S3."""
     from utils.load_and_process_index import process_course_context_s3 as _process
+
     return _process(bucket, username, course_title, api_key)
 
 

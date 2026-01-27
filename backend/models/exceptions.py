@@ -30,9 +30,7 @@ class NotFoundError(ServiceError):
 class ValidationError(ServiceError):
     """Raised when input validation fails."""
 
-    def __init__(
-        self, message: str, field: str | None = None, errors: list | None = None
-    ):
+    def __init__(self, message: str, field: str | None = None, errors: list | None = None):
         super().__init__(
             message=message,
             details={"field": field, "errors": errors or []},

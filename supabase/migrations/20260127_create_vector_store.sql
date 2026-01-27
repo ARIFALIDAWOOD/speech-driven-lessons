@@ -10,31 +10,31 @@ CREATE TABLE IF NOT EXISTS course_embeddings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_email VARCHAR(255) NOT NULL,
     course_title VARCHAR(255) NOT NULL,
-    
+
     -- Chunk content and metadata
     chunk_text TEXT NOT NULL,
     chunk_index INTEGER NOT NULL,
     source_file VARCHAR(255),
-    
+
     -- Vector embedding (3072 dimensions for text-embedding-3-large)
     embedding vector(3072) NOT NULL,
-    
+
     -- Metadata
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Unique constraint: one embedding per chunk per course
     UNIQUE(user_email, course_title, chunk_index)
 );
 
 -- Index for fast user/course lookups
-CREATE INDEX IF NOT EXISTS idx_course_embeddings_user_course 
+CREATE INDEX IF NOT EXISTS idx_course_embeddings_user_course
     ON course_embeddings(user_email, course_title);
 
 -- HNSW index for fast vector similarity search
 -- Using HNSW (Hierarchical Navigable Small World) for better performance
-CREATE INDEX IF NOT EXISTS idx_course_embeddings_vector 
-    ON course_embeddings 
+CREATE INDEX IF NOT EXISTS idx_course_embeddings_vector
+    ON course_embeddings
     USING hnsw (embedding vector_cosine_ops);
 
 -- Inverted index table for quotes and important phrases (kept for fast exact matching)
@@ -42,22 +42,22 @@ CREATE TABLE IF NOT EXISTS course_inverted_index (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_email VARCHAR(255) NOT NULL,
     course_title VARCHAR(255) NOT NULL,
-    
+
     -- Quote/phrase and associated chunk index
     phrase TEXT NOT NULL,
     chunk_index INTEGER NOT NULL,
-    
+
     -- Metadata
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Unique constraint
     UNIQUE(user_email, course_title, phrase)
 );
 
 -- Index for fast phrase lookups
-CREATE INDEX IF NOT EXISTS idx_course_inverted_index_user_course 
+CREATE INDEX IF NOT EXISTS idx_course_inverted_index_user_course
     ON course_inverted_index(user_email, course_title);
-CREATE INDEX IF NOT EXISTS idx_course_inverted_index_phrase 
+CREATE INDEX IF NOT EXISTS idx_course_inverted_index_phrase
     ON course_inverted_index(phrase);
 
 -- Course Chunks table for storing chunk metadata (optional, for faster retrieval)
@@ -65,20 +65,20 @@ CREATE TABLE IF NOT EXISTS course_chunks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_email VARCHAR(255) NOT NULL,
     course_title VARCHAR(255) NOT NULL,
-    
+
     -- Chunk content
     chunk_text TEXT NOT NULL,
     chunk_index INTEGER NOT NULL,
-    
+
     -- Metadata
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Unique constraint
     UNIQUE(user_email, course_title, chunk_index)
 );
 
 -- Index for fast chunk retrieval
-CREATE INDEX IF NOT EXISTS idx_course_chunks_user_course 
+CREATE INDEX IF NOT EXISTS idx_course_chunks_user_course
     ON course_chunks(user_email, course_title);
 
 -- Function to update updated_at timestamp
@@ -189,7 +189,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         ce.chunk_text,
         ce.chunk_index,
         1 - (ce.embedding <=> p_query_embedding) AS similarity,

@@ -18,20 +18,15 @@ from .dtos import (
     CourseData,
     CourseResponse,
     CreateCourseRequest,
-    SyllabusResponse,
-    SlidesResponse,
-    UploadFileRequest,
-    UploadFileMetadataRequest,
     DeleteFileRequest,
+    SlidesResponse,
+    SyllabusResponse,
     UpdateStepRequest,
     UpdateTagsRequest,
+    UploadFileMetadataRequest,
+    UploadFileRequest,
 )
-from .exceptions import (
-    NotFoundError,
-    ValidationError,
-    StorageError,
-    ProcessingError,
-)
+from .exceptions import NotFoundError, ProcessingError, StorageError, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -291,9 +286,7 @@ class CourseService:
         # Upload to S3
         file_obj = BytesIO(request.file_content)
         try:
-            s3_upload_success = s3_utils.upload_file_to_s3(
-                file_obj, self.s3_bucket, s3_key
-            )
+            s3_upload_success = s3_utils.upload_file_to_s3(file_obj, self.s3_bucket, s3_key)
             if not s3_upload_success:
                 raise StorageError("upload", "Failed to upload file to storage")
         except Exception as e:
@@ -348,15 +341,16 @@ class CourseService:
 
             # Check if file already exists
             file_exists = any(
-                f.get("name") == request.filename
-                for f in course_info["uploadedFiles"]
+                f.get("name") == request.filename for f in course_info["uploadedFiles"]
             )
 
             if not file_exists:
-                course_info["uploadedFiles"].append({
-                    "name": request.filename,
-                    "size": request.filesize,
-                })
+                course_info["uploadedFiles"].append(
+                    {
+                        "name": request.filename,
+                        "size": request.filesize,
+                    }
+                )
                 course_info["last_updated_at"] = self._get_current_utc_iso_string()
                 s3_utils.upload_json_to_s3(course_info, self.s3_bucket, course_info_key)
                 logger.info(f"Successfully added file '{request.filename}' metadata")
@@ -400,9 +394,7 @@ class CourseService:
 
     def _remove_file_metadata(self, course_id: str, filename: str) -> bool:
         """Remove file metadata from course_info.json."""
-        logger.info(
-            f"[{self.user_email}] Removing file '{filename}' from course {course_id}"
-        )
+        logger.info(f"[{self.user_email}] Removing file '{filename}' from course {course_id}")
         course_info_key = self._get_course_info_key(course_id)
 
         try:
@@ -412,8 +404,7 @@ class CourseService:
 
             initial_length = len(course_info.get("uploadedFiles", []))
             course_info["uploadedFiles"] = [
-                f for f in course_info.get("uploadedFiles", [])
-                if f.get("name") != filename
+                f for f in course_info.get("uploadedFiles", []) if f.get("name") != filename
             ]
 
             if len(course_info["uploadedFiles"]) < initial_length:
@@ -670,7 +661,9 @@ class CourseService:
     # Step Management
     # =========================================================================
 
-    def update_step(self, request: UpdateStepRequest, is_creation_complete: bool = False) -> CourseResponse:
+    def update_step(
+        self, request: UpdateStepRequest, is_creation_complete: bool = False
+    ) -> CourseResponse:
         """
         Update only the course creation step.
 

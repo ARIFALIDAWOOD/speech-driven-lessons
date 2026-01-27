@@ -23,12 +23,12 @@ export async function fetchCourseSlides(courseId: string): Promise<Slide[]> {
     return await response.json();
   } catch (error) {
     console.error("Error fetching course slides:", error);
-    
+
     // Provide more specific error messages for network errors
     if (error instanceof TypeError && error.message === "Failed to fetch") {
       throw new Error(`Cannot connect to backend server at ${API_BASE}. Please ensure the backend server is running.`);
     }
-    
+
     throw error;
   }
 }

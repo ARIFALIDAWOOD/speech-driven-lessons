@@ -5,22 +5,22 @@ Provides a proactive tutor agent that guides students through lessons
 using a state machine architecture.
 """
 
-from .machine import TutorStateMachine
-from .tutor import ProactiveTutor
-from .prompts import get_system_prompt
-
 # Re-export models for backward compatibility
 from models import (
-    TutorState,
-    SessionContext,
-    StudentLevel,
-    StateTransition,
-    TutorEvent,
+    AssessmentDifficulty,
     AssessmentQuestion,
     AssessmentResponse,
-    AssessmentDifficulty,
+    SessionContext,
+    StateTransition,
+    StudentLevel,
     TopicProgress,
+    TutorEvent,
+    TutorState,
 )
+
+from .machine import TutorStateMachine
+from .prompts import get_system_prompt
+from .tutor import ProactiveTutor
 
 __all__ = [
     # Agent classes

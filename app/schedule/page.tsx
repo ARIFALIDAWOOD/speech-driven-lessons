@@ -55,7 +55,7 @@ export default function SchedulePage() {
             setError(null)
 
             const apiUrl = `${process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"}/api/tutor-session/scheduled`
-            
+
             const response = await fetch(apiUrl, {
                 method: "GET",
                 headers: {
@@ -73,7 +73,7 @@ export default function SchedulePage() {
             setAppointments(data.sessions || [])
         } catch (err) {
             console.error("Error fetching scheduled sessions:", err)
-            
+
             // Provide more specific error messages
             let errorMessage = "Failed to fetch sessions"
             if (err instanceof TypeError && err.message === "Failed to fetch") {
@@ -82,7 +82,7 @@ export default function SchedulePage() {
             } else if (err instanceof Error) {
                 errorMessage = err.message
             }
-            
+
             setError(errorMessage)
         } finally {
             setIsLoading(false)

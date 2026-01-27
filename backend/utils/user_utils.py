@@ -13,6 +13,7 @@ import os
 from typing import Any, Dict, Optional
 
 import utils.s3_utils as s3_utils
+
 from .supabase_auth import verify_supabase_token
 
 logger = logging.getLogger(__name__)

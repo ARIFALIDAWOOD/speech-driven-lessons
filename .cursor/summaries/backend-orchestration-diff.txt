@@ -5,7 +5,7 @@ index eeb0b89..784cc8d 100644
 @@ -184,6 +184,12 @@ class SessionContext:
      student_requested_end: bool = False
      needs_clarification: bool = False
- 
+
 +    # Phase 1: Orchestration integration
 +    course_id: Optional[str] = None
 +    embeddings_ready: bool = False
@@ -20,7 +20,7 @@ index d35801d..7d9ab87 100644
 --- a/backend/orchestration/agents/tutor_adapter.py
 +++ b/backend/orchestration/agents/tutor_adapter.py
 @@ -39,11 +39,15 @@ class TutorAgentAdapter:
- 
+
          if session_id not in cls._active_tutors:
              # Create new tutor with context from state
 +            meta = (state.get("course_outline") or {}).get("metadata") or {}
@@ -34,7 +34,7 @@ index d35801d..7d9ab87 100644
 -                course_title=state.get("course_outline", {}).get("metadata", {}).get("title", ""),
 +                course_title=meta.get("title", ""),
              )
- 
+
              # Set course_id if available
 @@ -130,9 +134,9 @@ def tutor_node(state: OrchestratorState) -> Dict[str, Any]:
      # Extract tutor context for orchestration
@@ -46,35 +46,35 @@ index d35801d..7d9ab87 100644
 -        "messages_in_state": tutor.context.messages_in_current_state,
 +        "messages_in_state": len(tutor.context.conversation_history),
      }
- 
+
      # Build state updates
 @@ -147,7 +151,7 @@ def tutor_node(state: OrchestratorState) -> Dict[str, Any]:
          updates["messages"] = new_messages
- 
+
      # Check if tutor is doing understanding check
 -    if tutor_state_value == TutorState.CHECKING_UNDERSTANDING.value:
 +    if tutor_state_value == TutorState.CHECK_UNDERSTANDING.value:
          updates["current_phase"] = SessionPhase.ASSESSMENT
- 
+
      return updates
 @@ -158,11 +162,12 @@ def should_continue_tutoring(state: OrchestratorState) -> str:
      Conditional edge function after tutor node.
- 
+
      Determines if tutoring should continue or if another agent should take over.
 +    After tutor processes input, we should end the turn unless intervention is needed.
      """
      tutor_state = state.get("tutor_state", "")
- 
+
      # Check for assessment trigger
 -    if tutor_state == TutorState.CHECKING_UNDERSTANDING.value:
 +    if tutor_state == TutorState.CHECK_UNDERSTANDING.value:
          return "assessor"
- 
+
      # Check for progress intervention
 @@ -175,5 +180,6 @@ def should_continue_tutoring(state: OrchestratorState) -> str:
      if struggles >= 3:
          return "progress_tracker"
- 
+
 -    # Continue with orchestrator for routing
 -    return "orchestrator"
 +    # Turn is complete - end the graph execution for this turn
@@ -87,13 +87,13 @@ index 3d9f7e7..273f5d9 100644
 @@ -4,10 +4,9 @@ Orchestration Workflow - Phase 1
  Main LangGraph StateGraph definition for the multi-agent orchestration system.
  """
- 
+
 -from typing import Optional
 +from typing import Optional, Any
  import logging
  from langgraph.graph import StateGraph, START, END
 -from langgraph.graph.graph import CompiledGraph
- 
+
  from .state import OrchestratorState, AgentType, SessionPhase
  from .agents import (
 @@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
@@ -104,11 +104,11 @@ index 3d9f7e7..273f5d9 100644
 +) -> Any:
      """
      Create the orchestration workflow graph.
- 
+
 @@ -70,7 +69,7 @@ def create_orchestration_graph(
          }
      )
- 
+
 -    # Tutor returns to orchestrator (with intervention check)
 +    # Tutor returns to orchestrator (with intervention check) or ends
      builder.add_conditional_edges(
@@ -121,9 +121,9 @@ index 3d9f7e7..273f5d9 100644
 +            "__end__": END,
          }
      )
- 
+
 @@ -123,7 +123,7 @@ def _placeholder_node(agent_name: str):
- 
+
  # Async version for web handlers
  async def process_orchestration_turn(
 -    graph: CompiledGraph,
@@ -141,43 +141,43 @@ index 619d7a5..a5b525e 100644
              logger.error(f"Error loading course configuration: {str(e)}")
 -            return {"detail": "Failed to load course configuration"}, 500, {}
 +            return {"detail": "Failed to load course configuration"}, {}, 500
- 
+
          # Create chatbot instance for this session
          chatbot = ChatBot(context_manager=new_context_manager, api_key=API_KEY)
 @@ -78,7 +78,7 @@ async def initialize_chatbot(request: Request):
- 
+
      except Exception as e:
          logger.error(f"Error initializing chatbot: {str(e)}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.post("/get-ai-response", auth_required=True)
 @@ -93,7 +93,7 @@ async def get_ai_response(request: Request):
          course_title = body.get("course_title")
- 
+
          if not course_title:
 -            return {"detail": "course_title required in request"}, 400, {}
 +            return {"detail": "course_title required in request"}, {}, 400
- 
+
          start = time.time()
- 
+
 @@ -145,7 +145,7 @@ async def get_ai_response(request: Request):
- 
+
      except Exception as e:
          logger.error(f"Error getting AI response: {str(e)}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.post("/help-center/chat", auth_required=True)
 @@ -159,7 +159,7 @@ async def help_center_chat(request: Request):
          user_message = body.get("message", "")
- 
+
          if not user_message:
 -            return {"detail": "Message is required"}, 400, {}
 +            return {"detail": "Message is required"}, {}, 400
- 
+
          # Get conversation history for context (limited to last 5 messages)
          history = body.get("history", [])[-5:] if body.get("history") else []
 @@ -225,12 +225,12 @@ Keep responses under 150 words unless the question requires a detailed explanati
@@ -186,9 +186,9 @@ index 619d7a5..a5b525e 100644
              else:
 -                return {"detail": "No AI provider configured"}, 500, {}
 +                return {"detail": "No AI provider configured"}, {}, 500
- 
+
          return {"response": ai_response}
- 
+
      except requests.exceptions.Timeout:
 -        return {"detail": "Request timed out. Please try again."}, 504, {}
 +        return {"detail": "Request timed out. Please try again."}, {}, 504
@@ -202,8 +202,8 @@ index 15f1482..6824f39 100644
 +++ b/backend/robyn_routers/course.py
 @@ -30,18 +30,18 @@ def _get_api_key() -> str | None:
      return os.getenv("OPENAI_API_KEY")
- 
- 
+
+
 -def _handle_service_error(e: Exception) -> tuple[dict, int, dict]:
 +def _handle_service_error(e: Exception) -> tuple[dict, dict, int]:
      """Convert service exceptions to HTTP responses."""
@@ -221,8 +221,8 @@ index 15f1482..6824f39 100644
          logger.error(f"Unexpected error: {e}")
 -        return {"detail": "An unexpected error occurred"}, 500, {}
 +        return {"detail": "An unexpected error occurred"}, {}, 500
- 
- 
+
+
  @router.post("/create-course", auth_required=True)
 @@ -73,7 +73,7 @@ async def create_course(request: Request):
          return _handle_service_error(e)
@@ -230,8 +230,8 @@ index 15f1482..6824f39 100644
          logger.error(f"Error creating/updating course: {e}")
 -        return {"detail": "An unexpected error occurred during course creation/update"}, 500, {}
 +        return {"detail": "An unexpected error occurred during course creation/update"}, {}, 500
- 
- 
+
+
  @router.post("/customize", auth_required=True)
 @@ -103,7 +103,7 @@ async def customize_course(request: Request):
          return _handle_service_error(e)
@@ -239,8 +239,8 @@ index 15f1482..6824f39 100644
          logger.error(f"Error customizing course: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.post("/generate-course-syllabus", auth_required=True)
 @@ -124,7 +124,7 @@ async def generate_course_syllabus(request: Request):
          return _handle_service_error(e)
@@ -248,8 +248,8 @@ index 15f1482..6824f39 100644
          logger.error(f"Error generating syllabus: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.post("/generate-course-slides", auth_required=True)
 @@ -141,7 +141,7 @@ async def generate_course_slides(request: Request):
          if response.success:
@@ -257,7 +257,7 @@ index 15f1482..6824f39 100644
          else:
 -            return {"detail": response.message}, 500, {}
 +            return {"detail": response.message}, {}, 500
- 
+
      except (NotFoundError, ValidationError, StorageError) as e:
          return _handle_service_error(e)
 @@ -208,7 +208,7 @@ async def delete_course_endpoint(request: Request):
@@ -266,34 +266,34 @@ index 15f1482..6824f39 100644
          logger.error(f"Error deleting course: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.post("/upload-file", auth_required=True)
 @@ -223,18 +223,18 @@ async def upload_file(request: Request):
- 
+
          course_id = form_data.get("course_id")
          if not course_id:
 -            return {"detail": "course_id is required"}, 400, {}
 +            return {"detail": "course_id is required"}, {}, 400
- 
+
          # Get the uploaded file
          if not files or "file" not in files:
 -            return {"detail": "No file uploaded"}, 400, {}
 +            return {"detail": "No file uploaded"}, {}, 400
- 
+
          file_info = files["file"]
          filename = file_info.get("filename", "")
          file_content = file_info.get("body", b"")
- 
+
          if not filename:
 -            return {"detail": "No selected file"}, 400, {}
 +            return {"detail": "No selected file"}, {}, 400
- 
+
          service = CourseService(user_email=user["email"])
          req = UploadFileRequest(
 @@ -246,17 +246,41 @@ async def upload_file(request: Request):
          response = service.upload_file(req)
- 
+
          if response.success:
 +            # Phase 2: Emit file upload event for embedding rebuild
 +            try:
@@ -323,7 +323,7 @@ index 15f1482..6824f39 100644
          else:
 -            return {"detail": response.message}, 500, {}
 +            return {"detail": response.message}, {}, 500
- 
+
      except ValidationError as e:
 -        return {"detail": str(e)}, 400, {}
 +        return {"detail": str(e)}, {}, 400
@@ -333,13 +333,13 @@ index 15f1482..6824f39 100644
          logger.error(f"Error uploading file: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.delete("/delete-file", auth_required=True)
 @@ -266,30 +290,57 @@ async def delete_file(request: Request):
          user = require_auth(request)
          body = request.json()
- 
+
 +        course_id = body.get("course_id")
 +        filename = body.get("filename")
 +
@@ -350,9 +350,9 @@ index 15f1482..6824f39 100644
 +            course_id=course_id,
 +            filename=filename,
          )
- 
+
          response = service.delete_file(req)
- 
+
          if response.success:
 +            # Phase 2: Emit file delete event for embedding rebuild
 +            try:
@@ -382,30 +382,30 @@ index 15f1482..6824f39 100644
          else:
 -            return {"detail": response.message}, 500, {}
 +            return {"detail": response.message}, {}, 500
- 
+
      except (NotFoundError, StorageError) as e:
          return _handle_service_error(e)
      except Exception as e:
          logger.error(f"Error deleting file: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.get("/get-file", auth_required=True)
  async def get_file(request: Request):
      """Get file endpoint - placeholder."""
 -    return {"detail": "Get file endpoint not implemented"}, 501, {}
 +    return {"detail": "Get file endpoint not implemented"}, {}, 501
- 
- 
+
+
  @router.post("/process-content/:course_id", auth_required=True)
 @@ -301,7 +352,7 @@ async def process_course_content_endpoint(request: Request):
- 
+
          api_key = _get_api_key()
          if not api_key:
 -            return {"detail": "Missing API key"}, 500, {}
 +            return {"detail": "Missing API key"}, {}, 500
- 
+
          logger.info(f"Starting content processing for course {course_id}")
          service = CourseService(user_email=user["email"], api_key=api_key)
 @@ -312,15 +363,15 @@ async def process_course_content_endpoint(request: Request):
@@ -414,7 +414,7 @@ index 15f1482..6824f39 100644
          else:
 -            return {"detail": response.message}, 500, {}
 +            return {"detail": response.message}, {}, 500
- 
+
      except ValidationError as e:
 -        return {"detail": str(e)}, 400, {}
 +        return {"detail": str(e)}, {}, 400
@@ -424,12 +424,12 @@ index 15f1482..6824f39 100644
          logger.error(f"Error processing content: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.post("/auto-save-content", auth_required=True)
 @@ -343,12 +394,12 @@ async def auto_save_content(request: Request):
          }
- 
+
      except NotFoundError as e:
 -        return {"detail": f"Course {e.resource_id} not found or does not exist"}, 404, {}
 +        return {"detail": f"Course {e.resource_id} not found or does not exist"}, {}, 404
@@ -440,21 +440,21 @@ index 15f1482..6824f39 100644
          logger.error(f"Error auto-saving content: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.post("/update-step", auth_required=True)
 @@ -364,7 +415,7 @@ async def update_course_step(request: Request):
          is_creation_complete = create_course_process.get("is_creation_complete", False)
- 
+
          if not isinstance(creation_step, int) or creation_step < 1 or creation_step > 6:
 -            return {"detail": "Valid step number (1-6) is required"}, 400, {}
 +            return {"detail": "Valid step number (1-6) is required"}, {}, 400
- 
+
          service = CourseService(user_email=user["email"])
          req = UpdateStepRequest(
 @@ -380,9 +431,158 @@ async def update_course_step(request: Request):
          }
- 
+
      except NotFoundError as e:
 -        return {"detail": f"Course {e.resource_id} not found"}, 404, {}
 +        return {"detail": f"Course {e.resource_id} not found"}, {}, 404
@@ -620,8 +620,8 @@ index 992e80b..6471edb 100644
 +++ b/backend/robyn_routers/tutor_session.py
 @@ -26,15 +26,15 @@ def _get_user_id(user: dict) -> str:
      return user.get("email") or user.get("id")
- 
- 
+
+
 -def _handle_session_error(e: Exception) -> tuple[dict, int, dict]:
 +def _handle_session_error(e: Exception) -> tuple[dict, dict, int]:
      """Convert session exceptions to HTTP responses."""
@@ -635,8 +635,8 @@ index 992e80b..6471edb 100644
          logger.error(f"Unexpected error: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.post("/create", auth_required=True)
 @@ -43,8 +43,37 @@ async def create_session(request: Request):
      try:
@@ -679,9 +679,9 @@ index 992e80b..6471edb 100644
              board=body.get("selection_board", ""),
              subject=body.get("selection_subject", ""),
 @@ -54,18 +83,22 @@ async def create_session(request: Request):
- 
+
          response = service.create_session(req)
- 
+
 -        return {
 -            "session_id": response.session.session_id if response.session else None,
 -            "context": response.session.to_dict() if response.session else None,
@@ -698,7 +698,7 @@ index 992e80b..6471edb 100644
 +            {},
 +            201,
 +        )
- 
+
      except ValidationError as e:
 -        return {"detail": str(e)}, 400, {}
 +        return {"detail": str(e)}, {}, 400
@@ -706,37 +706,37 @@ index 992e80b..6471edb 100644
          logger.error(f"Error creating session: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.get("/:session_id/stream", auth_required=True)
 @@ -75,7 +108,7 @@ async def stream_session(request: Request):
- 
+
      # Check if session exists
      if not TutorSessionService.session_exists(session_id):
 -        return {"detail": "Session not found"}, 404, {}
 +        return {"detail": "Session not found"}, {}, 404
- 
+
      user = require_auth(request)
      service = TutorSessionService(user_id=_get_user_id(user))
 @@ -103,13 +136,13 @@ async def respond_to_tutor(request: Request):
- 
+
      # Check if session exists
      if not TutorSessionService.session_exists(session_id):
 -        return {"detail": "Session not found"}, 404, {}
 +        return {"detail": "Session not found"}, {}, 404
- 
+
      body = request.json()
      message = body.get("message")
- 
+
      if not message:
 -        return {"detail": "Message is required"}, 400, {}
 +        return {"detail": "Message is required"}, {}, 400
- 
+
      user = require_auth(request)
      service = TutorSessionService(user_id=_get_user_id(user))
 @@ -161,10 +194,10 @@ async def get_session_status(request: Request):
          }
- 
+
      except SessionNotFoundError:
 -        return {"detail": "Session not found"}, 404, {}
 +        return {"detail": "Session not found"}, {}, 404
@@ -744,12 +744,12 @@ index 992e80b..6471edb 100644
          logger.error(f"Error getting session status: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.post("/:session_id/pause", auth_required=True)
 @@ -183,10 +216,10 @@ async def pause_session(request: Request):
          }
- 
+
      except SessionNotFoundError:
 -        return {"detail": "Session not found"}, 404, {}
 +        return {"detail": "Session not found"}, {}, 404
@@ -757,21 +757,21 @@ index 992e80b..6471edb 100644
          logger.error(f"Error pausing session: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.post("/:session_id/resume", auth_required=True)
 @@ -196,7 +229,7 @@ async def resume_session(request: Request):
- 
+
      # Check if session exists
      if not TutorSessionService.session_exists(session_id):
 -        return {"detail": "Session not found"}, 404, {}
 +        return {"detail": "Session not found"}, {}, 404
- 
+
      user = require_auth(request)
      service = TutorSessionService(user_id=_get_user_id(user))
 @@ -233,10 +266,10 @@ async def end_session(request: Request):
          }
- 
+
      except SessionNotFoundError:
 -        return {"detail": "Session not found"}, 404, {}
 +        return {"detail": "Session not found"}, {}, 404
@@ -779,12 +779,12 @@ index 992e80b..6471edb 100644
          logger.error(f"Error ending session: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.get("/:session_id/history", auth_required=True)
 @@ -255,10 +288,10 @@ async def get_session_history(request: Request):
          }
- 
+
      except SessionNotFoundError:
 -        return {"detail": "Session not found"}, 404, {}
 +        return {"detail": "Session not found"}, {}, 404
@@ -792,8 +792,8 @@ index 992e80b..6471edb 100644
          logger.error(f"Error getting session history: {e}")
 -        return {"detail": str(e)}, 500, {}
 +        return {"detail": str(e)}, {}, 500
- 
- 
+
+
  @router.get("/progress", auth_required=True)
 diff --git a/backend/services/course_service.py b/backend/services/course_service.py
 index 63090f5..c0fd6e9 100644
@@ -1039,13 +1039,13 @@ index 77311fa..a06c798 100644
 +
 +    This function uses the Supabase RPC call to leverage pgvector's
 +    optimized HNSW index for fast similarity search.
- 
+
      Args:
          user_email: User's email address
 @@ -219,12 +222,35 @@ def search_similar_chunks(
              else:
                  query_embedding = query_embedding[:3072]
- 
+
 -        # Use the database function for vector search
 -        # Note: Supabase Python client doesn't directly support calling PostgreSQL functions
 -        # So we'll use a direct SQL query via RPC or raw query
@@ -1076,7 +1076,7 @@ index 77311fa..a06c798 100644
 +                ]
 +        except Exception as rpc_error:
 +            logger.debug(f"RPC search failed, falling back to Python: {rpc_error}")
- 
+
 -        # Get embeddings for this course
 +        # Fallback: Python-side similarity calculation
 +        # This is less efficient but works when RPC function doesn't exist
@@ -1086,7 +1086,7 @@ index 77311fa..a06c798 100644
 @@ -237,18 +263,25 @@ def search_similar_chunks(
              logger.info(f"No embeddings found for {user_email}/{course_title}")
              return []
- 
+
 -        # Calculate similarities (using cosine similarity via pgvector)
 -        # We'll use the match_course_embeddings function via RPC
 -        # But since Supabase client may not support custom functions directly,
@@ -1099,7 +1099,7 @@ index 77311fa..a06c798 100644
 +        if query_norm == 0:
 +            logger.warning("Query embedding has zero norm")
 +            return []
- 
+
          for row in response.data:
              embedding_vec = np.array(row["embedding"], dtype=np.float32)
 +            embedding_norm = np.linalg.norm(embedding_vec)
@@ -1112,13 +1112,13 @@ index 77311fa..a06c798 100644
 +            similarity = float(
 +                np.dot(query_vec, embedding_vec) / (query_norm * embedding_norm)
 +            )
- 
+
              if similarity >= similarity_threshold:
                  results.append(
 @@ -269,6 +302,31 @@ def search_similar_chunks(
          return []
- 
- 
+
+
 +def get_embeddings_count(user_email: str, course_title: str) -> int:
 +    """
 +    Get the count of embeddings for a course.

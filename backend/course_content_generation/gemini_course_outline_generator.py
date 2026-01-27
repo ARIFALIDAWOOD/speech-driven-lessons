@@ -83,9 +83,7 @@ class CourseOutlineGenerator:
             return {"error": f"Failed to extract PDF text: {e}"}
 
         if not text or len(text.strip()) < 100:
-            return {
-                "error": "PDF has insufficient extractable text for outline generation"
-            }
+            return {"error": "PDF has insufficient extractable text for outline generation"}
 
         doc_excerpt = text[:120000]
         prompt = f"""You are an expert course designer. Produce a structured course outline.
@@ -125,9 +123,7 @@ Document content (excerpt; use full context when generating):
             data = _parse_outline_json(full_text)
             course_outline = data.get("course_outline")
             if not course_outline or not isinstance(course_outline, list):
-                return {
-                    "error": "Generated outline missing or invalid 'course_outline' list"
-                }
+                return {"error": "Generated outline missing or invalid 'course_outline' list"}
 
             return {
                 "course_outline": course_outline,

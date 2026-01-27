@@ -4,19 +4,14 @@ Orchestration Workflow - Phase 1
 Main LangGraph StateGraph definition for the multi-agent orchestration system.
 """
 
-from typing import Optional
 import logging
-from langgraph.graph import StateGraph, START, END
-from langgraph.graph.graph import CompiledGraph
+from typing import Any, Optional
 
-from .state import OrchestratorState, AgentType, SessionPhase
-from .agents import (
-    orchestrator_node,
-    route_from_orchestrator,
-    tutor_node,
-    should_continue_tutoring,
-)
+from langgraph.graph import END, START, StateGraph
+
+from .agents import orchestrator_node, route_from_orchestrator, should_continue_tutoring, tutor_node
 from .config import get_config
+from .state import AgentType, OrchestratorState, SessionPhase
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +19,7 @@ logger = logging.getLogger(__name__)
 def create_orchestration_graph(
     redis_url: Optional[str] = None,
     with_checkpointer: bool = True,
-) -> CompiledGraph:
+) -> Any:
     """
     Create the orchestration workflow graph.
 
@@ -67,10 +62,10 @@ def create_orchestration_graph(
             "assessor": "assessor",
             "progress_tracker": "progress_tracker",
             "__end__": END,
-        }
+        },
     )
 
-    # Tutor returns to orchestrator (with intervention check)
+    # Tutor returns to orchestrator (with intervention check) or ends
     builder.add_conditional_edges(
         "tutor",
         should_continue_tutoring,
@@ -78,7 +73,8 @@ def create_orchestration_graph(
             "orchestrator": "orchestrator",
             "assessor": "assessor",
             "progress_tracker": "progress_tracker",
-        }
+            "__end__": END,
+        },
     )
 
     # Other agents return to orchestrator
@@ -91,6 +87,7 @@ def create_orchestration_graph(
     if with_checkpointer:
         try:
             from langgraph.checkpoint.memory import MemorySaver
+
             # Use MemorySaver for Phase 1 (Redis in later phase)
             checkpointer = MemorySaver()
             graph = builder.compile(checkpointer=checkpointer)
@@ -112,10 +109,12 @@ def _placeholder_node(agent_name: str):
         # Just return to orchestrator
         return {
             "active_agent": AgentType.ORCHESTRATOR,
-            "messages": [{
-                "role": "assistant",
-                "content": f"[{agent_name}] This agent is not yet implemented. Returning to main tutor."
-            }],
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": f"[{agent_name}] This agent is not yet implemented. Returning to main tutor.",
+                }
+            ],
         }
 
     return node
@@ -123,7 +122,7 @@ def _placeholder_node(agent_name: str):
 
 # Async version for web handlers
 async def process_orchestration_turn(
-    graph: CompiledGraph,
+    graph: Any,
     state: OrchestratorState,
     user_input: str,
     thread_id: str,

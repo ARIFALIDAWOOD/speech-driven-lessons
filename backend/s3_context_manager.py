@@ -15,10 +15,9 @@ from difflib import SequenceMatcher
 import numpy as np
 import openai
 import tiktoken
-from dotenv import load_dotenv
-
 import utils.s3_utils as s3_utils
 import utils.vector_utils as vector_utils
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -141,7 +140,7 @@ class ContextManager:
         try:
             # Save chunks and inverted index to database
             # (Embeddings are saved separately via build_faiss_index/store_embeddings)
-            
+
             # Also save chunks to storage for backward compatibility
             chunks_key = s3_utils.get_s3_file_path(self.user, self.course_title, "chunks.json")
             s3_utils.upload_json_to_s3(self.chunks, self.s3_bucket, chunks_key)
@@ -234,9 +233,7 @@ class ContextManager:
         try:
             # Generate query embedding
             query_embedding = (
-                self.client_embedding.embeddings.create(
-                    model="text-embedding-3-large", input=query
-                )
+                self.client_embedding.embeddings.create(model="text-embedding-3-large", input=query)
                 .data[0]
                 .embedding
             )
@@ -265,7 +262,7 @@ class ContextManager:
     def build_faiss_index(self):
         """
         Build embeddings and store them in Supabase vector store.
-        
+
         This method generates embeddings for all chunks and stores them in the database
         using Supabase's pgvector extension instead of creating a FAISS index file.
         """

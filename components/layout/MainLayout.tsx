@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { Home, BookOpen, Upload, User, HelpCircle, GraduationCap } from "lucide-react";
 import { UserMenu } from "./UserMenu";
+import { ModeToggle } from "@/components/mode-toggle";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -23,8 +24,9 @@ export function MainLayout({ children }: MainLayoutProps) {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b">
+        <div className="p-4 border-b flex justify-between items-center">
           <h1 className="text-xl font-bold text-emerald-700">Anantra LMS</h1>
+          <ModeToggle />
         </div>
         <nav className="flex-1 p-4">
           <ul className="space-y-2">

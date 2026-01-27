@@ -9,88 +9,64 @@ Example usage:
     from models import NotFoundError, ValidationError
 """
 
-# Enums
-from .enums import (
-    TutorState,
-    StudentLevel,
-    AssessmentDifficulty,
-    MessageRole,
-)
+# Agent DTOs
+from .agent import StateTransition, TutorEvent
 
-# Exceptions
-from .exceptions import (
-    ServiceError,
-    NotFoundError,
-    ValidationError,
-    AuthorizationError,
-    StorageError,
-    ProcessingError,
-    SessionError,
-    SessionNotFoundError,
-)
+# Assessment DTOs
+from .assessment import AssessmentQuestion, AssessmentResponse
 
 # Course DTOs
 from .course import (
+    CourseData,
+    CourseProgress,
+    CourseResponse,
+    CreateCourseProcess,
     CreateCourseRequest,
-    UpdateStepRequest,
-    UploadFileRequest,
-    UploadFileMetadataRequest,
     DeleteFileRequest,
     FileInfo,
-    CreateCourseProcess,
-    CourseProgress,
-    CourseData,
-    CourseResponse,
-    SyllabusSection,
-    SyllabusResponse,
     SlideData,
     SlidesResponse,
+    SyllabusResponse,
+    SyllabusSection,
+    UpdateStepRequest,
+    UploadFileMetadataRequest,
+    UploadFileRequest,
 )
+
+# Enums
+from .enums import AssessmentDifficulty, MessageRole, StudentLevel, TutorState
+
+# Exceptions
+from .exceptions import (
+    AuthorizationError,
+    NotFoundError,
+    ProcessingError,
+    ServiceError,
+    SessionError,
+    SessionNotFoundError,
+    StorageError,
+    ValidationError,
+)
+
+# LLM DTOs
+from .llm import LLMConfig, LLMMessage, LLMResponse, StreamChunk
+
+# Outline DTOs
+from .outline import CourseOutline, OutlineSection, SubTopic
+
+# Search DTOs
+from .search import SearchResponse, SearchResult
 
 # Session DTOs
 from .session import (
     CreateSessionRequest,
+    ProcessResponseRequest,
+    SessionContext,
     SessionInfo,
     SessionResponse,
     SessionStatusResponse,
-    ProcessResponseRequest,
     TopicProgress,
-    SessionContext,
 )
-
-# LLM DTOs
-from .llm import (
-    LLMMessage,
-    LLMResponse,
-    StreamChunk,
-    LLMConfig,
-)
-
-# Search DTOs
-from .search import (
-    SearchResult,
-    SearchResponse,
-)
-
-# Outline DTOs
-from .outline import (
-    SubTopic,
-    OutlineSection,
-    CourseOutline,
-)
-
-# Assessment DTOs
-from .assessment import (
-    AssessmentQuestion,
-    AssessmentResponse,
-)
-
-# Agent DTOs
-from .agent import (
-    StateTransition,
-    TutorEvent,
-)
-
 
 __all__ = [
     # Enums

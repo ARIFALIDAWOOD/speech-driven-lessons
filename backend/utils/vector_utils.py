@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from dotenv import load_dotenv
+
 from supabase import Client, create_client
 
 logger = logging.getLogger(__name__)
@@ -192,7 +193,10 @@ def search_similar_chunks(
     similarity_threshold: float = 0.5,
 ) -> List[Dict[str, Any]]:
     """
-    Search for similar chunks using vector similarity.
+    Search for similar chunks using vector similarity via pgvector RPC.
+
+    This function uses the Supabase RPC call to leverage pgvector's
+    optimized HNSW index for fast similarity search.
 
     Args:
         user_email: User's email address
@@ -219,12 +223,35 @@ def search_similar_chunks(
             else:
                 query_embedding = query_embedding[:3072]
 
-        # Use the database function for vector search
-        # Note: Supabase Python client doesn't directly support calling PostgreSQL functions
-        # So we'll use a direct SQL query via RPC or raw query
-        # For now, we'll use the table directly with vector operations
+        # Try using pgvector RPC function first (optimized)
+        try:
+            response = supabase.rpc(
+                "match_course_embeddings",
+                {
+                    "p_user_email": user_email,
+                    "p_course_title": course_title,
+                    "p_query_embedding": query_embedding,
+                    "p_match_threshold": similarity_threshold,
+                    "p_match_count": max_results,
+                },
+            ).execute()
 
-        # Get embeddings for this course
+            if response.data:
+                logger.debug(f"RPC search returned {len(response.data)} results")
+                return [
+                    {
+                        "chunk_text": row["chunk_text"],
+                        "chunk_index": row["chunk_index"],
+                        "similarity": row["similarity"],
+                        "source_file": row.get("source_file"),
+                    }
+                    for row in response.data
+                ]
+        except Exception as rpc_error:
+            logger.debug(f"RPC search failed, falling back to Python: {rpc_error}")
+
+        # Fallback: Python-side similarity calculation
+        # This is less efficient but works when RPC function doesn't exist
         response = (
             supabase.table("course_embeddings")
             .select("chunk_text, chunk_index, embedding, source_file")
@@ -237,18 +264,23 @@ def search_similar_chunks(
             logger.info(f"No embeddings found for {user_email}/{course_title}")
             return []
 
-        # Calculate similarities (using cosine similarity via pgvector)
-        # We'll use the match_course_embeddings function via RPC
-        # But since Supabase client may not support custom functions directly,
-        # we'll calculate similarity in Python for now (less efficient but works)
-
         results = []
         query_vec = np.array(query_embedding, dtype=np.float32)
+        query_norm = np.linalg.norm(query_vec)
+
+        if query_norm == 0:
+            logger.warning("Query embedding has zero norm")
+            return []
 
         for row in response.data:
             embedding_vec = np.array(row["embedding"], dtype=np.float32)
+            embedding_norm = np.linalg.norm(embedding_vec)
+
+            if embedding_norm == 0:
+                continue
+
             # Calculate cosine similarity
-            similarity = float(np.dot(query_vec, embedding_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(embedding_vec)))
+            similarity = float(np.dot(query_vec, embedding_vec) / (query_norm * embedding_norm))
 
             if similarity >= similarity_threshold:
                 results.append(
@@ -267,6 +299,31 @@ def search_similar_chunks(
     except Exception as e:
         logger.error(f"Error searching similar chunks: {e}")
         return []
+
+
+def get_embeddings_count(user_email: str, course_title: str) -> int:
+    """
+    Get the count of embeddings for a course.
+
+    Args:
+        user_email: User's email address
+        course_title: Course title/ID
+
+    Returns:
+        Number of embeddings, or 0 if error
+    """
+    try:
+        response = (
+            supabase.table("course_embeddings")
+            .select("id", count="exact")
+            .eq("user_email", user_email)
+            .eq("course_title", course_title)
+            .execute()
+        )
+        return response.count or 0
+    except Exception as e:
+        logger.error(f"Error getting embeddings count: {e}")
+        return 0
 
 
 def get_course_chunks(

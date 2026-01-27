@@ -8,11 +8,11 @@ Note: This uses in-memory FAISS for fast session-based lookups.
 For persistent course materials, see s3_context_manager.py which uses Supabase vector store.
 """
 
-import os
 import logging
+import os
 import tempfile
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 from openai import OpenAI
 
@@ -25,7 +25,7 @@ class MaterialsContextManager:
 
     Uses in-memory FAISS vector search to find relevant content from uploaded PDFs.
     Materials are session-scoped and stored in memory for fast access.
-    
+
     For persistent course materials, use s3_context_manager.py which stores
     embeddings in Supabase vector store.
     """
@@ -82,12 +82,14 @@ class MaterialsContextManager:
                     words = text.split()
                     chunk_size = 500
                     for i in range(0, len(words), chunk_size):
-                        chunk = " ".join(words[i:i + chunk_size])
-                        text_chunks.append({
-                            "content": chunk,
-                            "source": original_name,
-                            "page": page_num + 1,
-                        })
+                        chunk = " ".join(words[i : i + chunk_size])
+                        text_chunks.append(
+                            {
+                                "content": chunk,
+                                "source": original_name,
+                                "page": page_num + 1,
+                            }
+                        )
 
             if not text_chunks:
                 logger.warning(f"No text extracted from {original_name}")
@@ -117,7 +119,7 @@ class MaterialsContextManager:
         # Process in batches
         batch_size = 100
         for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
+            batch = texts[i : i + batch_size]
             response = self.openai_client.embeddings.create(
                 model="text-embedding-3-small",
                 input=batch,
@@ -132,8 +134,8 @@ class MaterialsContextManager:
             return
 
         try:
-            import numpy as np
             import faiss
+            import numpy as np
 
             # Convert to numpy array
             embeddings_array = np.array(self.embeddings).astype("float32")

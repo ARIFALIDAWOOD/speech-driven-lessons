@@ -5,15 +5,17 @@ Canonical schema for course outlines used across all generators
 (Gemini PDF, Brave+LLM, Manual).
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional, List
 from datetime import datetime
-from uuid import uuid4
 from enum import Enum
+from typing import List, Optional
+from uuid import uuid4
+
+from pydantic import BaseModel, Field
 
 
 class DifficultyLevel(str, Enum):
     """Difficulty level of course content."""
+
     BEGINNER = "beginner"
     INTERMEDIATE = "intermediate"
     ADVANCED = "advanced"
@@ -21,6 +23,7 @@ class DifficultyLevel(str, Enum):
 
 class GeneratorType(str, Enum):
     """Source of the course plan generation."""
+
     GEMINI_PDF = "gemini_pdf"
     BRAVE_LLM = "brave_llm"
     MANUAL = "manual"
@@ -28,6 +31,7 @@ class GeneratorType(str, Enum):
 
 class SubTopic(BaseModel):
     """A subtopic within a section."""
+
     id: str = Field(default_factory=lambda: str(uuid4()))
     title: str
     description: str = ""
@@ -43,13 +47,14 @@ class SubTopic(BaseModel):
                 "description": "Learn what variables are and how to use them",
                 "key_points": ["Variable declaration", "Variable types", "Naming conventions"],
                 "estimated_minutes": 10,
-                "order": 0
+                "order": 0,
             }
         }
 
 
 class Section(BaseModel):
     """A section of the course containing subtopics."""
+
     id: str = Field(default_factory=lambda: str(uuid4()))
     title: str
     description: str = ""
@@ -66,17 +71,18 @@ class Section(BaseModel):
                 "description": "Understanding how to store and manipulate data",
                 "learning_objectives": [
                     "Define and use variables",
-                    "Understand different data types"
+                    "Understand different data types",
                 ],
                 "estimated_minutes": 30,
                 "order": 0,
-                "subtopics": []
+                "subtopics": [],
             }
         }
 
 
 class CoursePlanMetadata(BaseModel):
     """Metadata about the course."""
+
     title: str = ""
     description: str = ""
     board: str = ""  # e.g., "CBSE", "ICSE"
@@ -94,6 +100,7 @@ class CoursePlan(BaseModel):
     This is the unified format for course outlines, regardless of how
     they were generated (PDF extraction, search-based, or manual).
     """
+
     id: str = Field(default_factory=lambda: str(uuid4()))
     course_id: str
     version: int = 1
@@ -122,15 +129,17 @@ class CoursePlan(BaseModel):
         topics = []
         for section in self.sections:
             for subtopic in section.subtopics:
-                topics.append({
-                    "id": subtopic.id,
-                    "title": subtopic.title,
-                    "section_title": section.title,
-                    "description": subtopic.description,
-                    "key_points": subtopic.key_points,
-                    "estimated_minutes": subtopic.estimated_minutes,
-                    "learning_objectives": section.learning_objectives,
-                })
+                topics.append(
+                    {
+                        "id": subtopic.id,
+                        "title": subtopic.title,
+                        "section_title": section.title,
+                        "description": subtopic.description,
+                        "key_points": subtopic.key_points,
+                        "estimated_minutes": subtopic.estimated_minutes,
+                        "learning_objectives": section.learning_objectives,
+                    }
+                )
         return topics
 
     class Config:
@@ -142,10 +151,10 @@ class CoursePlan(BaseModel):
                 "metadata": {
                     "title": "Introduction to Programming",
                     "subject": "Computer Science",
-                    "difficulty_level": "beginner"
+                    "difficulty_level": "beginner",
                 },
                 "sections": [],
                 "generator": "brave_llm",
-                "total_estimated_minutes": 60
+                "total_estimated_minutes": 60,
             }
         }

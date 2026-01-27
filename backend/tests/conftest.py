@@ -6,10 +6,12 @@ and managing test environment configuration.
 """
 
 import os
-import pytest
 from pathlib import Path
+
+import pytest
 from dotenv import load_dotenv
-from supabase import create_client, Client
+
+from supabase import Client, create_client
 
 # Load test environment variables
 test_env_path = Path(__file__).parent.parent / ".env.test"
@@ -158,6 +160,7 @@ def expired_supabase_token(supabase_client: Client, test_user_credentials: dict)
         'exp' claim to a past timestamp.
     """
     import time
+
     import jwt
 
     # Get a valid token first
@@ -305,9 +308,7 @@ def missing_email_token(supabase_client: Client, test_user_credentials: dict) ->
 
 
 @pytest.fixture
-def invalid_signature_token(
-    supabase_client: Client, test_user_credentials: dict
-) -> str:
+def invalid_signature_token(supabase_client: Client, test_user_credentials: dict) -> str:
     """
     Generate a Supabase token with invalid signature for testing signature validation.
 
@@ -440,9 +441,10 @@ def test_client():
     Returns:
         FastAPI TestClient instance
     """
-    from fastapi.testclient import TestClient
     import sys
     from pathlib import Path
+
+    from fastapi.testclient import TestClient
 
     # Add backend directory to Python path
     backend_dir = Path(__file__).parent.parent

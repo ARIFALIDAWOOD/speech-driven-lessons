@@ -10,30 +10,30 @@ Import from `models` directly for new code:
 
 # Re-export all course DTOs from models
 from models.course import (
+    CourseData,
+    CourseProgress,
+    CourseResponse,
+    CreateCourseProcess,
     CreateCourseRequest,
-    UpdateStepRequest,
-    UploadFileRequest,
-    UploadFileMetadataRequest,
     DeleteFileRequest,
     FileInfo,
-    CreateCourseProcess,
-    CourseProgress,
-    CourseData,
-    CourseResponse,
-    SyllabusSection,
-    SyllabusResponse,
     SlideData,
     SlidesResponse,
+    SyllabusResponse,
+    SyllabusSection,
+    UpdateStepRequest,
     UpdateTagsRequest,
+    UploadFileMetadataRequest,
+    UploadFileRequest,
 )
 
 # Re-export all session DTOs from models
 from models.session import (
     CreateSessionRequest,
+    ProcessResponseRequest,
     SessionInfo,
     SessionResponse,
     SessionStatusResponse,
-    ProcessResponseRequest,
 )
 
 __all__ = [

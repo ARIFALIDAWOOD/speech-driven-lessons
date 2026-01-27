@@ -2,30 +2,25 @@
 Tests for the centralized models module.
 """
 
-
-from models import (
-    # Enums
-    TutorState,
-    StudentLevel,
-    MessageRole,
-    # Exceptions
-    ServiceError,
-    NotFoundError,
-    SessionError,
-    SessionNotFoundError,
-    # Course DTOs
-    CreateCourseRequest,
+from models import (  # Enums; Exceptions; Course DTOs; Outline DTOs
     CourseData,
-    SessionInfo,
-    SessionContext,
-    LLMMessage,
+    CreateCourseRequest,
     LLMConfig,
-    SearchResult,
-    SearchResponse,
-    # Outline DTOs
-    SubTopic,
+    LLMMessage,
+    MessageRole,
+    NotFoundError,
     OutlineSection,
+    SearchResponse,
+    SearchResult,
+    ServiceError,
+    SessionContext,
+    SessionError,
+    SessionInfo,
+    SessionNotFoundError,
+    StudentLevel,
+    SubTopic,
     TutorEvent,
+    TutorState,
 )
 
 
@@ -195,9 +190,7 @@ class TestSearchDTOs:
             )
             for i in range(3)
         ]
-        response = SearchResponse(
-            query="test", results=results, total_results=3, took_ms=100
-        )
+        response = SearchResponse(query="test", results=results, total_results=3, took_ms=100)
         context = response.get_combined_context(max_results=2)
         assert "Result 0" in context
         assert "Result 1" in context
@@ -211,9 +204,7 @@ class TestOutlineDTOs:
         section = OutlineSection(
             title="Test Section",
             learning_objectives=["Learn X"],
-            subtopics=[
-                SubTopic(title="Subtopic 1", description="Desc", key_points=["Point 1"])
-            ],
+            subtopics=[SubTopic(title="Subtopic 1", description="Desc", key_points=["Point 1"])],
         )
         d = section.to_dict()
         assert d["title"] == "Test Section"
@@ -251,14 +242,14 @@ class TestBackwardCompatibility:
         assert SessionInfo is not None
 
     def test_import_from_agent(self):
-        from agent import TutorState, SessionContext, StudentLevel
+        from agent import SessionContext, StudentLevel, TutorState
 
         assert TutorState is not None
         assert SessionContext is not None
         assert StudentLevel is not None
 
     def test_import_from_llm(self):
-        from llm import LLMMessage, MessageRole, LLMConfig
+        from llm import LLMConfig, LLMMessage, MessageRole
 
         assert LLMMessage is not None
         assert MessageRole is not None

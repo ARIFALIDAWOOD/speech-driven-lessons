@@ -3,21 +3,21 @@
 import logging
 import os
 
-from robyn import SubRouter, Request
-
-from .auth import get_auth_handler, require_auth
+from robyn import Request, SubRouter
 from services import (
     CourseService,
     CreateCourseRequest,
-    UpdateStepRequest,
-    UploadFileRequest,
     DeleteFileRequest,
-    UpdateTagsRequest,
     NotFoundError,
-    ValidationError,
-    StorageError,
     ProcessingError,
+    StorageError,
+    UpdateStepRequest,
+    UpdateTagsRequest,
+    UploadFileRequest,
+    ValidationError,
 )
+
+from .auth import get_auth_handler, require_auth
 
 router = SubRouter(__file__, prefix="/api/course")
 logger = logging.getLogger(__name__)
@@ -249,9 +249,10 @@ async def upload_file(request: Request):
         if response.success:
             # Phase 2: Emit file upload event for embedding rebuild
             try:
+                import asyncio
+
                 from events import CourseEvent, CourseEventType, get_event_bus
                 from workers import get_embedding_worker
-                import asyncio
 
                 event_bus = get_event_bus()
                 event_bus.emit(
@@ -265,9 +266,7 @@ async def upload_file(request: Request):
 
                 # Schedule embedding rebuild
                 worker = get_embedding_worker()
-                asyncio.create_task(
-                    worker.schedule_rebuild(course_id, user["email"])
-                )
+                asyncio.create_task(worker.schedule_rebuild(course_id, user["email"]))
             except Exception as event_error:
                 logger.warning(f"Failed to emit file upload event: {event_error}")
 
@@ -305,9 +304,10 @@ async def delete_file(request: Request):
         if response.success:
             # Phase 2: Emit file delete event for embedding rebuild
             try:
+                import asyncio
+
                 from events import CourseEvent, CourseEventType, get_event_bus
                 from workers import get_embedding_worker
-                import asyncio
 
                 event_bus = get_event_bus()
                 event_bus.emit(
@@ -321,9 +321,7 @@ async def delete_file(request: Request):
 
                 # Schedule embedding rebuild
                 worker = get_embedding_worker()
-                asyncio.create_task(
-                    worker.schedule_rebuild(course_id, user["email"])
-                )
+                asyncio.create_task(worker.schedule_rebuild(course_id, user["email"]))
             except Exception as event_error:
                 logger.warning(f"Failed to emit file delete event: {event_error}")
 

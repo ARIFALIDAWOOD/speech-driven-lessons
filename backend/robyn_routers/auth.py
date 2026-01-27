@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 from dotenv import load_dotenv
 from robyn import Request
 from robyn.authentication import AuthenticationHandler, BearerGetter, Identity
+
 from supabase import Client, create_client
 
 logger = logging.getLogger(__name__)
@@ -25,9 +26,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-    raise ValueError(
-        "SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables"
-    )
+    raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables")
 
 supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 

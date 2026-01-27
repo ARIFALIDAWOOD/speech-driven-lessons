@@ -118,7 +118,7 @@ try {
     # Use Python 3.12 to avoid LangChain/Pydantic V1 deprecation warning on 3.14+
     # (run `uv python install 3.12` if missing)
     # Robyn uses its own Rust-based server, not uvicorn
-    uv run --python 3.12 python main.py
+    uv run --python 3.12 robyn main.py
 }
 catch {
     Write-Host "ERROR: $_" -ForegroundColor Red

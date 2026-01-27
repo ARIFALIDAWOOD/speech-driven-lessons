@@ -4,8 +4,7 @@ System Prompts for Tutor Agent States
 Provides state-specific system prompts for the tutoring agent.
 """
 
-from .states import TutorState, SessionContext, StudentLevel
-
+from .states import SessionContext, StudentLevel, TutorState
 
 # Base tutor personality
 BASE_TUTOR_PROMPT = """You are an expert, friendly tutor specializing in {subject} for {board} curriculum.
@@ -39,7 +38,6 @@ Your task: Welcome the student warmly and briefly introduce what you'll be cover
 - Ask if they're ready to begin with a quick assessment to understand their current level
 
 Keep it brief and engaging - no more than 3-4 sentences.""",
-
     TutorState.INITIAL_ASSESSMENT: """You are conducting an initial assessment to gauge the student's current understanding.
 
 Your task: Generate appropriate assessment questions based on the topic.
@@ -63,7 +61,6 @@ Generate questions in JSON format:
 }
 
 Generate 3-5 questions that progressively increase in difficulty.""",
-
     TutorState.ASSESSMENT_REVIEW: """You are reviewing the student's assessment results.
 
 Based on their performance, provide:
@@ -78,7 +75,6 @@ Assessment results:
 {assessment_summary}
 
 Keep your response conversational and supportive - 2-3 sentences max.""",
-
     TutorState.LESSON_INTRODUCTION: """You are introducing a new topic/section.
 
 Current topic: {current_topic}
@@ -91,7 +87,6 @@ Your task:
 4. Connect to what they already know (if applicable)
 
 Keep it brief (2-3 sentences) and build curiosity. End by transitioning to the concept explanation.""",
-
     TutorState.CONCEPT_EXPLANATION: """You are explaining a concept.
 
 Current topic: {current_topic}
@@ -110,7 +105,6 @@ Adjust complexity based on student level:
 - Advanced: Can use technical language, deeper exploration
 
 End by transitioning to an example.""",
-
     TutorState.EXAMPLE_DEMONSTRATION: """You are demonstrating with an example.
 
 Current topic: {current_topic}
@@ -128,7 +122,6 @@ For {student_level} students:
 - Advanced: Challenging examples that stretch understanding
 
 End by transitioning to guided practice.""",
-
     TutorState.GUIDED_PRACTICE: """You are guiding the student through practice.
 
 Current topic: {current_topic}
@@ -141,7 +134,6 @@ Your task:
 4. Celebrate correct answers, gently guide incorrect ones
 
 Present the problem clearly and wait for their response. Don't solve it for them immediately.""",
-
     TutorState.CHECK_UNDERSTANDING: """You are checking if the student understood the material.
 
 Current topic: {current_topic}
@@ -154,7 +146,6 @@ Your task:
 
 If they show understanding, acknowledge and move on.
 If they seem confused, be ready to re-explain differently.""",
-
     TutorState.TOPIC_SUMMARY: """You are summarizing the topic just covered.
 
 Current topic: {current_topic}
@@ -167,7 +158,6 @@ Your task:
 4. Celebrate their progress!
 
 Keep it concise - this is a quick recap before moving on.""",
-
     TutorState.ANSWERING_QUESTION: """The student has asked a question during the lesson.
 
 Student's question: {student_question}
@@ -180,7 +170,6 @@ Your task:
 4. Smoothly transition back to where you left off
 
 Be patient and thorough - questions show engagement!""",
-
     TutorState.HANDLING_CONFUSION: """The student seems confused or is struggling.
 
 What they're confused about: {confusion_context}
@@ -193,7 +182,6 @@ Your task:
 4. Check if the new explanation helped
 
 Remember: Confusion is part of learning. Be patient and encouraging.""",
-
     TutorState.BREAK_SUGGESTION: """It's time to suggest a break.
 
 Session duration: {session_duration} minutes
@@ -206,7 +194,6 @@ Your task:
 4. Ask if they'd like to take a break or continue
 
 Be casual and supportive - breaks are important for learning!""",
-
     TutorState.LESSON_COMPLETE: """The lesson is complete!
 
 Topics covered: {topics_completed}
@@ -220,7 +207,6 @@ Your task:
 4. Encourage them to come back for more learning
 
 Make them feel accomplished and motivated to continue!""",
-
     TutorState.SESSION_COMPLETE: """The tutoring session is ending.
 
 Final summary:
@@ -270,9 +256,7 @@ def get_system_prompt(state: TutorState, context: SessionContext) -> str:
         subject_name=context.subject_name or context.subject,
         chapter_name=context.chapter_name or context.chapter,
         topic_context=topic_context,
-        student_level_description=level_descriptions.get(
-            context.student_level, "Standard level"
-        ),
+        student_level_description=level_descriptions.get(context.student_level, "Standard level"),
     )
 
     # Get state-specific prompt
@@ -283,13 +267,19 @@ def get_system_prompt(state: TutorState, context: SessionContext) -> str:
         current_topic = context.get_current_topic()
 
         format_vars = {
-            "current_topic": current_topic.get("subtopic", {}).get("title", "") if current_topic else "",
-            "learning_objectives": ", ".join(
-                current_topic.get("section", {}).get("learning_objectives", [])
-            ) if current_topic else "",
-            "key_points": ", ".join(
-                current_topic.get("subtopic", {}).get("key_points", [])
-            ) if current_topic else "",
+            "current_topic": (
+                current_topic.get("subtopic", {}).get("title", "") if current_topic else ""
+            ),
+            "learning_objectives": (
+                ", ".join(current_topic.get("section", {}).get("learning_objectives", []))
+                if current_topic
+                else ""
+            ),
+            "key_points": (
+                ", ".join(current_topic.get("subtopic", {}).get("key_points", []))
+                if current_topic
+                else ""
+            ),
             "student_level": context.student_level.value,
             "concepts_covered": ", ".join(context.concepts_covered[-5:]),
             "student_question": context.pending_student_question or "",
@@ -338,18 +328,30 @@ def get_transition_prompt(from_state: TutorState, to_state: TutorState) -> str:
         Transition phrase or empty string
     """
     transitions = {
-        (TutorState.CONCEPT_EXPLANATION, TutorState.EXAMPLE_DEMONSTRATION):
-            "Let me show you an example to make this clearer.",
-        (TutorState.EXAMPLE_DEMONSTRATION, TutorState.GUIDED_PRACTICE):
-            "Now it's your turn to try!",
-        (TutorState.GUIDED_PRACTICE, TutorState.CHECK_UNDERSTANDING):
-            "Great work! Let me check if you've got this.",
-        (TutorState.CHECK_UNDERSTANDING, TutorState.TOPIC_SUMMARY):
-            "Perfect! Let's quickly summarize what we learned.",
-        (TutorState.TOPIC_SUMMARY, TutorState.LESSON_INTRODUCTION):
-            "Excellent progress! Let's move on to our next topic.",
-        (TutorState.ASSESSMENT_REVIEW, TutorState.LESSON_INTRODUCTION):
-            "Now that I understand where you are, let's start our lesson!",
+        (
+            TutorState.CONCEPT_EXPLANATION,
+            TutorState.EXAMPLE_DEMONSTRATION,
+        ): "Let me show you an example to make this clearer.",
+        (
+            TutorState.EXAMPLE_DEMONSTRATION,
+            TutorState.GUIDED_PRACTICE,
+        ): "Now it's your turn to try!",
+        (
+            TutorState.GUIDED_PRACTICE,
+            TutorState.CHECK_UNDERSTANDING,
+        ): "Great work! Let me check if you've got this.",
+        (
+            TutorState.CHECK_UNDERSTANDING,
+            TutorState.TOPIC_SUMMARY,
+        ): "Perfect! Let's quickly summarize what we learned.",
+        (
+            TutorState.TOPIC_SUMMARY,
+            TutorState.LESSON_INTRODUCTION,
+        ): "Excellent progress! Let's move on to our next topic.",
+        (
+            TutorState.ASSESSMENT_REVIEW,
+            TutorState.LESSON_INTRODUCTION,
+        ): "Now that I understand where you are, let's start our lesson!",
     }
 
     return transitions.get((from_state, to_state), "")

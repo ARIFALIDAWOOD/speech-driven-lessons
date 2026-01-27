@@ -6,11 +6,11 @@ Pydantic models for data validation across the application.
 
 from .course_plan import (
     CoursePlan,
-    Section,
-    SubTopic,
     CoursePlanMetadata,
     DifficultyLevel,
     GeneratorType,
+    Section,
+    SubTopic,
 )
 
 __all__ = [

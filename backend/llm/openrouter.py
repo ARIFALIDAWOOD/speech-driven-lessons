@@ -4,19 +4,13 @@ OpenRouter LLM Provider
 Primary provider using zai/glm-4.7 and other models via OpenRouter's unified API.
 """
 
-import os
 import json
+import os
 from typing import AsyncIterator, Iterator, Optional
 
 import httpx
 
-from .base import (
-    LLMProvider,
-    LLMMessage,
-    LLMResponse,
-    LLMConfig,
-    StreamChunk,
-)
+from .base import LLMConfig, LLMMessage, LLMProvider, LLMResponse, StreamChunk
 
 
 class OpenRouterProvider(LLMProvider):

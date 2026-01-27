@@ -12,6 +12,7 @@ from difflib import SequenceMatcher
 import numpy as np
 import openai
 import tiktoken
+import utils.vector_utils as vector_utils
 from utils.s3_utils import (
     SUPABASE_BUCKET_NAME,
     get_course_s3_folder,
@@ -21,7 +22,6 @@ from utils.s3_utils import (
     storage,
     upload_json_to_s3,
 )
-import utils.vector_utils as vector_utils
 
 
 def process_course_context_s3(bucket_name, username, coursename, api_key, max_tokens=2000):
@@ -101,12 +101,12 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
     for i in range(0, len(chunks), batch_size):
         batch = chunks[i : i + batch_size]
         try:
-            response = openai_client.embeddings.create(
-                model="text-embedding-3-large", input=batch
-            )
+            response = openai_client.embeddings.create(model="text-embedding-3-large", input=batch)
             batch_embeddings = [e.embedding for e in response.data]
             embeddings.extend(batch_embeddings)
-            print(f"Generated embeddings for batch {i // batch_size + 1}/{(len(chunks) + batch_size - 1) // batch_size}")
+            print(
+                f"Generated embeddings for batch {i // batch_size + 1}/{(len(chunks) + batch_size - 1) // batch_size}"
+            )
         except Exception as e:
             print(f"Error generating embeddings: {str(e)}")
             # Use zero vectors as fallback
@@ -118,14 +118,12 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
 
     # Store embeddings in Supabase vector store
     print(f"Storing {len(embeddings)} embeddings in Supabase vector store...")
-    success = vector_utils.store_course_embeddings(
-        username, coursename, chunks, embeddings
-    )
+    success = vector_utils.store_course_embeddings(username, coursename, chunks, embeddings)
     if success:
         print(f"Successfully stored embeddings in Supabase vector store")
     else:
         print(f"Warning: Failed to store embeddings in Supabase vector store")
-    
+
     del embeddings  # Free memory
 
     # 4. Build inverted index
@@ -144,7 +142,7 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
 
     # Store inverted index in database
     vector_utils.store_inverted_index(username, coursename, inverted_index)
-    
+
     # Also upload inverted index to storage (backward compatibility)
     upload_json_to_s3(inverted_index, bucket_name, f"{base_key}inverted_index.json")
     del inverted_index

@@ -245,7 +245,7 @@ def upload_json_to_s3(json_data: Union[Dict, List], bucket_name: str, s3_key: st
 def upload_faiss_index_to_s3(index, bucket_name: str, s3_key: str) -> bool:
     """
     [DEPRECATED] Upload a FAISS index to Supabase Storage.
-    
+
     This function is deprecated. Vector storage now uses Supabase's native pgvector
     extension via utils/vector_utils.py. This function is kept for backward compatibility
     during migration but should not be used for new code.
@@ -261,11 +261,11 @@ def upload_faiss_index_to_s3(index, bucket_name: str, s3_key: str) -> bool:
     logger.warning(
         "upload_faiss_index_to_s3 is deprecated. Use utils.vector_utils.store_course_embeddings() instead."
     )
-    
+
     try:
         import faiss
         import numpy as np
-        
+
         # Serialize the FAISS index to memory
         index_binary = faiss.serialize_index(index)
         index_bytes = index_binary.tobytes()
@@ -276,7 +276,9 @@ def upload_faiss_index_to_s3(index, bucket_name: str, s3_key: str) -> bool:
             file_options={"content-type": "application/octet-stream", "upsert": "true"},
         )
 
-        logger.info(f"FAISS index uploaded successfully to {bucket_name}/{s3_key} (deprecated method)")
+        logger.info(
+            f"FAISS index uploaded successfully to {bucket_name}/{s3_key} (deprecated method)"
+        )
         return True
 
     except ImportError:

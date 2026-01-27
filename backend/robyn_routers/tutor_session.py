@@ -3,16 +3,16 @@
 import json
 import logging
 
-from robyn import SubRouter, Request, SSEResponse, SSEMessage
-
-from .auth import get_auth_handler, require_auth
+from robyn import Request, SSEMessage, SSEResponse, SubRouter
 from services import (
-    TutorSessionService,
     CreateSessionRequest,
     ProcessResponseRequest,
     SessionNotFoundError,
+    TutorSessionService,
     ValidationError,
 )
+
+from .auth import get_auth_handler, require_auth
 
 router = SubRouter(__file__, prefix="/api/tutor-session")
 logger = logging.getLogger(__name__)
@@ -60,18 +60,26 @@ async def create_session(request: Request):
                 # Allow unknown for backward compatibility
                 status = embeddings_status.get("status")
                 if status == "building":
-                    return {
-                        "detail": "Course embeddings are being built. Please wait.",
-                        "status": status,
-                    }, {}, 409
+                    return (
+                        {
+                            "detail": "Course embeddings are being built. Please wait.",
+                            "status": status,
+                        },
+                        {},
+                        409,
+                    )
                 elif status == "stale":
                     # Allow stale but warn
                     logger.warning(f"Starting session with stale embeddings for {course_id}")
                 elif status == "error":
-                    return {
-                        "detail": f"Embeddings build failed: {embeddings_status.get('error')}",
-                        "status": status,
-                    }, {}, 409
+                    return (
+                        {
+                            "detail": f"Embeddings build failed: {embeddings_status.get('error')}",
+                            "status": status,
+                        },
+                        {},
+                        409,
+                    )
 
         service = TutorSessionService(user_id=user_email)
         req = CreateSessionRequest(

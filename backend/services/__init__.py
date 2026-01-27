@@ -2,52 +2,48 @@
 Backend services for the Agent-Driven Teaching System.
 """
 
-from .brave_search import BraveSearchClient
-from .outline_generator import OutlineGenerator
-from .materials_context import (
-    MaterialsContextManager,
-    get_materials_manager,
-    clear_session_materials,
+# Re-export DTOs from models for backward compatibility
+from models import (  # Course DTOs; Session DTOs; Search & Outline DTOs; Exceptions
+    AuthorizationError,
+    CourseData,
+    CourseOutline,
+    CourseResponse,
+    CreateCourseRequest,
+    CreateSessionRequest,
+    DeleteFileRequest,
+    NotFoundError,
+    OutlineSection,
+    ProcessingError,
+    ProcessResponseRequest,
+    SearchResponse,
+    SearchResult,
+    ServiceError,
+    SessionError,
+    SessionInfo,
+    SessionNotFoundError,
+    SessionResponse,
+    SessionStatusResponse,
+    SlidesResponse,
+    StorageError,
+    SubTopic,
+    SyllabusResponse,
+    UpdateStepRequest,
+    UploadFileMetadataRequest,
+    UploadFileRequest,
+    ValidationError,
 )
+
+from .brave_search import BraveSearchClient
 
 # Service layer
 from .course_service import CourseService
-from .tutor_session_service import TutorSessionService
-
-# Re-export DTOs from models for backward compatibility
-from models import (
-    # Course DTOs
-    CreateCourseRequest,
-    UpdateStepRequest,
-    UploadFileRequest,
-    UploadFileMetadataRequest,
-    DeleteFileRequest,
-    CourseData,
-    CourseResponse,
-    SyllabusResponse,
-    SlidesResponse,
-    # Session DTOs
-    CreateSessionRequest,
-    SessionInfo,
-    SessionResponse,
-    SessionStatusResponse,
-    ProcessResponseRequest,
-    # Search & Outline DTOs
-    SearchResult,
-    SearchResponse,
-    CourseOutline,
-    OutlineSection,
-    SubTopic,
-    # Exceptions
-    ServiceError,
-    NotFoundError,
-    ValidationError,
-    AuthorizationError,
-    StorageError,
-    ProcessingError,
-    SessionError,
-    SessionNotFoundError,
+from .materials_context import (
+    MaterialsContextManager,
+    clear_session_materials,
+    get_materials_manager,
 )
+from .outline_generator import OutlineGenerator
+from .tutor_session_service import TutorSessionService
 
 __all__ = [
     # Search & Outline

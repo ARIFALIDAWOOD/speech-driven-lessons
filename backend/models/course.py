@@ -91,15 +91,13 @@ class CourseData:
     ai_voice: str = "alloy"
     is_published: bool = False
     uploaded_files: list[FileInfo] = field(default_factory=list)
-    create_course_process: CreateCourseProcess = field(
-        default_factory=CreateCourseProcess
-    )
+    create_course_process: CreateCourseProcess = field(default_factory=CreateCourseProcess)
     progress: CourseProgress = field(default_factory=CourseProgress)
 
     # B/S/C/T Curriculum tagging fields
-    board_id: Optional[str] = None       # e.g., "CBSE", "ICSE"
-    subject_id: Optional[str] = None     # e.g., "MATH", "PHY"
-    chapter_id: Optional[str] = None     # e.g., "CH1", "CH2"
+    board_id: Optional[str] = None  # e.g., "CBSE", "ICSE"
+    subject_id: Optional[str] = None  # e.g., "MATH", "PHY"
+    chapter_id: Optional[str] = None  # e.g., "CH1", "CH2"
     curriculum_topic: Optional[str] = None  # Free-text topic
 
     # Display names for UI
@@ -118,9 +116,7 @@ class CourseData:
             "last_updated_at": self.last_updated_at,
             "ai_voice": self.ai_voice,
             "is_published": self.is_published,
-            "uploadedFiles": [
-                {"name": f.name, "size": f.size} for f in self.uploaded_files
-            ],
+            "uploadedFiles": [{"name": f.name, "size": f.size} for f in self.uploaded_files],
             "create_course_process": {
                 "is_creation_complete": self.create_course_process.is_creation_complete,
                 "current_step": self.create_course_process.current_step,
@@ -151,8 +147,7 @@ class CourseData:
     def from_dict(cls, data: dict) -> "CourseData":
         """Create from dictionary (e.g., from S3 JSON)."""
         uploaded_files = [
-            FileInfo(name=f["name"], size=f["size"])
-            for f in data.get("uploadedFiles", [])
+            FileInfo(name=f["name"], size=f["size"]) for f in data.get("uploadedFiles", [])
         ]
         process_data = data.get("create_course_process", {})
         progress_data = data.get("progress", {})

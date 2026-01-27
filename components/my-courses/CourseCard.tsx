@@ -30,12 +30,12 @@ export function CourseCard({ course, onRequestAssistant }: CourseCardProps) {
         {/* Progress bar */}
         <div className="mb-3">
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600">Progress</span>
-            <span className="font-medium">{progress}%</span>
+            <span className="text-gray-500">Progress</span>
+            <span className="font-medium text-gray-700">{progress}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
-              className="bg-emerald-600 h-2 rounded-full transition-all"
+              className="bg-emerald-500 h-2 rounded-full transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>

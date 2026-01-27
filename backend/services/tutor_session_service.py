@@ -15,15 +15,12 @@ from services import OutlineGenerator
 
 from .dtos import (
     CreateSessionRequest,
+    ProcessResponseRequest,
     SessionInfo,
     SessionResponse,
     SessionStatusResponse,
-    ProcessResponseRequest,
 )
-from .exceptions import (
-    SessionNotFoundError,
-    ValidationError,
-)
+from .exceptions import SessionNotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +103,10 @@ class TutorSessionService:
 
                     # Check embeddings status
                     embeddings_status = course_service.get_embeddings_status(request.course_id)
-                    context.embeddings_ready = embeddings_status.get("status") in ("ready", "unknown")
+                    context.embeddings_ready = embeddings_status.get("status") in (
+                        "ready",
+                        "unknown",
+                    )
 
                     logger.info(
                         f"Session {session_id} linked to course {request.course_id}, "
@@ -262,10 +262,12 @@ class TutorSessionService:
                 yield event.to_json()
 
         # Yield ready event
-        ready_data = json.dumps({
-            "event": "ready",
-            "state": tutor.context.current_state.value,
-        })
+        ready_data = json.dumps(
+            {
+                "event": "ready",
+                "state": tutor.context.current_state.value,
+            }
+        )
         yield ready_data
 
     def process_response(self, request: ProcessResponseRequest) -> Iterator[str]:
@@ -290,10 +292,12 @@ class TutorSessionService:
             yield event.to_json()
 
         # Yield complete event
-        complete_data = json.dumps({
-            "event": "complete",
-            "state": tutor.context.current_state.value,
-        })
+        complete_data = json.dumps(
+            {
+                "event": "complete",
+                "state": tutor.context.current_state.value,
+            }
+        )
         yield complete_data
 
     # =========================================================================
@@ -361,25 +365,27 @@ class TutorSessionService:
         for session_id, tutor in self._active_sessions.items():
             if tutor.context.user_id == self.user_id:
                 ctx = tutor.context
-                sessions.append({
-                    "id": session_id,
-                    "title": f"{ctx.subject_name} - {ctx.chapter_name}",
-                    "tutor": "AI Tutor",
-                    "email": "tutor@anantra.ai",
-                    "zoomLink": "",
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                    "startTime": "08:00",
-                    "endTime": "09:00",
-                    "description": (
-                        f"Learning session for {ctx.chapter_name} in "
-                        f"{ctx.subject_name} ({ctx.board_name})"
-                    ),
-                    "board": ctx.board,
-                    "subject": ctx.subject,
-                    "chapter": ctx.chapter,
-                    "currentState": ctx.current_state.value,
-                    "isPaused": ctx.is_paused,
-                })
+                sessions.append(
+                    {
+                        "id": session_id,
+                        "title": f"{ctx.subject_name} - {ctx.chapter_name}",
+                        "tutor": "AI Tutor",
+                        "email": "tutor@anantra.ai",
+                        "zoomLink": "",
+                        "date": datetime.now().strftime("%Y-%m-%d"),
+                        "startTime": "08:00",
+                        "endTime": "09:00",
+                        "description": (
+                            f"Learning session for {ctx.chapter_name} in "
+                            f"{ctx.subject_name} ({ctx.board_name})"
+                        ),
+                        "board": ctx.board,
+                        "subject": ctx.subject,
+                        "chapter": ctx.chapter,
+                        "currentState": ctx.current_state.value,
+                        "isPaused": ctx.is_paused,
+                    }
+                )
 
         return sessions
 

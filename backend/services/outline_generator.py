@@ -6,20 +6,13 @@ Combines Brave Search results with LLM to generate structured course outlines.
 
 import json
 import logging
-from typing import Iterator, Optional
 from datetime import datetime
+from typing import Iterator, Optional
 
-from models import (
-    SubTopic,
-    OutlineSection,
-    CourseOutline,
-    LLMMessage,
-    LLMConfig,
-    MessageRole,
-)
-from .brave_search import BraveSearchClient
 from llm import get_llm_provider
+from models import CourseOutline, LLMConfig, LLMMessage, MessageRole, OutlineSection, SubTopic
 
+from .brave_search import BraveSearchClient
 
 logger = logging.getLogger(__name__)
 
@@ -209,14 +202,21 @@ class OutlineGenerator:
                 )
                 search_context = search_response.get_combined_context(max_results=5)
                 source_urls = [r.url for r in search_response.results[:5]]
-                yield json.dumps({
-                    "status": "search_complete",
-                    "message": f"Found {len(search_response.results)} relevant sources",
-                    "sources": source_urls[:3],
-                })
+                yield json.dumps(
+                    {
+                        "status": "search_complete",
+                        "message": f"Found {len(search_response.results)} relevant sources",
+                        "sources": source_urls[:3],
+                    }
+                )
             except Exception as e:
                 logger.warning(f"Search failed: {e}")
-                yield json.dumps({"status": "search_failed", "message": "Search unavailable, using LLM knowledge"})
+                yield json.dumps(
+                    {
+                        "status": "search_failed",
+                        "message": "Search unavailable, using LLM knowledge",
+                    }
+                )
 
         yield json.dumps({"status": "generating", "message": "Creating course outline..."})
 
@@ -246,11 +246,13 @@ class OutlineGenerator:
         # Parse and return final outline
         try:
             outline_data = self._parse_outline_response(full_content)
-            yield json.dumps({
-                "status": "completed",
-                "outline": outline_data,
-                "source_urls": source_urls,
-            })
+            yield json.dumps(
+                {
+                    "status": "completed",
+                    "outline": outline_data,
+                    "source_urls": source_urls,
+                }
+            )
         except Exception as e:
             logger.error(f"Failed to parse outline: {e}")
             yield json.dumps({"status": "error", "message": f"Failed to parse outline: {e}"})
@@ -275,23 +277,27 @@ class OutlineGenerator:
             prompt_parts.append(f"- Specific Focus: {topic}")
 
         if search_context:
-            prompt_parts.extend([
-                "",
-                "Here is relevant context from educational resources:",
-                "---",
-                search_context,
-                "---",
-                "",
-                "Use this context to create an accurate and comprehensive outline.",
-            ])
+            prompt_parts.extend(
+                [
+                    "",
+                    "Here is relevant context from educational resources:",
+                    "---",
+                    search_context,
+                    "---",
+                    "",
+                    "Use this context to create an accurate and comprehensive outline.",
+                ]
+            )
 
-        prompt_parts.extend([
-            "",
-            "Generate a structured JSON outline with 3-8 sections, each containing:",
-            "- Clear learning objectives",
-            "- 2-6 subtopics with descriptions and key points",
-            "- Realistic time estimates",
-        ])
+        prompt_parts.extend(
+            [
+                "",
+                "Generate a structured JSON outline with 3-8 sections, each containing:",
+                "- Clear learning objectives",
+                "- 2-6 subtopics with descriptions and key points",
+                "- Realistic time estimates",
+            ]
+        )
 
         return "\n".join(prompt_parts)
 
@@ -317,7 +323,8 @@ class OutlineGenerator:
             logger.error(f"Failed to parse JSON: {e}")
             # Try to find JSON in the content
             import re
-            json_match = re.search(r'\{[\s\S]*\}', content)
+
+            json_match = re.search(r"\{[\s\S]*\}", content)
             if json_match:
                 try:
                     return json.loads(json_match.group())

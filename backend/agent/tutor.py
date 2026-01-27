@@ -7,26 +7,25 @@ Main agent class that drives tutoring sessions with adaptive pacing.
 import json
 import logging
 from datetime import datetime
-from typing import Iterator, Optional, Callable
-
-from models import (
-    TutorState,
-    SessionContext,
-    StudentLevel,
-    AssessmentQuestion,
-    AssessmentResponse,
-    AssessmentDifficulty,
-    TopicProgress,
-    TutorEvent,
-    LLMMessage,
-    LLMConfig,
-    MessageRole,
-)
-from .machine import TutorStateMachine
-from .prompts import get_system_prompt, get_transition_prompt
+from typing import Callable, Iterator, Optional
 
 from llm import get_llm_provider
+from models import (
+    AssessmentDifficulty,
+    AssessmentQuestion,
+    AssessmentResponse,
+    LLMConfig,
+    LLMMessage,
+    MessageRole,
+    SessionContext,
+    StudentLevel,
+    TopicProgress,
+    TutorEvent,
+    TutorState,
+)
 
+from .machine import TutorStateMachine
+from .prompts import get_system_prompt, get_transition_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -186,12 +185,37 @@ class ProactiveTutor:
 
         # Question detection
         if "?" in user_input or any(
-            lower.startswith(word) for word in ["what", "why", "how", "when", "where", "can", "could", "would", "is", "are", "do", "does"]
+            lower.startswith(word)
+            for word in [
+                "what",
+                "why",
+                "how",
+                "when",
+                "where",
+                "can",
+                "could",
+                "would",
+                "is",
+                "are",
+                "do",
+                "does",
+            ]
         ):
             return "question"
 
         # Confusion indicators
-        if any(word in lower for word in ["confused", "don't understand", "don't get", "lost", "unclear", "huh", "what do you mean"]):
+        if any(
+            word in lower
+            for word in [
+                "confused",
+                "don't understand",
+                "don't get",
+                "lost",
+                "unclear",
+                "huh",
+                "what do you mean",
+            ]
+        ):
             return "confusion"
 
         return "conversation"
@@ -329,21 +353,24 @@ class ProactiveTutor:
         """Parse assessment questions from LLM response."""
         # Try to extract JSON
         import re
-        json_match = re.search(r'\{[\s\S]*\}', response)
+
+        json_match = re.search(r"\{[\s\S]*\}", response)
         if json_match:
             try:
                 data = json.loads(json_match.group())
                 questions = []
 
                 for q in data.get("questions", []):
-                    questions.append(AssessmentQuestion(
-                        question_text=q.get("question", ""),
-                        question_type=q.get("type", "mcq"),
-                        options=q.get("options", []),
-                        correct_answer=q.get("correct", ""),
-                        difficulty=AssessmentDifficulty(q.get("difficulty", "medium")),
-                        explanation=q.get("explanation", ""),
-                    ))
+                    questions.append(
+                        AssessmentQuestion(
+                            question_text=q.get("question", ""),
+                            question_type=q.get("type", "mcq"),
+                            options=q.get("options", []),
+                            correct_answer=q.get("correct", ""),
+                            difficulty=AssessmentDifficulty(q.get("difficulty", "medium")),
+                            explanation=q.get("explanation", ""),
+                        )
+                    )
 
                 return questions
             except (json.JSONDecodeError, KeyError):
@@ -388,15 +415,17 @@ class ProactiveTutor:
         is_correct = self._check_answer(answer, question)
 
         # Record response
-        self.context.assessment_responses.append(AssessmentResponse(
-            question_index=self.current_assessment_index,
-            question_text=question.question_text,
-            question_type=question.question_type,
-            student_answer=answer,
-            correct_answer=question.correct_answer,
-            is_correct=is_correct,
-            difficulty=question.difficulty,
-        ))
+        self.context.assessment_responses.append(
+            AssessmentResponse(
+                question_index=self.current_assessment_index,
+                question_text=question.question_text,
+                question_type=question.question_type,
+                student_answer=answer,
+                correct_answer=question.correct_answer,
+                is_correct=is_correct,
+                difficulty=question.difficulty,
+            )
+        )
 
         # Provide feedback
         if is_correct:
@@ -493,11 +522,13 @@ class ProactiveTutor:
             return
 
         # Start tracking this topic
-        self.context.topic_progress.append(TopicProgress(
-            topic_index=len(self.context.topic_progress),
-            topic_title=current_topic["subtopic"]["title"],
-            started_at=datetime.utcnow(),
-        ))
+        self.context.topic_progress.append(
+            TopicProgress(
+                topic_index=len(self.context.topic_progress),
+                topic_title=current_topic["subtopic"]["title"],
+                started_at=datetime.utcnow(),
+            )
+        )
 
         response = self._generate_response()
         self.context.add_message("assistant", response)
@@ -529,8 +560,7 @@ class ProactiveTutor:
 
         # Transition prompt
         transition = get_transition_prompt(
-            TutorState.CONCEPT_EXPLANATION,
-            TutorState.EXAMPLE_DEMONSTRATION
+            TutorState.CONCEPT_EXPLANATION, TutorState.EXAMPLE_DEMONSTRATION
         )
         if transition:
             yield TutorEvent("transition", content=transition)
@@ -551,8 +581,7 @@ class ProactiveTutor:
 
         # Transition to practice
         transition = get_transition_prompt(
-            TutorState.EXAMPLE_DEMONSTRATION,
-            TutorState.GUIDED_PRACTICE
+            TutorState.EXAMPLE_DEMONSTRATION, TutorState.GUIDED_PRACTICE
         )
         if transition:
             yield TutorEvent("transition", content=transition)

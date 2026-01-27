@@ -8,24 +8,14 @@ Import from `models` directly for new code:
     from models import TutorState, SessionContext, ...
 """
 
-# Re-export enums from models
-from models.enums import (
-    TutorState,
-    StudentLevel,
-    AssessmentDifficulty,
-)
-
 # Re-export assessment models from models
-from models.assessment import (
-    AssessmentQuestion,
-    AssessmentResponse,
-)
+from models.assessment import AssessmentQuestion, AssessmentResponse
+
+# Re-export enums from models
+from models.enums import AssessmentDifficulty, StudentLevel, TutorState
 
 # Re-export session models from models
-from models.session import (
-    TopicProgress,
-    SessionContext,
-)
+from models.session import SessionContext, TopicProgress
 
 __all__ = [
     "TutorState",

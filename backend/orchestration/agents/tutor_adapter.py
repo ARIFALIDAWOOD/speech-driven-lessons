@@ -4,10 +4,12 @@ Tutor Agent Adapter - Phase 1
 Wraps the existing ProactiveTutor for integration with the LangGraph orchestration system.
 """
 
-from typing import Dict, Any, Optional
 import logging
+from typing import Any, Dict, Optional
+
 from agent import ProactiveTutor
 from models import SessionContext, TutorState
+
 from ..state import OrchestratorState, ProgressHealth, SessionPhase
 
 logger = logging.getLogger(__name__)
@@ -39,11 +41,15 @@ class TutorAgentAdapter:
 
         if session_id not in cls._active_tutors:
             # Create new tutor with context from state
+            meta = (state.get("course_outline") or {}).get("metadata") or {}
             context = SessionContext(
                 session_id=session_id,
                 user_id=state["user_id"],
+                board=meta.get("board", ""),
+                subject=meta.get("subject", ""),
+                chapter=meta.get("chapter", ""),
                 outline=state.get("course_outline"),
-                course_title=state.get("course_outline", {}).get("metadata", {}).get("title", ""),
+                course_title=meta.get("title", ""),
             )
 
             # Set course_id if available
@@ -92,10 +98,7 @@ def tutor_node(state: OrchestratorState) -> Dict[str, Any]:
         try:
             for event in tutor.start_session():
                 if event.event_type == "agent_speak":
-                    new_messages.append({
-                        "role": "assistant",
-                        "content": event.content
-                    })
+                    new_messages.append({"role": "assistant", "content": event.content})
                 tutor_state_value = event.state.value if event.state else None
         except Exception as e:
             logger.error(f"Error starting tutor session: {e}")
@@ -110,10 +113,7 @@ def tutor_node(state: OrchestratorState) -> Dict[str, Any]:
         try:
             for event in tutor.process_input(user_input):
                 if event.event_type == "agent_speak":
-                    new_messages.append({
-                        "role": "assistant",
-                        "content": event.content
-                    })
+                    new_messages.append({"role": "assistant", "content": event.content})
                 if event.state:
                     tutor_state_value = event.state.value
         except Exception as e:
@@ -130,9 +130,9 @@ def tutor_node(state: OrchestratorState) -> Dict[str, Any]:
     # Extract tutor context for orchestration
     tutor_context = {
         "current_state": tutor_state_value,
-        "topic_index": tutor.context.current_topic_index,
+        "topic_index": tutor.context.current_section_index,
         "subtopic_index": tutor.context.current_subtopic_index,
-        "messages_in_state": tutor.context.messages_in_current_state,
+        "messages_in_state": len(tutor.context.conversation_history),
     }
 
     # Build state updates
@@ -147,7 +147,7 @@ def tutor_node(state: OrchestratorState) -> Dict[str, Any]:
         updates["messages"] = new_messages
 
     # Check if tutor is doing understanding check
-    if tutor_state_value == TutorState.CHECKING_UNDERSTANDING.value:
+    if tutor_state_value == TutorState.CHECK_UNDERSTANDING.value:
         updates["current_phase"] = SessionPhase.ASSESSMENT
 
     return updates
@@ -158,11 +158,12 @@ def should_continue_tutoring(state: OrchestratorState) -> str:
     Conditional edge function after tutor node.
 
     Determines if tutoring should continue or if another agent should take over.
+    After tutor processes input, we should end the turn unless intervention is needed.
     """
     tutor_state = state.get("tutor_state", "")
 
     # Check for assessment trigger
-    if tutor_state == TutorState.CHECKING_UNDERSTANDING.value:
+    if tutor_state == TutorState.CHECK_UNDERSTANDING.value:
         return "assessor"
 
     # Check for progress intervention
@@ -175,5 +176,6 @@ def should_continue_tutoring(state: OrchestratorState) -> str:
     if struggles >= 3:
         return "progress_tracker"
 
-    # Continue with orchestrator for routing
-    return "orchestrator"
+    # Turn is complete - end the graph execution for this turn
+    # Next user input will start a new graph invocation
+    return "__end__"
