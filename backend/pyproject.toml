@@ -15,7 +15,7 @@ dependencies = [
     "firebase-admin>=6.0.0",
     "redis>=5.0.0",
     "edge-tts>=6.0.0",
-    "langgraph>=0.2.0",
+    "langswarm>=0.0.46",
     "langchain>=0.2.0",
     "langchain-openai>=0.1.0",
     "google-genai>=1.0.0",
@@ -41,4 +41,5 @@ dev = [
     "pytest-cov>=5.0.0",
     "pytest-mock>=3.14.0",
     "pyright>=1.1.390",
+    "ruff>=0.8.0",
 ]

@@ -9,6 +9,15 @@ import { BreakSuggestionModal } from "./BreakSuggestionModal";
 import { AssessmentContainer, AssessmentQuestion, AssessmentAnswer } from "@/components/assessment";
 import { Loader2 } from "lucide-react";
 
+// Orchestration components - Phase 1
+import {
+  ActiveAgentDisplay,
+  AgentIndicator,
+  ProgressCheckOverlay,
+  AgentTransitionNotification,
+} from "@/components/orchestration";
+import { useOrchestration } from "@/hooks/useOrchestration";
+
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
@@ -51,6 +60,9 @@ export function TutorSessionLayout({
   accessToken,
 }: TutorSessionLayoutProps) {
   const router = useRouter();
+
+  // Orchestration state - Phase 1
+  const orchestration = useOrchestration(sessionId);
 
   // State
   const [messages, setMessages] = useState<Message[]>([]);
@@ -435,16 +447,35 @@ export function TutorSessionLayout({
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Progress Bar */}
-      <SessionProgressBar
-        currentState={sessionState.currentState}
-        progress={progress}
-        topicsCompleted={topicsCompleted}
-        totalTopics={totalTopics}
-        timeSpent={sessionState.progress.timeSpentMinutes}
-        isPaused={sessionState.isPaused}
+    <div className="flex flex-col h-screen bg-gray-50 relative">
+      {/* Orchestration Overlays - Phase 1 */}
+      <ProgressCheckOverlay
+        isActive={orchestration.isProgressCheck}
+        checkType={orchestration.progressCheckType || 'routine'}
       />
+      <AgentTransitionNotification
+        fromAgent={orchestration.previousAgent}
+        toAgent={orchestration.activeAgent}
+        show={orchestration.showTransition}
+      />
+
+      {/* Progress Bar with Agent Indicator */}
+      <div className="flex items-center justify-between px-4 py-2 border-b bg-white">
+        {/* Agent Indicator showing active agent PNG */}
+        <AgentIndicator
+          activeAgent={orchestration.activeAgent}
+          isSpeaking={orchestration.isSpeaking}
+        />
+
+        <SessionProgressBar
+          currentState={sessionState.currentState}
+          progress={progress}
+          topicsCompleted={topicsCompleted}
+          totalTopics={totalTopics}
+          timeSpent={sessionState.progress.timeSpentMinutes}
+          isPaused={sessionState.isPaused}
+        />
+      </div>
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
@@ -457,26 +488,38 @@ export function TutorSessionLayout({
           />
         </div>
 
-        {/* Control Panel */}
-        <AgentControlPane
-          currentState={sessionState.currentState}
-          currentTopic={
-            sessionState.currentTopic
-              ? {
-                  section: sessionState.currentTopic.section.title,
-                  subtopic: sessionState.currentTopic.subtopic.title,
-                }
-              : undefined
-          }
-          upcomingTopics={upcomingTopics}
-          onSendMessage={sendMessage}
-          onQuickAction={handleQuickAction}
-          onPause={handlePause}
-          onResume={handleResume}
-          onEnd={handleEnd}
-          isPaused={sessionState.isPaused}
-          isProcessing={isStreaming}
-        />
+        {/* Control Panel with Active Agent Display */}
+        <div className="flex flex-col w-80 border-l bg-white">
+          {/* Active Agent Display - Phase 1 */}
+          <div className="border-b bg-gray-50">
+            <ActiveAgentDisplay
+              activeAgent={orchestration.activeAgent}
+              isSpeaking={orchestration.isSpeaking}
+              isThinking={orchestration.isThinking}
+            />
+          </div>
+
+          {/* Original Control Panel */}
+          <AgentControlPane
+            currentState={sessionState.currentState}
+            currentTopic={
+              sessionState.currentTopic
+                ? {
+                    section: sessionState.currentTopic.section.title,
+                    subtopic: sessionState.currentTopic.subtopic.title,
+                  }
+                : undefined
+            }
+            upcomingTopics={upcomingTopics}
+            onSendMessage={sendMessage}
+            onQuickAction={handleQuickAction}
+            onPause={handlePause}
+            onResume={handleResume}
+            onEnd={handleEnd}
+            isPaused={sessionState.isPaused}
+            isProcessing={isStreaming}
+          />
+        </div>
       </div>
 
       {/* Break Modal */}

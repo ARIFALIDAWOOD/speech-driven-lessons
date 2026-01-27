@@ -11,7 +11,6 @@ import {
   CourseHeader,
   GeneralInfoTab,
   SyllabusTab,
-  SlidesTab,
   CourseData,
   SlidePreviewModal
 } from "@/components/my-courses/view-courses-details-user-created"

@@ -3,6 +3,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { Home, BookOpen, Upload, User, HelpCircle, GraduationCap } from "lucide-react";
+import { UserMenu } from "./UserMenu";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -40,6 +41,9 @@ export function MainLayout({ children }: MainLayoutProps) {
             ))}
           </ul>
         </nav>
+        <div className="mt-auto border-t p-4">
+          <UserMenu />
+        </div>
       </aside>
       {/* Main content */}
       <main className="flex-1 overflow-auto">

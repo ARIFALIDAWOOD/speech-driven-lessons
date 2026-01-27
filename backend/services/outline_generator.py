@@ -265,7 +265,7 @@ class OutlineGenerator:
     ) -> str:
         """Build the user prompt for outline generation."""
         prompt_parts = [
-            f"Create a course outline for the following:",
+            "Create a course outline for the following:",
             f"- Education Board: {board}",
             f"- Subject: {subject}",
             f"- Chapter: {chapter}",

@@ -1,6 +1,5 @@
 export { CourseHeader } from './CourseHeader'
 export { GeneralInfoTab } from './GeneralInfoTab'
 export { SyllabusTab } from './SyllabusTab'
-export { SlidesTab } from './SlidesTab'
 export { SlidePreviewModal } from './SlidePreviewModal'
 export type { CourseData } from './types'
