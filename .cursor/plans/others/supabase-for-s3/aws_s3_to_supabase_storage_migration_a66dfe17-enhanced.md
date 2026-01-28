@@ -3,7 +3,7 @@
 ## Executive Summary
 
 This enhanced plan addresses critical gaps identified in the original migration plan, including:
-- Missing `user_files_utils.py` refactoring (standalone boto3 client)
+- Missing `user_files_utils.py` refactoring (standalone boto3 client) — *file was later removed as dead code*
 - Incomplete error handling for Supabase-specific exceptions
 - Missing pagination handling differences between S3 and Supabase
 - No consideration for synchronous vs asynchronous client usage
@@ -21,7 +21,7 @@ This enhanced plan addresses critical gaps identified in the original migration 
 |------|-------------|------------|-------|
 | `backend/utils/s3_utils.py` | Complete Rewrite | High | 615 lines, 30+ functions |
 | `backend/utils/load_and_process_index.py` | Moderate | Medium | Direct boto3 usage lines 34-49 |
-| `backend/user_files_utils.py` | Complete Rewrite | Low | **MISSING FROM ORIGINAL PLAN** - Standalone boto3 client |
+| `backend/user_files_utils.py` | Complete Rewrite | Low | **MISSING FROM ORIGINAL PLAN** - Standalone boto3 client; *later removed as dead code* |
 | `backend/.env.example` | Update | Low | Add Supabase credentials |
 | `backend/api/in_class.py` | Update | Low | Hardcoded bucket name line 13 |
 | `backend/api/assistant.py` | Update | Low | Hardcoded bucket name line 13 |
@@ -1056,7 +1056,9 @@ def process_course_context_s3(bucket_name, username, coursename, api_key, max_to
 
 ### Phase 4: Update user_files_utils.py
 
-**File: `backend/user_files_utils.py`** (Complete Rewrite - MISSING FROM ORIGINAL PLAN)
+**Note:** `user_files_utils.py` was later removed as dead code. This phase is obsolete.
+
+**File: `backend/user_files_utils.py`** (Complete Rewrite - MISSING FROM ORIGINAL PLAN; *later removed*)
 
 ```python
 """

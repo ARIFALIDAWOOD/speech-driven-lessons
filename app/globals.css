@@ -40,14 +40,22 @@ body {
 
 @layer base {
   :root {
+    /* Brand colors for login/welcome pages */
+    --brand-primary: 130 16% 55%;
+    --brand-secondary: 130 16% 43%;
+    --brand-light: 120 19% 92%;
+    --brand-bg: 120 14% 96%;
+    --brand-border: 123 19% 78%;
+    --brand-text: 127 11% 41%;
+    --brand-gradient: 126 20% 70%;
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
@@ -81,6 +89,13 @@ body {
   }
   .dark {
     /* Dark theme tuned to match learning-page-redesign.html */
+    --brand-primary: 160 84% 39%; /* emerald-500 */
+    --brand-secondary: 160 84% 30%; /* darker emerald */
+    --brand-light: 0 0% 15%; /* dark gray for light areas */
+    --brand-bg: 0 0% 7%; /* near-black background */
+    --brand-border: 0 0% 20%; /* subtle border */
+    --brand-text: 220 14% 94%; /* light text */
+    --brand-gradient: 160 84% 25%; /* dark emerald gradient */
     --background: 0 0% 4%; /* #0a0a0a */
     --foreground: 220 14% 94%; /* #e5e7eb */
     --card: 0 0% 9%; /* #171717 */

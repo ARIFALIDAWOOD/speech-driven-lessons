@@ -1,0 +1,413 @@
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anantra LMS Suite | Proactive Tutoring</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #171717;
+            --text-primary: #e5e7eb;
+            --text-secondary: #9ca3af;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --sidebar-width: 280px;
+        }
+
+        .light-mode {
+            --bg-primary: #f9fafb;
+            --bg-secondary: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+
+        .glass-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            transition: background 0.3s, border 0.3s;
+        }
+
+        .chat-bubble-agent {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .chat-bubble-user {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        /* Resizable Divider */
+        #drag-handle {
+            width: 4px;
+            cursor: col-resize;
+            background: var(--border-color);
+            transition: background 0.2s;
+        }
+        #drag-handle:hover, #drag-handle.active {
+            background: #3b82f6;
+        }
+
+        .agent-active::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            border: 2px solid var(--bg-secondary);
+        }
+
+        /* Vision Feedback System */
+        #vision-feedback-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            transition: all 0.8s ease;
+            box-shadow: inset 0 0 0px 0px rgba(239, 68, 68, 0);
+            z-index: 100;
+        }
+
+        #vision-feedback-overlay.alert-mode {
+            box-shadow: inset 0 0 100px 20px rgba(239, 68, 68, 0.4);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        
+        .message-in { animation: slideIn 0.3s ease-out forwards; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .agent-br-float {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+            z-index: 40;
+            transition: transform 0.3s ease;
+        }
+
+        /* Particle/Kinesthetic Effect */
+        .particle {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            position: absolute;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Vision Feedback Overlay -->
+    <div id="vision-feedback-overlay"></div>
+
+    <div class="flex h-full w-full overflow-hidden">
+        
+        <!-- Sidebar: Agentic List -->
+        <aside class="w-[var(--sidebar-width)] glass-panel border-r flex flex-col p-4 z-40">
+            <div class="flex items-center gap-3 mb-8 px-2">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-brain text-white text-sm"></i>
+                </div>
+                <h1 class="font-bold text-lg tracking-tight">Anantra <span class="text-blue-500">LMS</span></h1>
+            </div>
+
+            <!-- Sidebar Top: Chat History -->
+            <div class="flex-1 flex flex-col min-h-0">
+                <p class="text-[10px] uppercase font-bold text-neutral-500 px-2 mb-4 tracking-widest">Recent Sessions</p>
+                <div class="space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 cursor-pointer">
+                        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=Quantum" class="w-7 h-7 rounded-lg opacity-80">
+                        <div class="overflow-hidden">
+                            <p class="text-xs font-semibold truncate">Quantum Basics</p>
+                            <p class="text-[10px] text-neutral-500">Active now</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-primary)] border border-transparent hover:border-[var(--border-color)] transition-all cursor-pointer opacity-70 hover:opacity-100 group">
+                        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=Thermodynamics" class="w-7 h-7 rounded-lg">
+                        <div class="overflow-hidden">
+                            <p class="text-xs font-medium truncate group-hover:text-blue-500 transition-colors">Thermodynamics II</p>
+                            <p class="text-[10px] text-neutral-500">2 days ago</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[var(--bg-primary)] border border-transparent hover:border-[var(--border-color)] transition-all cursor-pointer opacity-70 hover:opacity-100 group">
+                        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=Organic" class="w-7 h-7 rounded-lg">
+                        <div class="overflow-hidden">
+                            <p class="text-xs font-medium truncate group-hover:text-blue-500 transition-colors">Organic Synthesis</p>
+                            <p class="text-[10px] text-neutral-500">Jan 12</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Bottom: Agent Accordion -->
+            <div class="mt-4 border-t border-[var(--border-color)] pt-4">
+                <details class="group">
+                    <summary class="flex items-center justify-between list-none cursor-pointer p-2 rounded-lg hover:bg-[var(--bg-primary)] transition-colors">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-robot text-xs text-blue-500"></i>
+                            <span class="text-[10px] uppercase font-bold text-neutral-500 tracking-widest">System Agents</span>
+                        </div>
+                        <i class="fas fa-chevron-up text-[10px] text-neutral-500 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="space-y-1 mt-2 max-h-48 overflow-y-auto pr-1">
+                        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-blue-500/5">
+                            <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Orchestrator" class="w-6 h-6 rounded-full bg-blue-500/10">
+                            <span class="text-[11px] font-medium">Orchestrator</span>
+                            <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-emerald-500/5">
+                            <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Tutor" class="w-6 h-6 rounded-full bg-emerald-500/10">
+                            <span class="text-[11px] font-medium">Tutor</span>
+                            <span class="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-amber-500/5">
+                            <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Assessor" class="w-6 h-6 rounded-full bg-amber-500/10">
+                            <span class="text-[11px] font-medium">Assessor</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-rose-500/5">
+                            <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Overwatch" class="w-6 h-6 rounded-full bg-rose-500/10">
+                            <span class="text-[11px] font-medium">Overwatch</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-purple-500/5">
+                            <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Tracker" class="w-6 h-6 rounded-full bg-purple-500/10">
+                            <span class="text-[11px] font-medium">Progress Tracker</span>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <div class="mt-4 space-y-4">
+                <button id="theme-toggle" class="w-full flex items-center justify-between p-3 rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-primary)] transition-all text-xs">
+                    <span>Appearance</span>
+                    <i class="fas fa-moon"></i>
+                </button>
+
+                <div class="p-4 bg-blue-600/10 rounded-2xl border border-blue-500/20">
+                    <p class="text-[10px] font-bold text-blue-500 uppercase mb-2">Current Goal</p>
+                    <p class="text-[11px] leading-tight mb-2">Quantum Entanglement Basics</p>
+                    <div class="w-full bg-neutral-200 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-blue-500 h-full w-3/4"></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content (Split Screen) -->
+        <div class="flex-1 flex overflow-hidden">
+            
+            <!-- Left: Chat Pane -->
+            <section id="chat-pane" class="flex flex-col min-w-[300px] w-1/2 relative bg-[var(--bg-secondary)]">
+                <header class="h-16 border-b flex items-center justify-between px-6 bg-[var(--bg-secondary)]">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-xs font-medium uppercase tracking-wider">Live Tutoring Session</span>
+                    </div>
+                    <button id="toggle-alert" class="text-[10px] font-bold bg-[var(--bg-primary)] hover:opacity-80 px-3 py-1.5 rounded-lg border border-[var(--border-color)] text-[var(--text-primary)] uppercase transition-colors">
+                        Simulate Stall
+                    </button>
+                </header>
+
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-6 pb-24">
+                    <!-- Tutor Message with Identicon -->
+                    <div class="flex gap-3 message-in">
+                        <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Tutor" class="w-8 h-8 rounded p-1 flex-shrink-0 border border-emerald-500/20 bg-emerald-500/5">
+                        <div class="chat-bubble-agent p-4 rounded-2xl rounded-tl-none text-sm max-w-sm border border-neutral-700/20">
+                            Excellent! Let's visualize the Schrödinger equation interaction on the right. Notice how the wave function collapses when you interact with the particles.
+                        </div>
+                    </div>
+
+                    <!-- User Message -->
+                    <div class="flex gap-3 flex-row-reverse message-in">
+                        <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0 text-xs text-white bg-blue-600">U</div>
+                        <div class="chat-bubble-user p-4 rounded-2xl rounded-tr-none text-sm max-w-sm shadow-md">
+                            I'm trying to click the blue particle, but nothing happens. Am I missing something?
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 bg-gradient-to-t from-[var(--bg-primary)] to-transparent">
+                    <div class="glass-panel rounded-2xl p-2 flex items-center gap-2 border-[var(--border-color)]">
+                        <input type="text" placeholder="Respond to the session..." class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 px-3 outline-none placeholder:text-[var(--text-secondary)] text-[var(--text-primary)]">
+                        <button class="bg-blue-600 hover:bg-blue-500 text-white w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-blue-500/20">
+                            <i class="fas fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Proactive Agent Overlay (BR) -->
+                <div class="agent-br-float bg-neutral-900 group cursor-help">
+                    <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Anantra&backgroundColor=10b981" alt="Agent" class="w-full h-full object-cover">
+                </div>
+            </section>
+
+            <!-- Resizer -->
+            <div id="drag-handle"></div>
+
+            <!-- Right: Interactive Workspace -->
+            <section id="workspace-pane" class="flex-1 flex flex-col bg-[var(--bg-primary)] overflow-hidden">
+                <header class="h-16 border-b flex items-center px-6 gap-4">
+                    <i class="fas fa-microscope text-blue-500"></i>
+                    <h2 class="text-xs font-bold uppercase tracking-widest">Kinesthetic Laboratory</h2>
+                </header>
+
+                <div class="flex-1 p-8 relative overflow-hidden flex flex-col">
+                    <div class="mb-4">
+                        <h3 class="text-xl font-bold mb-1">Quantum Superposition Lab</h3>
+                        <p class="text-xs text-neutral-500">Drag the energy nodes to observe state changes. The Assessor agent is watching your interaction speed.</p>
+                    </div>
+
+                    <div id="particle-container" class="flex-1 glass-panel rounded-3xl relative overflow-hidden border-dashed border-2 border-neutral-700/50 flex items-center justify-center">
+                        <div class="text-center space-y-4">
+                            <div class="flex gap-8 justify-center">
+                                <div id="particle-a" class="w-16 h-16 rounded-full bg-blue-500/20 border-2 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)] cursor-grab active:cursor-grabbing flex items-center justify-center transition-transform hover:scale-105">
+                                    <span class="text-[10px] font-bold text-blue-400">STATE: A</span>
+                                </div>
+                                <div id="particle-b" class="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-grab active:cursor-grabbing flex items-center justify-center transition-transform hover:scale-105">
+                                    <span class="text-[10px] font-bold text-emerald-400">STATE: B</span>
+                                </div>
+                            </div>
+                            <p class="text-[10px] uppercase font-bold text-neutral-600">Interaction required to fill gap</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-3 gap-4">
+                        <div class="glass-panel p-3 rounded-xl border border-neutral-700/30">
+                            <p class="text-[10px] text-neutral-500 uppercase font-bold mb-1">Coherence</p>
+                            <div class="h-1 bg-emerald-500 rounded-full w-full"></div>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl border border-neutral-700/30">
+                            <p class="text-[10px] text-neutral-500 uppercase font-bold mb-1">Interference</p>
+                            <div class="h-1 bg-amber-500 rounded-full w-1/2"></div>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl border border-neutral-700/30">
+                            <p class="text-[10px] text-neutral-500 uppercase font-bold mb-1">Gap Status</p>
+                            <p class="text-xs text-emerald-500 font-bold">Filling...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <script>
+        const alertOverlay = document.getElementById('vision-feedback-overlay');
+        const toggleBtn = document.getElementById('toggle-alert');
+        const chatContainer = document.getElementById('chat-messages');
+        const themeToggle = document.getElementById('theme-toggle');
+        const dragHandle = document.getElementById('drag-handle');
+        const chatPane = document.getElementById('chat-pane');
+        
+        let isAlerting = false;
+        let isDarkMode = true;
+
+        // Theme Toggle
+        themeToggle.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('light-mode');
+            themeToggle.querySelector('i').classList.toggle('fa-moon');
+            themeToggle.querySelector('i').classList.toggle('fa-sun');
+        });
+
+        // Resizable Logic
+        let isDragging = false;
+        dragHandle.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragHandle.classList.add('active');
+            document.body.style.cursor = 'col-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const sidebarWidth = 280;
+            const percentage = ((e.clientX - sidebarWidth) / (window.innerWidth - sidebarWidth)) * 100;
+            if (percentage > 20 && percentage < 80) {
+                chatPane.style.width = `${percentage}%`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            dragHandle.classList.remove('active');
+            document.body.style.cursor = 'default';
+        });
+
+        function triggerVisionFeedback() {
+            isAlerting = !isAlerting;
+            if (isAlerting) {
+                alertOverlay.classList.add('alert-mode');
+                toggleBtn.innerText = "Resume Session";
+                toggleBtn.style.backgroundColor = 'rgba(225, 29, 72, 0.2)';
+                toggleBtn.style.borderColor = 'rgba(225, 29, 72, 0.5)';
+                
+                addAgentMessage("Orchestrator", "Intervention required: Student is physically interacting with the Lab nodes without progression. Overwatch Agent has signaled a potential cognitive gap. Switching to tactile-priority assessment.", "Orchestrator");
+            } else {
+                alertOverlay.classList.remove('alert-mode');
+                toggleBtn.innerText = "Simulate Stall";
+                toggleBtn.style.backgroundColor = '';
+                toggleBtn.style.borderColor = '';
+            }
+        }
+
+        function addAgentMessage(name, text, seed) {
+            const msgHtml = `
+                <div class="flex gap-3 message-in">
+                    <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${seed}" class="w-8 h-8 rounded p-1 flex-shrink-0 border border-neutral-700/20 bg-neutral-500/5">
+                    <div class="chat-bubble-agent p-4 rounded-2xl rounded-tl-none text-sm max-w-sm border border-neutral-700/20">
+                        ${text}
+                    </div>
+                </div>
+            `;
+            chatContainer.insertAdjacentHTML('beforeend', msgHtml);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        toggleBtn.addEventListener('click', triggerVisionFeedback);
+
+        // Simple kinesthetic interaction
+        const pA = document.getElementById('particle-a');
+        const pB = document.getElementById('particle-b');
+        [pA, pB].forEach(p => {
+            p.addEventListener('click', () => {
+                p.style.transform = `scale(1.2) rotate(${Math.random() * 20 - 10}deg)`;
+                setTimeout(() => p.style.transform = 'scale(1)', 200);
+            });
+        });
+
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    </script>
+</body>
+</html>

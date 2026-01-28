@@ -28,6 +28,7 @@ from models import (  # Course DTOs; Session DTOs; Search & Outline DTOs; Except
     SubTopic,
     SyllabusResponse,
     UpdateStepRequest,
+    UpdateTagsRequest,
     UploadFileMetadataRequest,
     UploadFileRequest,
     ValidationError,
@@ -36,7 +37,9 @@ from models import (  # Course DTOs; Session DTOs; Search & Outline DTOs; Except
 from .brave_search import BraveSearchClient
 
 # Service layer
+from .community_course_service import CommunityCourseService
 from .course_service import CourseService
+from .user_classification_service import UserClassificationService
 from .materials_context import (
     MaterialsContextManager,
     clear_session_materials,
@@ -60,10 +63,13 @@ __all__ = [
     "clear_session_materials",
     # Services
     "CourseService",
+    "CommunityCourseService",
     "TutorSessionService",
+    "UserClassificationService",
     # Course DTOs
     "CreateCourseRequest",
     "UpdateStepRequest",
+    "UpdateTagsRequest",
     "UploadFileRequest",
     "UploadFileMetadataRequest",
     "DeleteFileRequest",

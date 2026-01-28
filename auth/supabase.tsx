@@ -66,39 +66,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session: existingSession } } = await supabase.auth.getSession()
 
         if (existingSession?.user) {
-          console.log("[AuthProvider] Session found from storage:", existingSession.user.email)
-          setSession(existingSession)
-          setUser(existingSession.user)
+          // Validate session with server - this catches stale sessions after Supabase restart
+          const { data: { user: validatedUser }, error: validationError } = await supabase.auth.getUser()
 
-          // Set user_email cookie if user is logged in
-          if (existingSession.user.email) {
-            document.cookie = `user_email=${encodeURIComponent(existingSession.user.email)}; Path=/; SameSite=Lax; max-age=86400`
+          if (validationError) {
+            // Session is invalid (e.g., Supabase restarted, session deleted)
+            console.log("[AuthProvider] Session invalid, signing out:", validationError.message)
+            await supabase.auth.signOut()
+            setUser(null)
+            setSession(null)
+            document.cookie = "user_email=; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+          } else if (validatedUser) {
+            console.log("[AuthProvider] Session validated:", validatedUser.email)
+            setSession(existingSession)
+            setUser(validatedUser)
+
+            // Set user_email cookie if user is logged in
+            if (validatedUser.email) {
+              document.cookie = `user_email=${encodeURIComponent(validatedUser.email)}; Path=/; SameSite=Lax; max-age=86400`
+            }
           }
         } else {
-          // No session in storage, try getUser to check with server
-          const { data: { user }, error } = await supabase.auth.getUser()
-
-          if (error) {
-            console.log("[AuthProvider] No session found (expected if not logged in)")
-            setUser(null)
-            setSession(null)
-          } else if (user) {
-            console.log("[AuthProvider] User found via getUser:", user.email)
-            // Refresh session object
-            const { data: { session } } = await supabase.auth.getSession()
-            setUser(user)
-            setSession(session)
-
-            if (user.email) {
-              document.cookie = `user_email=${encodeURIComponent(user.email)}; Path=/; SameSite=Lax; max-age=86400`
-            }
-          } else {
-            setUser(null)
-            setSession(null)
-          }
+          // No session in storage
+          console.log("[AuthProvider] No session found (expected if not logged in)")
+          setUser(null)
+          setSession(null)
         }
       } catch (error) {
         console.error("[AuthProvider] Error during initialization:", error)
+        // On error, clear session to be safe
+        setUser(null)
+        setSession(null)
       } finally {
         setLoading(false)
       }
@@ -198,37 +196,36 @@ export function useAuth(): AuthContextType {
         const { data: { session: existingSession } } = await supabase.auth.getSession()
 
         if (existingSession?.user) {
-          console.log("[useAuth standalone] Session found from storage:", existingSession.user.email)
-          setSession(existingSession)
-          setUser(existingSession.user)
+          // Validate session with server - this catches stale sessions after Supabase restart
+          const { data: { user: validatedUser }, error: validationError } = await supabase.auth.getUser()
 
-          if (existingSession.user.email) {
-            document.cookie = `user_email=${encodeURIComponent(existingSession.user.email)}; Path=/; SameSite=Lax; max-age=86400`
+          if (validationError) {
+            // Session is invalid (e.g., Supabase restarted, session deleted)
+            console.log("[useAuth standalone] Session invalid, signing out:", validationError.message)
+            await supabase.auth.signOut()
+            setUser(null)
+            setSession(null)
+            document.cookie = "user_email=; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+          } else if (validatedUser) {
+            console.log("[useAuth standalone] Session validated:", validatedUser.email)
+            setSession(existingSession)
+            setUser(validatedUser)
+
+            if (validatedUser.email) {
+              document.cookie = `user_email=${encodeURIComponent(validatedUser.email)}; Path=/; SameSite=Lax; max-age=86400`
+            }
           }
         } else {
-          // No session in storage, try getUser to check with server
-          const { data: { user }, error } = await supabase.auth.getUser()
-
-          if (error) {
-            console.log("[useAuth standalone] No session found (expected if not logged in)")
-            setUser(null)
-            setSession(null)
-          } else if (user) {
-            console.log("[useAuth standalone] User found via getUser:", user.email)
-            const { data: { session } } = await supabase.auth.getSession()
-            setUser(user)
-            setSession(session)
-
-            if (user.email) {
-              document.cookie = `user_email=${encodeURIComponent(user.email)}; Path=/; SameSite=Lax; max-age=86400`
-            }
-          } else {
-            setUser(null)
-            setSession(null)
-          }
+          // No session in storage
+          console.log("[useAuth standalone] No session found (expected if not logged in)")
+          setUser(null)
+          setSession(null)
         }
       } catch (error) {
         console.error("[useAuth standalone] Error during initialization:", error)
+        // On error, clear session to be safe
+        setUser(null)
+        setSession(null)
       } finally {
         setLoading(false)
       }

@@ -19,15 +19,15 @@ export function SectionHeader({
   return (
     <div className="flex justify-between items-end mb-4">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+        <h2 className="text-2xl font-bold text-foreground">{title}</h2>
         {description && (
-          <p className="text-gray-600 mt-1">{description}</p>
+          <p className="text-muted-foreground mt-1">{description}</p>
         )}
       </div>
       {actionHref && (
         <Link
           href={actionHref}
-          className="flex items-center text-emerald-700 hover:text-emerald-800 font-medium"
+          className="flex items-center text-primary hover:text-primary/80 font-medium"
         >
           {actionText}
           <ChevronRight className="w-4 h-4 ml-1" />

@@ -15,6 +15,32 @@ from .agent import StateTransition, TutorEvent
 # Assessment DTOs
 from .assessment import AssessmentQuestion, AssessmentResponse
 
+# Community Course DTOs
+from .community_course import (
+    CommunityCourseData,
+    ContributionData,
+    ContributionListResponse,
+    CourseDetailData,
+    CourseFilters,
+    CourseListResponse,
+    CreateCourseRequest as CommunityCreateCourseRequest,
+    MaterialData,
+    MembershipData,
+    SubmitContributionRequest,
+    UserProgressData,
+)
+
+# User Classification DTOs
+from .user_classification import (
+    BOARDS,
+    CITIES,
+    CLASS_LEVELS,
+    STATES,
+    ClassificationCheckResponse,
+    SetClassificationRequest,
+    UserClassification,
+)
+
 # Course DTOs
 from .course import (
     CourseData,
@@ -29,6 +55,7 @@ from .course import (
     SyllabusResponse,
     SyllabusSection,
     UpdateStepRequest,
+    UpdateTagsRequest,
     UploadFileMetadataRequest,
     UploadFileRequest,
 )
@@ -86,6 +113,7 @@ __all__ = [
     # Course DTOs
     "CreateCourseRequest",
     "UpdateStepRequest",
+    "UpdateTagsRequest",
     "UploadFileRequest",
     "UploadFileMetadataRequest",
     "DeleteFileRequest",
@@ -124,4 +152,24 @@ __all__ = [
     # Agent DTOs
     "StateTransition",
     "TutorEvent",
+    # Community Course DTOs
+    "CommunityCourseData",
+    "CommunityCreateCourseRequest",
+    "CourseFilters",
+    "ContributionData",
+    "MaterialData",
+    "MembershipData",
+    "UserProgressData",
+    "CourseDetailData",
+    "CourseListResponse",
+    "ContributionListResponse",
+    "SubmitContributionRequest",
+    # User Classification DTOs
+    "UserClassification",
+    "SetClassificationRequest",
+    "ClassificationCheckResponse",
+    "STATES",
+    "CITIES",
+    "BOARDS",
+    "CLASS_LEVELS",
 ]

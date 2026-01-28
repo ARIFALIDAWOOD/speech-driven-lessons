@@ -1,340 +1,323 @@
 "use client"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import Link from "next/link"
 import { MainLayout } from "@/components/layout/MainLayout"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { CourseCard } from "@/components/my-courses/CourseCard"
 import { SectionHeader } from "@/components/dashboard/dashboard-section-header"
-import { TutorialCard } from "@/components/dashboard/tutorial-card"
-import { FeaturedRecommendationCard } from "@/components/dashboard/featured-recommendation-card"
 import { FullscreenButton } from "@/components/layout/fullscreen-button"
 import { useRouter } from "next/navigation"
-import { RecommendedCourseCard, RecommendedCoursesSearch } from "@/components/dashboard/recommended-course-card"
-import { CourseInfo } from "@/components/my-courses/utils/courseTypes"
+import { useAuth } from "@/auth/supabase"
+import {
+  BookOpen,
+  Clock,
+  FileText,
+  Play,
+  Plus,
+  TrendingUp,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from "lucide-react"
+import { Breadcrumb } from "@/components/layout/Breadcrumb"
 
 // Types
-interface Course {
-  id: string;
-  title: string;
-  progress: number;
-  duration?: number;
-  hoursCompleted?: number;
-  image?: string;
+interface UserProgress {
+  course_id: string
+  title: string
+  board_name?: string
+  subject_name?: string
+  chapter_name?: string
+  role: string
+  progress_pct: number
+  time_spent_mins: number
+  material_count: number
+  last_accessed_at?: string
 }
 
-interface Tutorial {
-  id: number;
-  title: string;
-  image: string;
-  videoUrl: string;
+interface UserContribution {
+  id: string
+  course_id: string
+  filename: string
+  status: string
+  submitted_at?: string
+  validation_score?: number
 }
 
-// This needs to match the interface in featured-recommendation-card.tsx
-interface FeaturedRecommendation {
-  id: number;
-  title: string;
-  description: string;
-  image: string;
-  duration: number;
-  match: number;
+interface QuickStats {
+  totalCourses: number
+  totalTimeSpent: number
+  avgProgress: number
+  contributionsCount: number
 }
-
-// API functions for future implementation
-const fetchEnrolledCourses = async (): Promise<Course[]> => {
-  // This will be replaced with an actual API call in the future
-  // Example: const response = await fetch('/api/user/courses');
-  //          return await response.json();
-
-  // Mock data
-  const mockCourses = [
-    {
-      id: "1",
-      title: "Introduction to AI",
-      progress: 75,
-      hoursCompleted: 7.5,
-      duration: 10
-    },
-    {
-      id: "2",
-      title: "Machine Learning Fundamentals",
-      progress: 45,
-      hoursCompleted: 4.5,
-      duration: 8
-    },
-    {
-      id: "3",
-      title: "Deep Learning with Python",
-      progress: 20,
-      hoursCompleted: 2,
-      duration: 5
-    },
-    {
-      id: "4",
-      title: "Advanced Python for Data Science",
-      progress: 60,
-      hoursCompleted: 6,
-      duration: 8
-    }
-  ];
-
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return mockCourses;
-};
-
-const fetchRecommendedCourses = async (): Promise<Course[]> => {
-  // Mock data
-  const mockRecommendations = [
-    {
-      id: "4",
-      title: "Natural Language Processing",
-      duration: 12,
-      progress: 0
-    },
-    {
-      id: "5",
-      title: "Computer Vision Basics",
-      duration: 8,
-      progress: 0
-    },
-    {
-      id: "6",
-      title: "AI Ethics and Governance",
-      duration: 6,
-      progress: 0
-    },
-    {
-      id: "7",
-      title: "Reinforcement Learning",
-      duration: 10,
-      progress: 0
-    }
-  ];
-
-  await new Promise(resolve => setTimeout(resolve, 700));
-  return mockRecommendations;
-};
-
-const fetchTutorials = async (): Promise<Tutorial[]> => {
-  // Mock data
-  const mockTutorials = [
-    {
-      id: 1,
-      title: "How to Use AI Tutor for Personalized Learning",
-      image: "/placeholder.svg?height=400&width=600&text=AI+Tutor+Guide",
-      videoUrl: "https://www.youtube.com/embed/oYNzl4Hzi4M",
-    },
-    {
-      id: 2,
-      title: "Maximizing Your Learning with AI-Powered Courses",
-      image: "/placeholder.svg?height=400&width=600&text=Maximize+Learning",
-      videoUrl: "https://www.youtube.com/embed/TnpcBrxEQmU",
-    },
-  ];
-
-  await new Promise(resolve => setTimeout(resolve, 600));
-  return mockTutorials;
-};
-
-const fetchFeaturedRecommendations = async (): Promise<FeaturedRecommendation[]> => {
-  // Mock data
-  const mockFeatured = [
-    {
-      id: 1,
-      title: "Neural Networks Fundamentals",
-      description: "Learn the core concepts of neural networks and deep learning",
-      image: "/placeholder.svg?height=200&width=300&text=Neural+Networks",
-      duration: 8,
-      match: 98
-    },
-    {
-      id: 2,
-      title: "Advanced Data Structures",
-      description: "Master complex data structures for efficient programming",
-      image: "/placeholder.svg?height=200&width=300&text=Data+Structures",
-      duration: 12,
-      match: 95
-    },
-    {
-      id: 3,
-      title: "Machine Learning with Python",
-      description: "Practical machine learning techniques using Python",
-      image: "/placeholder.svg?height=200&width=300&text=ML+Python",
-      duration: 10,
-      match: 92
-    }
-  ];
-
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return mockFeatured;
-};
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const tutorialsRef = useRef<HTMLElement>(null);
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
-  const [recommendedCourses, setRecommendedCourses] = useState<Course[]>([]);
-  const [tutorials, setTutorials] = useState<Tutorial[]>([]);
-  const [featuredRecommendations, setFeaturedRecommendations] = useState<FeaturedRecommendation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter()
+  const { session, user, loading: authLoading } = useAuth()
+  const [isFullScreen, setIsFullScreen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Function to toggle fullscreen mode
+  // Data state
+  const [userProgress, setUserProgress] = useState<UserProgress[]>([])
+  const [contributions, setContributions] = useState<UserContribution[]>([])
+  const [quickStats, setQuickStats] = useState<QuickStats>({
+    totalCourses: 0,
+    totalTimeSpent: 0,
+    avgProgress: 0,
+    contributionsCount: 0,
+  })
+
+  const apiBaseUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000"
+
+  // Fetch dashboard data
+  const fetchDashboardData = useCallback(async () => {
+    if (!session?.access_token) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Fetch user progress and contributions in parallel
+      const [progressResponse, contributionsResponse] = await Promise.all([
+        fetch(`${apiBaseUrl}/api/community/my-progress`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+        fetch(`${apiBaseUrl}/api/community/my-contributions`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+      ])
+
+      if (!progressResponse.ok || !contributionsResponse.ok) {
+        throw new Error("Failed to fetch dashboard data")
+      }
+
+      const progressData = await progressResponse.json()
+      const contributionsData = await contributionsResponse.json()
+
+      const courses = progressData.courses || []
+      const contribs = contributionsData.contributions || []
+
+      setUserProgress(courses)
+      setContributions(contribs)
+
+      // Calculate quick stats
+      const totalTime = courses.reduce(
+        (sum: number, c: UserProgress) => sum + (c.time_spent_mins || 0),
+        0
+      )
+      const avgProg =
+        courses.length > 0
+          ? courses.reduce((sum: number, c: UserProgress) => sum + c.progress_pct, 0) /
+            courses.length
+          : 0
+
+      setQuickStats({
+        totalCourses: courses.length,
+        totalTimeSpent: totalTime,
+        avgProgress: avgProg,
+        contributionsCount: contribs.length,
+      })
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err)
+      setError(err instanceof Error ? err.message : "Failed to load dashboard")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [session?.access_token, apiBaseUrl])
+
+  useEffect(() => {
+    if (!authLoading && session?.access_token) {
+      fetchDashboardData()
+    }
+  }, [authLoading, session?.access_token, fetchDashboardData])
+
+  // Fullscreen handling
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.log(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-      setIsFullScreen(true);
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.log(`Error attempting to enable fullscreen: ${err.message}`)
+      })
+      setIsFullScreen(true)
     } else {
       if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullScreen(false);
+        document.exitFullscreen()
+        setIsFullScreen(false)
       }
     }
-  };
+  }
 
-  // Listen for fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullScreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, []);
-
-  // Fetch data
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setIsLoading(true);
-
-        // In a real application, you might want to use Promise.all to fetch multiple resources in parallel
-        const [courses, recommended, tutorialData, featuredData] = await Promise.all([
-          fetchEnrolledCourses(),
-          fetchRecommendedCourses(),
-          fetchTutorials(),
-          fetchFeaturedRecommendations()
-        ]);
-
-        setEnrolledCourses(courses);
-        setRecommendedCourses(recommended);
-        setTutorials(tutorialData);
-        setFeaturedRecommendations(featuredData);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to fetch dashboard data:", err);
-        setError("Failed to load dashboard data. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
-
-  // Function to navigate while preserving fullscreen state
-  const navigateToMyUploads = () => {
-    // Use Next.js router to navigate without exiting fullscreen
-    router.push('/my-uploads');
-  };
-
-  // Function to scroll to tutorials section
-  const scrollToTutorials = () => {
-    tutorialsRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
-  };
-
-  // Handle assistant request for a course
-  const handleRequestAssistant = async (courseId: string, courseTitle: string): Promise<string | null> => {
-    try {
-      console.log(`Requesting assistant for course: ${courseTitle} (ID: ${courseId})`);
-      // In a real implementation, this would call an API to create or get an assistant
-      // Mock delay to simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      // Return a mock assistant ID
-      return `assistant_${Date.now()}`;
-    } catch (error) {
-      console.error("Error creating assistant:", error);
-      return null;
+      setIsFullScreen(!!document.fullscreenElement)
     }
-  };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange)
+    }
+  }, [])
+
+  const formatTime = (mins: number) => {
+    if (mins < 60) return `${mins}m`
+    const hours = Math.floor(mins / 60)
+    const remaining = mins % 60
+    return remaining > 0 ? `${hours}h ${remaining}m` : `${hours}h`
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+      case "pending":
+        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
+      case "rejected":
+        return "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+      default:
+        return "bg-gray-100 text-gray-700"
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "approved":
+        return <CheckCircle className="w-4 h-4" />
+      case "pending":
+        return <Clock className="w-4 h-4" />
+      case "rejected":
+        return <AlertCircle className="w-4 h-4" />
+      default:
+        return null
+    }
+  }
 
   return (
     <MainLayout>
       <div className="flex-1 bg-background relative">
         <ScrollArea className="h-screen" type="hover">
-          {/* Fullscreen button */}
           <FullscreenButton
             isFullScreen={isFullScreen}
             onToggle={toggleFullScreen}
           />
 
-          {/* Welcome Banner */}
-          <div className="w-full bg-gradient-to-r from-muted to-muted/80 mb-6">
-            <div className="max-w-7xl mx-auto px-14 sm:px-20 lg:px-28 py-8 sm:py-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col justify-center">
-                  <h1 className="text-3xl font-bold text-foreground">
-                    Welcome back, User!
+          {/* Welcome Banner with Breadcrumb */}
+          <div className="w-full bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-950/30 dark:to-blue-950/30 border-b">
+            <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-6 pb-8">
+              {/* Breadcrumb */}
+              <div className="mb-6">
+                <Breadcrumb items={[{ label: "Dashboard" }]} />
+              </div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">
+                    Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""}!
                   </h1>
-                  <p className="mt-2 text-lg text-muted-foreground">
-                    Track your learning progress and continue your courses.
+                  <p className="mt-1 text-muted-foreground">
+                    Track your learning progress and manage your contributions.
                   </p>
+                </div>
 
-                  <div className="mt-4 flex flex-wrap gap-4">
-                    <Button
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-md"
-                      onClick={() => router.push('/learn')}
-                    >
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/learn">
+                    <Button className="bg-blue-600 hover:bg-blue-700">
+                      <Play className="w-4 h-4 mr-2" />
                       Start Learning
                     </Button>
-                    <Button
-                      className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-6 py-3 rounded-md"
-                      onClick={navigateToMyUploads}
-                    >
-                      Customize your courses
+                  </Link>
+                  <Link href="/courses">
+                    <Button variant="outline">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Browse Courses
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="border-2 border-primary text-primary bg-transparent hover:bg-primary/10 font-medium px-6 py-3 rounded-md"
-                      onClick={scrollToTutorials}
-                    >
-                      More details
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-center h-full">
-                  {isLoading ? (
-                    <div className="w-full max-w-md h-[270px] animate-pulse bg-muted rounded-xl"></div>
-                  ) : (
-                    <div className="w-full max-w-md h-[270px]">
-                      <FeaturedRecommendationCard recommendations={featuredRecommendations} />
-                    </div>
-                  )}
+                  </Link>
                 </div>
               </div>
+
+              {/* Quick Stats */}
+              {!isLoading && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                  <Card className="bg-white/80 dark:bg-card/80 backdrop-blur">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900">
+                          <BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{quickStats.totalCourses}</p>
+                          <p className="text-xs text-muted-foreground">Enrolled Courses</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-white/80 dark:bg-card/80 backdrop-blur">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
+                          <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">
+                            {formatTime(quickStats.totalTimeSpent)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Total Time</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-white/80 dark:bg-card/80 backdrop-blur">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900">
+                          <TrendingUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">
+                            {quickStats.avgProgress.toFixed(0)}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">Avg Progress</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-white/80 dark:bg-card/80 backdrop-blur">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900">
+                          <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{quickStats.contributionsCount}</p>
+                          <p className="text-xs text-muted-foreground">Contributions</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Main content */}
-          <div className="max-w-7xl mx-auto px-14 sm:px-20 lg:px-28 pt-4 sm:pt-6 pb-8">
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
             {error ? (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 text-destructive mb-12">
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 text-destructive mb-8">
                 <p>{error}</p>
                 <Button
                   variant="outline"
                   className="mt-4"
-                  onClick={() => window.location.reload()}
+                  onClick={fetchDashboardData}
                 >
                   Try Again
                 </Button>
@@ -345,96 +328,148 @@ export default function DashboardPage() {
                 <section className="mb-12">
                   <SectionHeader
                     title="Continue Learning"
-                    description="Your enrolled courses and learning progress"
-                    actionHref="/in-class-courses"
+                    description="Pick up where you left off"
+                    actionHref="/courses"
+                    actionText="Browse All Courses"
                   />
 
                   {isLoading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mt-4">
-                      {[...Array(4)].map((_, i) => (
-                        <Card key={i} className="h-60 animate-pulse bg-muted border-border" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                      {[...Array(3)].map((_, i) => (
+                        <Card key={i} className="h-40 animate-pulse bg-muted" />
                       ))}
                     </div>
+                  ) : userProgress.length === 0 ? (
+                    <Card className="mt-4">
+                      <CardContent className="flex flex-col items-center justify-center py-12">
+                        <BookOpen className="w-12 h-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">No courses yet</h3>
+                        <p className="text-muted-foreground text-center mb-4">
+                          Join a course to start tracking your progress
+                        </p>
+                        <Link href="/courses">
+                          <Button>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Browse Courses
+                          </Button>
+                        </Link>
+                      </CardContent>
+                    </Card>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mt-4">
-                      {enrolledCourses.map((course) => (
-                        <CourseCard
-                          key={course.id}
-                          course={{
-                            id: course.id,
-                            title: course.title,
-                            progress: {
-                              completion: course.progress,
-                              hours: course.hoursCompleted || course.duration || 0
-                            },
-                            author: "Instructor Name",
-                            description: null,
-                            created_at: new Date().toISOString(),
-                            last_updated_at: new Date().toISOString(),
-                            create_course_process: {
-                              is_creation_complete: true,
-                              current_step: 5
-                            },
-                            uploadedFiles: [],
-                            ai_voice: "jennifer"
-                          } as CourseInfo}
-                          onRequestAssistant={handleRequestAssistant}
-                        />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                      {userProgress.slice(0, 6).map((course) => (
+                        <Card
+                          key={course.course_id}
+                          className="hover:shadow-lg transition-shadow"
+                        >
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-base line-clamp-1">
+                              {course.title}
+                            </CardTitle>
+                            <div className="flex flex-wrap gap-1">
+                              {course.board_name && (
+                                <Badge variant="outline" className="text-xs">
+                                  {course.board_name}
+                                </Badge>
+                              )}
+                              {course.subject_name && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {course.subject_name}
+                                </Badge>
+                              )}
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              <div>
+                                <div className="flex justify-between text-sm mb-1">
+                                  <span className="text-muted-foreground">Progress</span>
+                                  <span className="font-medium">
+                                    {course.progress_pct.toFixed(0)}%
+                                  </span>
+                                </div>
+                                <Progress value={course.progress_pct} className="h-2" />
+                              </div>
+
+                              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatTime(course.time_spent_mins)}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <FileText className="w-3 h-3" />
+                                  {course.material_count} files
+                                </span>
+                              </div>
+
+                              <Link href={`/learn/session/${course.course_id}`}>
+                                <Button className="w-full" size="sm">
+                                  <Play className="w-4 h-4 mr-2" />
+                                  Continue
+                                </Button>
+                              </Link>
+                            </div>
+                          </CardContent>
+                        </Card>
                       ))}
                     </div>
                   )}
                 </section>
 
-                {/* Recommended Courses Section */}
+                {/* My Contributions Section */}
                 <section className="mb-12">
                   <SectionHeader
-                    title="Recommended For You"
-                    description="Courses that match your interests and goals"
-                    actionHref="/my-courses/recommended"
-                    actionText="View All Recommendations"
+                    title="My Contributions"
+                    description="Track the status of your uploaded materials"
                   />
 
                   {isLoading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mt-4">
-                      {[...Array(4)].map((_, i) => (
-                        <Card key={i} className="h-36 animate-pulse bg-muted border-border" />
+                    <div className="space-y-2 mt-4">
+                      {[...Array(3)].map((_, i) => (
+                        <Card key={i} className="h-16 animate-pulse bg-muted" />
                       ))}
                     </div>
+                  ) : contributions.length === 0 ? (
+                    <Card className="mt-4">
+                      <CardContent className="flex flex-col items-center justify-center py-8">
+                        <FileText className="w-10 h-10 text-muted-foreground mb-3" />
+                        <p className="text-muted-foreground text-center">
+                          You haven&apos;t contributed any materials yet.
+                        </p>
+                        <Link href="/courses" className="mt-3">
+                          <Button variant="outline" size="sm">
+                            Find a course to contribute
+                          </Button>
+                        </Link>
+                      </CardContent>
+                    </Card>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mt-4">
-                      {recommendedCourses.slice(0, 3).map((course) => (
-                        <RecommendedCourseCard
-                          key={course.id}
-                          id={course.id}
-                          title={course.title}
-                          duration={course.duration}
-                          onClick={() => router.push(`/in-class-courses/${course.id}`)}
-                        />
-                      ))}
-                      <RecommendedCoursesSearch />
-                    </div>
-                  )}
-                </section>
-
-                {/* Tutorials Section */}
-                <section ref={tutorialsRef} className="mb-8">
-                  <SectionHeader
-                    title="Helpful Tutorials"
-                    description="Learn how to get the most out of Tutorion"
-                    actionText="Browse all tutorials"
-                    actionHref="/tutorials"
-                  />
-
-                  {isLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                      {[...Array(2)].map((_, i) => (
-                        <Card key={i} className="aspect-video animate-pulse bg-muted border-border" />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                      {tutorials.map((tutorial) => (
-                        <TutorialCard key={tutorial.id} tutorial={tutorial} />
+                    <div className="space-y-2 mt-4">
+                      {contributions.slice(0, 5).map((contribution) => (
+                        <Card key={contribution.id}>
+                          <CardContent className="flex items-center justify-between p-4">
+                            <div className="flex items-center gap-3">
+                              <FileText className="w-5 h-5 text-muted-foreground" />
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {contribution.filename}
+                                </p>
+                                {contribution.submitted_at && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Submitted{" "}
+                                    {new Date(contribution.submitted_at).toLocaleDateString()}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Badge
+                              className={`${getStatusColor(contribution.status)} flex items-center gap-1`}
+                            >
+                              {getStatusIcon(contribution.status)}
+                              {contribution.status}
+                            </Badge>
+                          </CardContent>
+                        </Card>
                       ))}
                     </div>
                   )}

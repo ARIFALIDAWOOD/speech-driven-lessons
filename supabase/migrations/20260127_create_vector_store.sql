@@ -31,11 +31,13 @@ CREATE TABLE IF NOT EXISTS course_embeddings (
 CREATE INDEX IF NOT EXISTS idx_course_embeddings_user_course
     ON course_embeddings(user_email, course_title);
 
--- HNSW index for fast vector similarity search
--- Using HNSW (Hierarchical Navigable Small World) for better performance
-CREATE INDEX IF NOT EXISTS idx_course_embeddings_vector
-    ON course_embeddings
-    USING hnsw (embedding vector_cosine_ops);
+-- NOTE: Vector indexes (HNSW, IVFFlat) have a 2000 dimension limit in pgvector
+-- Since we use text-embedding-3-large (3072 dims), we cannot create a vector index
+-- Similarity searches will use sequential scan which is still performant for moderate data sizes
+-- If performance becomes an issue, consider:
+-- 1. Using text-embedding-3-small (1536 dims) instead
+-- 2. Using dimensionality reduction techniques
+-- 3. Upgrading to a Supabase plan with pgvector extensions that support higher dimensions
 
 -- Inverted index table for quotes and important phrases (kept for fast exact matching)
 CREATE TABLE IF NOT EXISTS course_inverted_index (

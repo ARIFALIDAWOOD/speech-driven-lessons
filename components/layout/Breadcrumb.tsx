@@ -25,7 +25,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
         <li>
           <Link
             href="/dashboard"
-            className="flex items-center text-gray-500 hover:text-emerald-600 transition-colors"
+            className="flex items-center text-muted-foreground hover:text-primary transition-colors"
           >
             <Home className="h-4 w-4" />
             <span className="sr-only">Dashboard</span>
@@ -37,12 +37,12 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
 
           return (
             <li key={index} className="flex items-center">
-              <ChevronRight className="h-4 w-4 text-gray-400 mx-1" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground mx-1" />
               {isLast || !item.href ? (
                 <span
                   className={cn(
                     "font-medium",
-                    isLast ? "text-gray-900" : "text-gray-500"
+                    isLast ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
                   {item.label}
@@ -50,7 +50,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
               ) : (
                 <Link
                   href={item.href}
-                  className="text-gray-500 hover:text-emerald-600 transition-colors"
+                  className="text-muted-foreground hover:text-primary transition-colors"
                 >
                   {item.label}
                 </Link>

@@ -251,6 +251,8 @@ for file_path in text_files:
 
 ## Task 5: Update user_files_utils.py
 
+**Note:** `user_files_utils.py` was later removed as dead code (no imports in codebase). This task is obsolete.
+
 **Agent Type:** code
 **Dependencies:** Task 3
 **Files:**
@@ -258,7 +260,7 @@ for file_path in text_files:
 
 ### Context
 
-This file has a standalone boto3 client initialization that was **MISSED in the original plan**. It needs to be refactored to use s3_utils.
+This file had a standalone boto3 client initialization that was **MISSED in the original plan**. It was refactored to use s3_utils, then removed as dead code.
 
 ### Instructions
 

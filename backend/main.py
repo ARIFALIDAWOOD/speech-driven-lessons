@@ -39,11 +39,13 @@ ALLOW_CORS(
 )
 
 # Import and include routers
-from robyn_routers import assistant, course, tutor_session, websocket_router
+from robyn_routers import assistant, community_course, course, tutor_session, user_classification, websocket_router
 
 app.include_router(course.router)
 app.include_router(tutor_session.router)
 app.include_router(assistant.router)
+app.include_router(community_course.router)
+app.include_router(user_classification.router)
 
 # Register WebSocket routes on main app (not via SubRouter)
 websocket_router.register_websocket(app)

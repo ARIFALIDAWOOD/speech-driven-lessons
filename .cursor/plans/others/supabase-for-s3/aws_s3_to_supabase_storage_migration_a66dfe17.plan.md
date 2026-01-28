@@ -150,7 +150,7 @@ Replace AWS S3 storage backend with Supabase Storage while maintaining the same 
 - `backend/api/in_class.py`
 - `backend/api/assistant.py`
 - `backend/api/course_generation.py`
-- `backend/user_files_utils.py`
+- `backend/user_files_utils.py` *(removed as dead code; see backend cleanup plan)*
 
 **Strategy:**
 

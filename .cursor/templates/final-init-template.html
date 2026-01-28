@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anantra LMS Suite | Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #171717;
+            --text-primary: #e5e7eb;
+            --text-secondary: #9ca3af;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --sidebar-width: 260px;
+            --hover-bg: rgba(255, 255, 255, 0.05);
+            --active-bg: rgba(16, 185, 129, 0.15);
+            --btn-bg: #1f2937;
+        }
+
+        .light-mode {
+            --bg-primary: #f9fafb;
+            --bg-secondary: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --hover-bg: rgba(0, 0, 0, 0.05);
+            --active-bg: rgba(5, 150, 105, 0.1);
+            --btn-bg: #f3f4f6;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .glass-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            transition: background 0.3s, border 0.3s;
+        }
+
+        .sidebar-item-active {
+            background-color: var(--active-bg);
+            color: #10b981;
+            border-right: 3px solid #10b981;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        /* Progress Circle */
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .pulse-soft { animation: pulse-soft 2s infinite; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-[var(--sidebar-width)] glass-panel border-r flex flex-col z-40">
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-10 px-2">
+                <div class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                    <i class="fas fa-brain text-white text-sm"></i>
+                </div>
+                <h1 class="font-bold text-lg tracking-tight">Anantra <span class="text-emerald-500">LMS</span></h1>
+            </div>
+
+            <nav class="space-y-1">
+                <p class="text-[10px] uppercase font-bold text-[var(--text-secondary)] px-3 mb-4 tracking-widest">Main Menu</p>
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 p-3 rounded-xl sidebar-item-active transition-all group">
+                    <i class="fas fa-chart-line text-sm"></i>
+                    <span class="text-sm font-medium">Dashboard</span>
+                </button>
+                <button onclick="switchTab('courses')" id="nav-courses" class="nav-item w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] transition-all">
+                    <i class="fas fa-book-open text-sm"></i>
+                    <span class="text-sm font-medium">My Courses</span>
+                </button>
+                <button onclick="switchTab('labs')" id="nav-labs" class="nav-item w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] transition-all">
+                    <i class="fas fa-flask text-sm"></i>
+                    <span class="text-sm font-medium">Labs & Simulations</span>
+                </button>
+                <button onclick="switchTab('insights')" id="nav-insights" class="nav-item w-full flex items-center gap-3 p-3 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] transition-all">
+                    <i class="fas fa-brain text-sm"></i>
+                    <span class="text-sm font-medium">AI Insights</span>
+                </button>
+            </nav>
+
+            <div class="mt-10">
+                <p class="text-[10px] uppercase font-bold text-[var(--text-secondary)] px-3 mb-4 tracking-widest">System Agents</p>
+                <div class="space-y-3 px-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-soft"></span>
+                        <span class="text-xs font-medium text-[var(--text-secondary)]">Orchestrator Online</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                        <span class="text-xs font-medium text-[var(--text-secondary)]">Tutor Standby</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-auto p-6 border-t border-[var(--border-color)]">
+            <button id="theme-toggle" class="w-full flex items-center justify-between p-3 rounded-xl border border-[var(--border-color)] hover:bg-[var(--hover-bg)] transition-all text-xs mb-4">
+                <span class="font-medium">Theme Mode</span>
+                <i class="fas fa-moon"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center text-white font-bold">
+                    JD
+                </div>
+                <div class="flex-1 overflow-hidden">
+                    <p class="text-xs font-bold truncate">John Doe</p>
+                    <p class="text-[10px] text-[var(--text-secondary)]">Pro Tier Student</p>
+                </div>
+                <i class="fas fa-right-from-bracket text-[var(--text-secondary)] cursor-pointer hover:text-red-500 transition-colors"></i>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto bg-[var(--bg-primary)] p-8">
+        <!-- Dashboard Tab -->
+        <div id="tab-dashboard" class="tab-content">
+            <header class="flex justify-between items-end mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold mb-1">Welcome back, John.</h2>
+                    <p class="text-sm text-[var(--text-secondary)]">The Orchestrator has detected a 12% improvement in your spatial reasoning.</p>
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex -space-x-2">
+                        <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Orchestrator" class="w-8 h-8 rounded-full border-2 border-[var(--bg-primary)] bg-emerald-900/20" title="Orchestrator">
+                        <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Tutor" class="w-8 h-8 rounded-full border-2 border-[var(--bg-primary)] bg-teal-900/20" title="Tutor">
+                        <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Assessor" class="w-8 h-8 rounded-full border-2 border-[var(--bg-primary)] bg-amber-900/20" title="Assessor">
+                    </div>
+                    <button onclick="switchTab('labs')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2">
+                        <i class="fas fa-play text-[10px]"></i> Resume Quantum Lab
+                    </button>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="glass-panel p-5 rounded-2xl metric-card transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg">+4.2%</span>
+                    </div>
+                    <p class="text-xs text-[var(--text-secondary)] font-medium uppercase tracking-wider mb-1">Average Score</p>
+                    <h3 class="text-2xl font-bold text-[var(--text-primary)]">92.4%</h3>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl metric-card transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-500 flex items-center justify-center">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-lg">High</span>
+                    </div>
+                    <p class="text-xs text-[var(--text-secondary)] font-medium uppercase tracking-wider mb-1">Learning Velocity</p>
+                    <h3 class="text-2xl font-bold text-[var(--text-primary)]">1.8x <span class="text-xs text-[var(--text-secondary)] font-normal">avg</span></h3>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl metric-card transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-lg">Optimal</span>
+                    </div>
+                    <p class="text-xs text-[var(--text-secondary)] font-medium uppercase tracking-wider mb-1">Cognitive Load</p>
+                    <h3 class="text-2xl font-bold text-[var(--text-primary)]">64%</h3>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl metric-card transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-[var(--text-secondary)] bg-[var(--hover-bg)] px-2 py-1 rounded-lg">12 Days</span>
+                    </div>
+                    <p class="text-xs text-[var(--text-secondary)] font-medium uppercase tracking-wider mb-1">Current Streak</p>
+                    <h3 class="text-2xl font-bold text-[var(--text-primary)]">Steady</h3>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 space-y-8">
+                    <section>
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-lg">Active Learning Tracks</h3>
+                            <button onclick="switchTab('courses')" class="text-xs text-emerald-500 font-bold hover:underline">View All</button>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="glass-panel p-5 rounded-2xl group cursor-pointer hover:bg-[var(--hover-bg)] transition-all">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-16 h-16 rounded-xl bg-emerald-600/20 flex items-center justify-center border border-emerald-500/30">
+                                        <i class="fas fa-atom text-2xl text-emerald-500"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 class="font-bold text-[var(--text-primary)]">Quantum Mechanics & Computing</h4>
+                                                <p class="text-xs text-[var(--text-secondary)]">Module 4: Superposition & Gates</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-sm font-bold text-[var(--text-primary)]">78%</p>
+                                                <p class="text-[10px] text-emerald-500">3 lessons left</p>
+                                            </div>
+                                        </div>
+                                        <div class="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] h-2 rounded-full overflow-hidden">
+                                            <div class="bg-emerald-600 h-full w-[78%] rounded-full"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <div class="space-y-8">
+                    <section>
+                        <h3 class="font-bold text-lg mb-6">Agent Recommendations</h3>
+                        <div class="space-y-4">
+                            <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                                <div class="flex gap-3 mb-2">
+                                    <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Assessor" class="w-8 h-8 rounded-lg bg-amber-500/20">
+                                    <div><p class="text-xs font-bold text-amber-500 uppercase">Cognitive Gap</p></div>
+                                </div>
+                                <p class="text-xs mb-3">You struggled with "Eigenvalue Calculation" twice yesterday. Visual refresher suggested.</p>
+                                <button class="w-full py-2 rounded-lg bg-amber-500/20 text-amber-500 text-[10px] font-bold">Launch Refresher</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- Courses Tab -->
+        <div id="tab-courses" class="tab-content hidden">
+            <header class="mb-8">
+                <h2 class="text-2xl font-bold mb-1">Academic Curriculum</h2>
+                <p class="text-sm text-[var(--text-secondary)]">All enrolled programs and interactive learning paths.</p>
+            </header>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Course Card -->
+                <div class="glass-panel p-6 rounded-3xl relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 opacity-50"></div>
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                            <i class="fas fa-atom text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-500 px-2 py-1 rounded-md">IN PROGRESS</span>
+                        </div>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2 text-[var(--text-primary)]">Quantum Physics</h3>
+                    <p class="text-xs text-[var(--text-secondary)] mb-6">Explore the fundamentals of quantum states, entanglement, and probability amplitude.</p>
+                    <div class="space-y-4">
+                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                            <span>Progress</span>
+                            <span>78%</span>
+                        </div>
+                        <div class="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-emerald-500 h-full w-[78%]"></div>
+                        </div>
+                        <button class="w-full py-3 bg-[var(--hover-bg)] hover:bg-[var(--border-color)] text-xs font-bold rounded-xl transition-all text-[var(--text-primary)]">View Modules</button>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-teal-500 opacity-50"></div>
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-500">
+                            <i class="fas fa-dna text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold bg-teal-500/20 text-teal-500 px-2 py-1 rounded-md">IN PROGRESS</span>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2 text-[var(--text-primary)]">Bio-Engineering</h3>
+                    <p class="text-xs text-[var(--text-secondary)] mb-6">Advanced techniques in CRISPR, synthetic biology, and molecular modeling.</p>
+                    <div class="space-y-4">
+                        <div class="flex justify-between text-[10px] font-bold text-[var(--text-secondary)] uppercase">
+                            <span>Progress</span>
+                            <span>42%</span>
+                        </div>
+                        <div class="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-teal-500 h-full w-[42%]"></div>
+                        </div>
+                        <button class="w-full py-3 bg-[var(--hover-bg)] hover:bg-[var(--border-color)] text-xs font-bold rounded-xl transition-all text-[var(--text-primary)]">View Modules</button>
+                    </div>
+                </div>
+
+                <!-- Empty State / New Course -->
+                <div class="border-2 border-dashed border-[var(--border-color)] p-6 rounded-3xl flex flex-col items-center justify-center text-center group cursor-pointer hover:border-emerald-500/50 transition-all">
+                    <div class="w-12 h-12 rounded-full bg-[var(--hover-bg)] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-plus text-[var(--text-secondary)]"></i>
+                    </div>
+                    <p class="text-sm font-bold text-[var(--text-primary)]">Enroll in New Course</p>
+                    <p class="text-[10px] text-[var(--text-secondary)] mt-1">AI curated paths available</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Labs Tab -->
+        <div id="tab-labs" class="tab-content hidden h-full flex flex-col">
+            <header class="mb-8 flex justify-between items-start">
+                <div>
+                    <h2 class="text-2xl font-bold mb-1">Virtual Laboratory</h2>
+                    <p class="text-sm text-[var(--text-secondary)]">Kinesthetic environments for experimental learning.</p>
+                </div>
+                <div class="flex gap-2">
+                    <div class="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-[10px] font-bold text-emerald-500">GPU ACCELERATED</div>
+                    <div class="px-3 py-1.5 bg-teal-500/10 border border-teal-500/30 rounded-lg text-[10px] font-bold text-teal-500">LOW LATENCY</div>
+                </div>
+            </header>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1">
+                <div class="lg:col-span-3 glass-panel rounded-3xl overflow-hidden relative flex flex-col min-h-[500px]">
+                    <div class="absolute inset-0 bg-[#000] opacity-40 z-0"></div>
+                    <div class="absolute inset-0 z-10 p-12 flex flex-col items-center justify-center text-center">
+                        <div class="w-24 h-24 rounded-full bg-emerald-600/20 flex items-center justify-center border border-emerald-500/40 mb-6 animate-pulse">
+                            <i class="fas fa-microscope text-4xl text-emerald-500"></i>
+                        </div>
+                        <h3 class="text-3xl font-bold mb-4 text-[var(--text-primary)]">Quantum Superposition Lab</h3>
+                        <p class="text-[var(--text-secondary)] max-w-md mb-8">Click 'Initialize' to start your interactive session. The Orchestrator will monitor your interaction speed and accuracy.</p>
+                        <button class="px-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl shadow-xl shadow-emerald-500/30 transition-all">Initialize Lab Environment</button>
+                    </div>
+                    <!-- Mock visual grid -->
+                    <div class="flex-1 opacity-20 pointer-events-none" style="background-image: radial-gradient(#10b981 1px, transparent 1px); background-size: 30px 30px;"></div>
+                </div>
+                
+                <div class="space-y-6">
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <h4 class="text-xs font-bold uppercase text-[var(--text-secondary)] tracking-widest mb-4">Lab Metrics</h4>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-end">
+                                <span class="text-[10px] text-[var(--text-secondary)]">COHERENCE</span>
+                                <span class="text-xs font-bold text-[var(--text-primary)]">0.0%</span>
+                            </div>
+                            <div class="w-full h-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-full"></div>
+                            <div class="flex justify-between items-end pt-2">
+                                <span class="text-[10px] text-[var(--text-secondary)]">LATENCY</span>
+                                <span class="text-xs font-bold text-[var(--text-primary)]">14ms</span>
+                            </div>
+                            <div class="w-full h-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-full">
+                                <div class="bg-emerald-500 h-full w-[10%]"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-panel p-5 rounded-2xl bg-amber-500/5 border-amber-500/20">
+                        <p class="text-[10px] font-bold text-amber-500 mb-2 uppercase tracking-widest">Pre-Lab Briefing</p>
+                        <p class="text-[11px] leading-relaxed text-[var(--text-primary)]">Ensure you have reviewed "Hilbert Spaces" module before attempting this simulation. Failure rate is 45% for unbriefed students.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Insights Tab -->
+        <div id="tab-insights" class="tab-content hidden">
+            <header class="mb-8">
+                <h2 class="text-2xl font-bold mb-1">AI Cognitive Insights</h2>
+                <p class="text-sm text-[var(--text-secondary)]">Neural analysis of your learning patterns and retention gaps.</p>
+            </header>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="glass-panel p-8 rounded-3xl">
+                    <h3 class="font-bold text-lg mb-6 text-[var(--text-primary)]">Retention Heatmap</h3>
+                    <div class="grid grid-cols-7 gap-2">
+                        <!-- Simulated Heatmap -->
+                        <script>
+                            for(let i=0; i<28; i++) {
+                                const opacity = Math.random() * 0.8 + 0.1;
+                                document.write(`<div class="aspect-square rounded-md bg-emerald-500" style="opacity: ${opacity}"></div>`);
+                            }
+                        </script>
+                    </div>
+                    <p class="mt-6 text-xs text-[var(--text-secondary)] leading-relaxed">Your retention for mathematical concepts peaks in the late evening, while visual-spatial tasks are handled best during morning sessions.</p>
+                </div>
+                
+                <div class="glass-panel p-8 rounded-3xl bg-emerald-600/5 border-emerald-500/20">
+                    <h3 class="font-bold text-lg mb-6 text-[var(--text-primary)]">Orchestrator's Analysis</h3>
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0">
+                                <i class="fas fa-brain text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold">Strategic Pivot Suggested</h4>
+                                <p class="text-xs text-[var(--text-secondary)] mt-1">Based on your recent lab interactions, I've noticed a 30% speed decrease in Bio-Engineering. I suggest pivoting to theoretical study for 48 hours.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center shrink-0">
+                                <i class="fas fa-chart-line text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold">Velocity Milestone</h4>
+                                <p class="text-xs text-[var(--text-secondary)] mt-1">Your learning velocity in Physics is now 2.1x above average. I've unlocked the "Quantum Field Theory" advanced path.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        let isDarkMode = true;
+
+        // Theme Toggle Logic
+        themeToggle.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('light-mode');
+            const icon = themeToggle.querySelector('i');
+            if (isDarkMode) {
+                icon.className = 'fas fa-moon';
+            } else {
+                icon.className = 'fas fa-sun text-amber-500';
+            }
+        });
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            // Show selected tab
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            
+            // Update sidebar styles
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('sidebar-item-active');
+                item.classList.add('text-[var(--text-secondary)]');
+            });
+            
+            const activeNav = document.getElementById('nav-' + tabId);
+            activeNav.classList.add('sidebar-item-active');
+            activeNav.classList.remove('text-[var(--text-secondary)]');
+        }
+
+        // Initialize first tab
+        switchTab('dashboard');
+
+        // Add some hover interactions for course cards
+        document.querySelectorAll('.glass-panel').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                // Subtle feedback handled by CSS
+            });
+        });
+    </script>
+</body>
+</html>

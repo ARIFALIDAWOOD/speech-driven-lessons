@@ -39,11 +39,11 @@ function LoginPrompt() {
   return (
     <button
       onClick={() => router.push("/login")}
-      className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+      className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
     >
-      <Avatar className="h-10 w-10 bg-gray-200">
+      <Avatar className="h-10 w-10 bg-muted">
         <AvatarFallback>
-          <User className="h-5 w-5 text-gray-500" />
+          <User className="h-5 w-5 text-muted-foreground" />
         </AvatarFallback>
       </Avatar>
       <span className="text-sm font-medium">Sign In</span>
@@ -71,18 +71,18 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
-          <Avatar className="h-10 w-10 bg-emerald-100">
-            <AvatarFallback className="bg-emerald-100 text-emerald-700 font-medium">
+        <button className="flex items-center gap-3 w-full px-2 py-2 rounded-lg hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background">
+          <Avatar className="h-10 w-10 bg-primary/10">
+            <AvatarFallback className="bg-primary/10 text-primary font-medium">
               {getInitials(userEmail)}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 text-left min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate max-w-[140px]">
+            <p className="text-sm font-medium text-foreground truncate max-w-[140px]">
               {userEmail}
             </p>
           </div>
-          <ChevronUp className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="top" className="w-56">
@@ -96,7 +96,7 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleSignOut}
-          className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+          className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
         >
           <LogOut className="mr-2 h-4 w-4" />
           Sign Out

@@ -81,10 +81,9 @@ Use this checklist to track progress during implementation.
 - [ ] Replaced `s3.get_object()` with `read_text_file_from_s3()`
 - [ ] Verified FAISS processing still works
 
-### Task 5: user_files_utils.py (MISSED IN ORIGINAL PLAN)
-- [ ] Removed boto3 import and client
-- [ ] Updated to import from s3_utils
-- [ ] Exported `bucket_name` for compatibility
+### Task 5: user_files_utils.py (MISSED IN ORIGINAL PLAN) — OBSOLETE
+**Note:** `user_files_utils.py` was removed as dead code. Task obsolete.
+- [x] File removed (dead code)
 
 ### Task 6: in_class.py
 - [ ] Removed hardcoded bucket name (line 13)

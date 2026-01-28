@@ -148,7 +148,9 @@ Supabase Storage may have different performance characteristics than S3, especia
 
 ---
 
-### Risk 5: Missing File in user_files_utils.py (IDENTIFIED GAP)
+### Risk 5: Missing File in user_files_utils.py (IDENTIFIED GAP) — OBSOLETE
+
+**Update:** `user_files_utils.py` was later removed as dead code (no imports). This risk is obsolete.
 
 | Attribute | Value |
 |-----------|-------|
@@ -157,7 +159,7 @@ Supabase Storage may have different performance characteristics than S3, especia
 | **Impact** | Partial migration, boto3 still required |
 
 **Description:**
-The original plan missed `backend/user_files_utils.py` which has its own standalone boto3 client. This would cause the migration to be incomplete.
+The original plan missed `backend/user_files_utils.py` which had its own standalone boto3 client. The file was refactored then removed as dead code.
 
 **Mitigation:**
 1. **Already addressed** in enhanced plan
